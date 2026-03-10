@@ -1,0 +1,61 @@
+# ==========================================
+# Visual Studio & .NET Standard
+# ==========================================
+.vs/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+
+# ==========================================
+# WinUI 3 / Windows App SDK Specific
+# ==========================================
+# App package directories generated during MSIX builds
+AppPackages/
+BundleArtifacts/
+Packages.dgml
+
+# XAML compiler generated files (usually in obj/, but sometimes leak out depending on config)
+Generated\ Files/
+GeneratedFiles/
+
+# Temporary files created during MSIX packaging
+_pkginfo.txt
+*.appx
+*.appxbundle
+*.msix
+*.msixbundle
+*.appxsym
+*.appxupload
+*.msixupload
+
+# ==========================================
+# NuGet Packages
+# ==========================================
+*.nupkg
+# The packages folder can be ignored because NuGet restores them automatically
+[Pp]ackages/
+!/[Pp]ackages/build/
+# If you use local NuGet caching
+.nuget/
+
+# ==========================================
+# Resharper / Rider (Optional but recommended)
+# ==========================================
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+.idea/
+
+# ==========================================
+# OS Generated Files
+# ==========================================
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+$RECYCLE.BIN/
