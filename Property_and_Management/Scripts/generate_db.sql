@@ -33,7 +33,7 @@ CREATE TABLE Games (
     is_active BIT NOT NULL DEFAULT 1,
     
     CONSTRAINT PK_Games PRIMARY KEY (game_id),
-    CONSTRAINT FK_Games_Owner FOREIGN KEY (owner_id) REFERENCES [user](id),
+    CONSTRAINT FK_Games_Owner FOREIGN KEY (owner_id) REFERENCES [User](id),
     
     -- Business Logic Constraints
     CONSTRAINT CHK_Game_Price CHECK (price > 0),
@@ -51,9 +51,9 @@ CREATE TABLE Request (
     end_date DATETIME NOT NULL,
     
     CONSTRAINT PK_Request PRIMARY KEY (request_id),
-    CONSTRAINT FK_Request_Game FOREIGN KEY (game_id) REFERENCES games(game_id),
-    CONSTRAINT FK_Request_Renter FOREIGN KEY (renter_id) REFERENCES [user](id),
-    CONSTRAINT FK_Request_Owner FOREIGN KEY (owner_id) REFERENCES [user](id)
+    CONSTRAINT FK_Request_Game FOREIGN KEY (game_id) REFERENCES Games(game_id),
+    CONSTRAINT FK_Request_Renter FOREIGN KEY (renter_id) REFERENCES [User](id),
+    CONSTRAINT FK_Request_Owner FOREIGN KEY (owner_id) REFERENCES [User](id)
 );
 
 -- 5. Create the Rentals table (Confirmed Bookings)
@@ -66,9 +66,9 @@ CREATE TABLE Rentals (
     end_date DATETIME NOT NULL,
     
     CONSTRAINT PK_Rentals PRIMARY KEY (rental_id),
-    CONSTRAINT FK_Rentals_Game FOREIGN KEY (game_id) REFERENCES games(game_id),
-    CONSTRAINT FK_Rentals_Renter FOREIGN KEY (renter_id) REFERENCES [user](id),
-    CONSTRAINT FK_Rentals_Owner FOREIGN KEY (owner_id) REFERENCES [user](id)
+    CONSTRAINT FK_Rentals_Game FOREIGN KEY (game_id) REFERENCES Games(game_id),
+    CONSTRAINT FK_Rentals_Renter FOREIGN KEY (renter_id) REFERENCES [User](id),
+    CONSTRAINT FK_Rentals_Owner FOREIGN KEY (owner_id) REFERENCES [User](id)
 );
 
 -- 6. Create the Notifications table
@@ -80,5 +80,5 @@ CREATE TABLE Notifications (
     body NVARCHAR(500) NOT NULL,
     
     CONSTRAINT PK_Notifications PRIMARY KEY (notification_id),
-    CONSTRAINT FK_Notifications_User FOREIGN KEY (user_id) REFERENCES [user](id)
+    CONSTRAINT FK_Notifications_User FOREIGN KEY (user_id) REFERENCES [User](id)
 );
