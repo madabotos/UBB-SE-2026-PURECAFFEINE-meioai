@@ -1,14 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Identity.Client;
 using Property_and_Management.src.Attributes;
 using Property_and_Management.src.Interface;
-using Windows.Security.Authentication.OnlineId;
 
 namespace Property_and_Management.src.Model
 {

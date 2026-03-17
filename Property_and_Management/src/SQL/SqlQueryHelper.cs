@@ -37,7 +37,8 @@ namespace Property_and_Management.src.SQL
         {
             foreach (var keyValuePair in variableDictionary)
             {
-                command.Parameters.AddWithValue(keyValuePair.Key, keyValuePair.Value);
+                var value = keyValuePair.Value ?? DBNull.Value;
+                command.Parameters.AddWithValue(keyValuePair.Key, value);
             }
         }
 

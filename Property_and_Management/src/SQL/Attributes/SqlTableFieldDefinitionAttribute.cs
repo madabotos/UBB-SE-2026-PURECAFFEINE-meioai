@@ -11,7 +11,7 @@ namespace Property_and_Management.src.Attributes
     /// </summary>
     /// <param name="fieldName">The name of the field</param>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    class SqlTableFieldDefinitionAttribute(string fieldName) : Attribute
+    public class SqlTableFieldDefinitionAttribute(string fieldName) : Attribute
     {
         public string FieldName { get; } = fieldName;
         public bool IsPrimaryKey { get; set; } = false;
