@@ -6,9 +6,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Property_and_Management.src.Model;
 
-namespace Property_and_Management.src.Repository
+namespace Property_and_Management.src.Interface
 {
-    interface IRepository<T> where T : notnull, IEntity
+    public interface IRepository<T> where T : notnull, IEntity
     {
         /// <summary>
         /// Retrieves all items in the collection as an immutable list.
