@@ -11,7 +11,7 @@ namespace Property_and_Management.src.Attributes
     /// </summary>
     /// <param name="tableName">The name of the table</param>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-    class SqlTableDefinitionAttribute(string tableName) : Attribute
+    public class SqlTableDefinitionAttribute(string tableName) : Attribute
     {
         public string TableName { get; } = tableName;
     }

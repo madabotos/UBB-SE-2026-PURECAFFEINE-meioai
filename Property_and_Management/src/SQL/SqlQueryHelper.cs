@@ -15,6 +15,8 @@ namespace Property_and_Management.src.SQL
 {
     public class SqlQueryHelper<T> : ISqlQueryHelper<T> where T : IEntity
     {
+        static private readonly Type s_genericType = typeof(T);
+
         private struct SqlQueryHelperParameters(string primaryKeyField, string tableName, List<string> fieldNames, VariableDictionary variables)
         {
             public string PrimaryKeyField { get; } = primaryKeyField;
@@ -44,10 +46,8 @@ namespace Property_and_Management.src.SQL
 
         public static string GetTableName()
         {
-            var genericType = typeof(T);
-
             // Get the table name
-            var tableNameAttribute = Attribute.GetCustomAttribute(genericType, typeof(SqlTableDefinitionAttribute)) as SqlTableDefinitionAttribute;
+            var tableNameAttribute = Attribute.GetCustomAttribute(s_genericType, typeof(SqlTableDefinitionAttribute)) as SqlTableDefinitionAttribute;
 
             if (tableNameAttribute == null)
             {
@@ -59,12 +59,10 @@ namespace Property_and_Management.src.SQL
 
         public static List<string> GetTableFields(bool includePrimaryKey)
         {
-            var genericType = typeof(T);
-
             List<string> fieldNames = [];
 
             // Go through each property
-            foreach (var property in genericType.GetProperties())
+            foreach (var property in s_genericType.GetProperties())
             {
                 var fieldNameAttribute = property.GetCustomAttribute<SqlTableFieldDefinitionAttribute>();
 
@@ -91,12 +89,10 @@ namespace Property_and_Management.src.SQL
 
         public static VariableDictionary GetVariables(T entity, bool includePrimaryKey)
         {
-            var genericType = typeof(T);
-
             VariableDictionary variables = [];
 
             // Go through each property
-            foreach (var property in genericType.GetProperties())
+            foreach (var property in s_genericType.GetProperties())
             {
                 var fieldNameAttribute = property.GetCustomAttribute<SqlTableFieldDefinitionAttribute>();
                 object? propertyValue = entity != null ? property.GetValue(entity) : null;
@@ -124,11 +120,8 @@ namespace Property_and_Management.src.SQL
 
         public static string GetPrimaryKeyField()
         {
-            var genericType = typeof(T);
-
-
             // Go through each property
-            foreach (var property in genericType.GetProperties())
+            foreach (var property in s_genericType.GetProperties())
             {
                 var fieldNameAttribute = property.GetCustomAttribute<SqlTableFieldDefinitionAttribute>();
 
@@ -219,12 +212,9 @@ namespace Property_and_Management.src.SQL
 
         public static T EntityFromReader(SqlDataReader reader)
         {
-
-            var genericType = typeof(T);
-
             Dictionary<string, object> parameters = [];
 
-            foreach (var property in genericType.GetProperties())
+            foreach (var property in s_genericType.GetProperties())
             {
                 var fieldNameAttribute = property.GetCustomAttribute<SqlTableFieldDefinitionAttribute>();
 
