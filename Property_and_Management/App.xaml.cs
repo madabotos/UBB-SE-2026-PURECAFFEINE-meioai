@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using Microsoft.Data.SqlClient;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -11,6 +12,9 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
+using Property_and_Management.src.Model;
+using Property_and_Management.src.Repository;
+using Property_and_Management.src.SQL;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
@@ -35,6 +39,17 @@ namespace Property_and_Management
         public App()
         {
             InitializeComponent();
+
+            using (SqlCommand cmd = new SqlCommand())
+            {
+                Notification test = new Notification(1, 1, DateTime.Now, "hello2", "world2");
+
+                // string t = SqlQueryHelper<Notification>.CreateInsertQuery(cmd, test, false);
+                // Dbrepo test
+                NotificationRepository notificationRepository = new NotificationRepository();
+
+                Console.WriteLine(notificationRepository.GetNotificationsByUser(0));
+            }
         }
 
         /// <summary>
