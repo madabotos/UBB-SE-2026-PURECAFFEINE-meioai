@@ -15,9 +15,9 @@ USE BoardRent;
 GO
 
 -- 2. Create the User table
-IF OBJECT_ID(N'[dbo].[User]', 'U') IS NULL
+IF OBJECT_ID(N'[dbo].[Users]', 'U') IS NULL
 BEGIN
-    CREATE TABLE [User] (
+    CREATE TABLE Users (
         id INT IDENTITY(1,1) NOT NULL,
         CONSTRAINT PK_User PRIMARY KEY (id)
     );
