@@ -1,5 +1,5 @@
-using System;
 using Property_and_Management.src.Model;
+using System;
 
 namespace Property_and_Management.src.DTO
 {

@@ -1,5 +1,5 @@
-using System;
 using Property_and_Management.src.Interface;
+using System;
 
 namespace Property_and_Management.src.Model
 {
@@ -15,7 +15,7 @@ namespace Property_and_Management.src.Model
         public byte[] Image { get; set; }
         public bool IsActive { get; set; }
 
-        public Game() {}
+        public Game() { }
 
         public Game(int id, User owner, string name, double price,
                     int minimumPlayerNumber, int maximumPlayerNumber,
