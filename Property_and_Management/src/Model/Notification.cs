@@ -11,6 +11,7 @@ namespace Property_and_Management.src.Model
         public string Title { get; set; }
         public string Body { get; set; }
 
+        public Notification() { }
         public Notification(int id, User user, DateTime timestamp, string title, string body)
         {
             Id = id;
