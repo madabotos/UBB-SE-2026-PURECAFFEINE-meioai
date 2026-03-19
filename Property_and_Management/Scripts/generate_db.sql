@@ -15,9 +15,9 @@ USE BoardRent;
 GO
 
 -- 2. Create the User table
-IF OBJECT_ID(N'[dbo].[User]', 'U') IS NULL
+IF OBJECT_ID(N'[dbo].[Users]', 'U') IS NULL
 BEGIN
-    CREATE TABLE [User] (
+    CREATE TABLE Users (
         id INT IDENTITY(1,1) NOT NULL,
         CONSTRAINT PK_User PRIMARY KEY (id)
     );
@@ -47,10 +47,10 @@ BEGIN
     );
 END;
 
--- 4. Create the Request table (Pending Inquiries)
-IF OBJECT_ID(N'[dbo].[Request]', 'U') IS NULL
+-- 4. Create the Requests table (Pending Inquiries)
+IF OBJECT_ID(N'[dbo].[Requests]', 'U') IS NULL
 BEGIN
-    CREATE TABLE Request (
+    CREATE TABLE Requests (
         request_id INT IDENTITY(1,1) NOT NULL,
         game_id INT NOT NULL,
         renter_id INT NOT NULL,
