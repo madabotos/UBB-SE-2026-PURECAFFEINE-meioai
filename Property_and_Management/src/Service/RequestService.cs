@@ -184,11 +184,11 @@ namespace Property_and_Management.src.Service
             //}
         }
 
-        // [API-GBD-04] The method shall return a list of objects. Each object shall contain:
-        // StartDate (DateTime) — the start of the booked interval;
-        // EndDate (DateTime) — the end of the booked interval, including the 48-hour buffer period
-        // (i.e., rental end_date + 48 hours).
-        // [API-GBD-05] The returned list shall be sorted by StartDate ascending.
+        //[API-GBD-04] The method shall return a list of objects. Each object shall contain:
+        //StartDate (DateTime) — the start of the booked interval;
+        //EndDate (DateTime) — the end of the booked interval, including the 48-hour buffer period
+        //(i.e., rental end_date + 48 hours).
+        //[API-GBD-05] The returned list shall be sorted by StartDate ascending.
         public ImmutableList<(DateTime, DateTime)> GetBookedDates(int gameId, int month = 0, int year = 0)
         {
             if (month == 0)
@@ -205,15 +205,14 @@ namespace Property_and_Management.src.Service
                 .ToImmutableList();
         }
 
-        
-        // [API-CAV-04] IsAvailable shall be TRUE if and only if all of the following conditions hold:
-        // (a) the requested [startDate, endDate] range does not overlap with any existing Rental interval
-        // for the specified game_id;
-        // (b) the requested startDate is not within the 48-hour buffer period of any existing Rental;
-        // (c) the requested startDate is not more than one month in the future from the current date;
-        // (d) the requested endDate is not more than one month in the future from the current date’
-        // (e) the game_id corresponds to an existent and active game. 
-        // If any condition is not met, IsAvailable shall be FALSE.
+        //[API-CAV-04] IsAvailable shall be TRUE if and only if all of the following conditions hold:
+        //(a) the requested [startDate, endDate] range does not overlap with any existing Rental interval
+        //for the specified game_id;
+        //(b) the requested startDate is not within the 48-hour buffer period of any existing Rental;
+        //(c) the requested startDate is not more than one month in the future from the current date;
+        //(d) the requested endDate is not more than one month in the future from the current date’
+        //(e) the game_id corresponds to an existent and active game. 
+        //If any condition is not met, IsAvailable shall be FALSE.
 
         public bool CheckAvailability(int gameId, DateTime startDate, DateTime endDate)
         {
