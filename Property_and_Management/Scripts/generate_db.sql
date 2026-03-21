@@ -4,6 +4,10 @@ This script should be run when setting up the project, so that you actually have
 Run in SSMS.
 */
 
+/*
+Corrected Database Script
+*/
+
 -- 1. Create the Database
 IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'BoardRent')
 BEGIN
@@ -38,7 +42,7 @@ BEGIN
         is_active BIT NOT NULL DEFAULT 1,
         
         CONSTRAINT PK_Games PRIMARY KEY (game_id),
-        CONSTRAINT FK_Games_Owner FOREIGN KEY (owner_id) REFERENCES [User](id),
+        CONSTRAINT FK_Games_Owner FOREIGN KEY (owner_id) REFERENCES [Users](id),
         
         -- Business Logic Constraints
         CONSTRAINT CHK_Game_Price CHECK (price > 0),
@@ -60,8 +64,8 @@ BEGIN
         
         CONSTRAINT PK_Request PRIMARY KEY (request_id),
         CONSTRAINT FK_Request_Game FOREIGN KEY (game_id) REFERENCES Games(game_id),
-        CONSTRAINT FK_Request_Renter FOREIGN KEY (renter_id) REFERENCES [User](id),
-        CONSTRAINT FK_Request_Owner FOREIGN KEY (owner_id) REFERENCES [User](id),
+        CONSTRAINT FK_Request_Renter FOREIGN KEY (renter_id) REFERENCES [Users](id),
+        CONSTRAINT FK_Request_Owner FOREIGN KEY (owner_id) REFERENCES [Users](id),
         CONSTRAINT CHK_Request_DateRange CHECK (end_date >= start_date)
     );
 END;
@@ -79,8 +83,8 @@ BEGIN
         
         CONSTRAINT PK_Rentals PRIMARY KEY (rental_id),
         CONSTRAINT FK_Rentals_Game FOREIGN KEY (game_id) REFERENCES Games(game_id),
-        CONSTRAINT FK_Rentals_Renter FOREIGN KEY (renter_id) REFERENCES [User](id),
-        CONSTRAINT FK_Rentals_Owner FOREIGN KEY (owner_id) REFERENCES [User](id),
+        CONSTRAINT FK_Rentals_Renter FOREIGN KEY (renter_id) REFERENCES [Users](id),
+        CONSTRAINT FK_Rentals_Owner FOREIGN KEY (owner_id) REFERENCES [Users](id),
         CONSTRAINT CHK_Rentals_DateRange CHECK (end_date >= start_date)
     );
 END;
@@ -96,6 +100,6 @@ BEGIN
         body NVARCHAR(500) NOT NULL,
         
         CONSTRAINT PK_Notifications PRIMARY KEY (notification_id),
-        CONSTRAINT FK_Notifications_User FOREIGN KEY (user_id) REFERENCES [User](id)
+        CONSTRAINT FK_Notifications_User FOREIGN KEY (user_id) REFERENCES [Users](id)
     );
 END;
