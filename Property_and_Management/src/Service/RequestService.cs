@@ -216,7 +216,7 @@ namespace Property_and_Management.src.Service
 
         public bool CheckAvailability(int gameId, DateTime startDate, DateTime endDate)
         {
-            bool dateNotTooLate = endDate <= DateTime.Now.AddMonths(1);
+            bool isDateWithin1Month = endDate <= DateTime.Now.AddMonths(1);
 
             bool isTheGameActive = _gameRepository
                 .GetAll()
@@ -226,7 +226,7 @@ namespace Property_and_Management.src.Service
                 .GetRequestsByGame(gameId)
                 .Any(r => r.StartDate <= endDate && r.EndDate >= startDate);
 
-            return dateNotTooLate && isTheGameActive && inAvailableTimeInterval;
+            return isDateWithin1Month && isTheGameActive && inAvailableTimeInterval;
         }
     }
 }
