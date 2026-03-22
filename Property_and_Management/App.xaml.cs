@@ -48,7 +48,7 @@ namespace Property_and_Management
                 // Dbrepo test
                 NotificationRepository notificationRepository = new NotificationRepository();
 
-                Console.WriteLine(notificationRepository.Get(3));
+                //Console.WriteLine(notificationRepository.Get(3));
             }
         }
 

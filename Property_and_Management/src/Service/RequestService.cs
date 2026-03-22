@@ -5,6 +5,8 @@ using System.Linq;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
+using Windows.Gaming.Input;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Property_and_Management.src.Service
 {
@@ -182,20 +184,49 @@ namespace Property_and_Management.src.Service
             //}
         }
 
-        public ImmutableList<(DateTime, DateTime)> GetBookedDates(int gameId, int month, int year)
+        //[API-GBD-04] The method shall return a list of objects. Each object shall contain:
+        //StartDate (DateTime) — the start of the booked interval;
+        //EndDate (DateTime) — the end of the booked interval, including the 48-hour buffer period
+        //(i.e., rental end_date + 48 hours).
+        //[API-GBD-05] The returned list shall be sorted by StartDate ascending.
+        public ImmutableList<(DateTime, DateTime)> GetBookedDates(int gameId, int month = 0, int year = 0)
         {
+            if (month == 0)
+                month = DateTime.Now.Month;
+
+            if (year == 0)
+                year = DateTime.Now.Year;
+
             return _requestRepository
                 .GetRequestsByGame(gameId)
                 .Where(r => r.StartDate.Month == month && r.StartDate.Year == year)
-                .Select(r => (r.StartDate, r.EndDate))
+                .OrderBy(r => r.StartDate)
+                .Select(r => (r.StartDate, r.EndDate.AddDays(2)))
                 .ToImmutableList();
         }
 
+        //[API-CAV-04] IsAvailable shall be TRUE if and only if all of the following conditions hold:
+        //(a) the requested [startDate, endDate] range does not overlap with any existing Rental interval
+        //for the specified game_id;
+        //(b) the requested startDate is not within the 48-hour buffer period of any existing Rental;
+        //(c) the requested startDate is not more than one month in the future from the current date;
+        //(d) the requested endDate is not more than one month in the future from the current date’
+        //(e) the game_id corresponds to an existent and active game. 
+        //If any condition is not met, IsAvailable shall be FALSE.
+
         public bool CheckAvailability(int gameId, DateTime startDate, DateTime endDate)
         {
-            return !_requestRepository
+            bool isDateWithin1Month = endDate <= DateTime.Now.AddMonths(1);
+
+            bool isTheGameActive = _gameRepository
+                .GetAll()
+                .Count(g => g.Id == gameId && g.IsActive) == 1;
+
+            bool inAvailableTimeInterval = !_requestRepository
                 .GetRequestsByGame(gameId)
-                .Any(r => r.StartDate < endDate && r.EndDate > startDate);
+                .Any(r => r.StartDate <= endDate && r.EndDate >= startDate);
+
+            return isDateWithin1Month && isTheGameActive && inAvailableTimeInterval;
         }
     }
 }
