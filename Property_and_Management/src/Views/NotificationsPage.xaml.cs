@@ -13,8 +13,6 @@ using Microsoft.UI.Xaml.Navigation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Property_and_Management.src.Viewmodels;
-using Property_and_Management.src.Service;
-using Property_and_Management.src.Repository;
 using Property_and_Management.src.DTO;
 using System.Diagnostics;
 
@@ -24,29 +22,45 @@ using System.Diagnostics;
 namespace Property_and_Management.src.Views
 {
     /// <summary>
-    /// An empty window that can be used on its own or navigated to within a Frame.
+    /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class NotificationsPage : Window
+    public sealed partial class NotificationsPage : Page
     {
-
-        public NotificationsPage(NotificationsViewModel viewModel)
+        public NotificationsPage()
         {
             InitializeComponent();
+        }
 
-            if (Content is FrameworkElement root)
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            base.OnNavigatedTo(e);
+
+            if (e.Parameter is NotificationsViewModel vm)
             {
-                root.DataContext = viewModel;
-            }
+                DataContext = vm;
 
-            // Bind the ItemsListView explicitly in code-behind in case DataContext binding isn't active yet
-            ItemsListView.ItemsSource = viewModel.Notifications;
+                // If the XAML contains a named ItemsControl / ListView called "ItemsListView" from older implementation,
+                // bind its ItemsSource to the VM's Notifications collection to preserve behavior.
+                if (this.FindName("ItemsListView") is ItemsControl items)
+                {
+                    items.ItemsSource = vm.Notifications;
+                }
+            }
         }
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                // Get the viewmodel from the window's DataContext
+                var btn = sender as Button;
+                // In ItemsControl the DataContext for the button is the NotificationDTO
+                var note = btn?.DataContext as NotificationDTO;
+                if (note == null)
+                {
+                    Debug.WriteLine("DeleteButton_Click: notification DTO not found");
+                    return;
+                }
+
                 var root = this.Content as FrameworkElement;
                 var vm = root?.DataContext as NotificationsViewModel;
                 if (vm == null)
@@ -55,13 +69,26 @@ namespace Property_and_Management.src.Views
                     return;
                 }
 
-                // Pick a random user id different from current
-                // vm.ChangeFirstText();
+                vm.DeleteNotificationById(note.Id);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"DeleteButton_Click error: {ex}");
             }
+        }
+
+        private void NextButton_Click(object sender, RoutedEventArgs e)
+        {
+            var root = this.Content as FrameworkElement;
+            var vm = root?.DataContext as NotificationsViewModel;
+            vm?.NextPage();
+        }
+
+        private void PrevButton_Click(object sender, RoutedEventArgs e)
+        {
+            var root = this.Content as FrameworkElement;
+            var vm = root?.DataContext as NotificationsViewModel;
+            vm?.PrevPage();
         }
     }
 }

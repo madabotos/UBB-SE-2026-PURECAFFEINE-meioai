@@ -12,6 +12,9 @@ using Property_and_Management.src.Repository;
 using Property_and_Management.src.Service.Listeners;
 using ServerCommunication;
 using Windows.UI.Notifications;
+using Microsoft.Windows.AppNotifications;
+using Microsoft.Windows.AppNotifications.Builder;
+using Property_and_Management.src.Views;
 
 namespace Property_and_Management.src.Service
 {
@@ -83,7 +86,7 @@ namespace Property_and_Management.src.Service
         {
             // Notify all subscribers
             // only SendNotificationMessage is supported
-            if( value is SendNotificationMessage message)
+            if (value is SendNotificationMessage message)
             {
                 NotificationDTO notificationDTO = new NotificationDTO
                 {
@@ -92,7 +95,7 @@ namespace Property_and_Management.src.Service
                     Body = message.Body,
                 };
 
-                foreach(var subscriber in _subscribers)
+                foreach (var subscriber in _subscribers)
                 {
                     subscriber.OnNext(notificationDTO);
                 }
@@ -110,15 +113,13 @@ namespace Property_and_Management.src.Service
 
         private void ShowWindowsNotification(string title, string body)
         {
-            // Using Microsoft.Toolkit.Uwp.Notifications
-            var toastXml = ToastNotificationManager.GetTemplateContent(ToastTemplateType.ToastText02);
+            var notification = new AppNotificationBuilder()
+                .AddArgument("navigate", nameof(NotificationsPage))
+                .AddText(title)
+                .AddText(body)
+                .BuildNotification();
 
-            var textNodes = toastXml.GetElementsByTagName("text");
-            textNodes[0].AppendChild(toastXml.CreateTextNode(title));
-            textNodes[1].AppendChild(toastXml.CreateTextNode(body));
-
-            var toast = new ToastNotification(toastXml);
-            ToastNotificationManager.CreateToastNotifier().Show(toast);
+            AppNotificationManager.Default.Show(notification);
         }
 
         public void SubscribeToServer(int userId)

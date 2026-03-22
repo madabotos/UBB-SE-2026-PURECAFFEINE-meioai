@@ -46,6 +46,7 @@ namespace NotificationServer
             }
 
             _userIpMap[message.UserId] = recivedEndPoint;
+            Console.WriteLine($"{message.UserId} -> {recivedEndPoint.Address}:{recivedEndPoint.Port}");
         }
 
         private static async Task HandleSendNotificationMessage(MessageWrapper recivedMessage)
@@ -56,6 +57,8 @@ namespace NotificationServer
             {
                 throw new InvalidCastException("Expected message was not " + nameof(SendNotificationMessage));
             }
+
+            Console.WriteLine($"Sending notification to user: {unwrappedMessage.UserId}({_userIpMap[unwrappedMessage.UserId]}) [{unwrappedMessage.Title} - {unwrappedMessage.Body}]");
 
             // Resend the UDP packet to the user id
             await SendMessage(unwrappedMessage.UserId, unwrappedMessage);

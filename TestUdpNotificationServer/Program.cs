@@ -17,7 +17,7 @@ class Program
         using var client = new UdpClient();
         client.Client.Bind(new IPEndPoint(IPAddress.Loopback, 0));
 
-        int userId = 1;
+        int userId = 2;
 
         try
         {

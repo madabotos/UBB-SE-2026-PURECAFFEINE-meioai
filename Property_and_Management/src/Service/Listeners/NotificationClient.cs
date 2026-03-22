@@ -18,7 +18,7 @@ namespace Property_and_Management.src.Service.Listeners
         private UdpClient _udpClient;
 
         private readonly CancellationTokenSource _cancellationTokenSource = new();
-        private CancellationToken _cancellationToken=> _cancellationTokenSource.Token;
+        private CancellationToken _cancellationToken => _cancellationTokenSource.Token;
 
         public IPEndPoint ServerEndpoint => new IPEndPoint(IPAddress.Loopback, 4544);
 

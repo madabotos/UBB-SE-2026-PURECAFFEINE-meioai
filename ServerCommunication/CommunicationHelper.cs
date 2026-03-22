@@ -21,6 +21,6 @@ namespace ServerCommunication
             // Deserialize
             return JsonSerializer.Deserialize<MessageWrapper>(recivedJson);
         }
-        
+
     }
 }
