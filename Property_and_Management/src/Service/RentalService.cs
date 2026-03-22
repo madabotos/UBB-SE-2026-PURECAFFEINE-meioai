@@ -24,10 +24,12 @@ namespace Property_and_Management.src.Service
 
             foreach (var rental in existingRentals)
             {
-                // Regula: start_date nu poate fi in intervalul [existent_start, existent_end + 48h]
-                var bufferEnd = rental.EndDate.AddHours(48);
+                const int bufferHours = 48;
+                // start_date cannot be in the interval (existent_start - 48h, existent_end + 48h)
+                var bufferStart = rental.StartDate.AddHours(-bufferHours);
+                var bufferEnd = rental.EndDate.AddHours(bufferHours);
 
-                if (newStart < bufferEnd && newEnd > rental.StartDate)
+                if (newStart < bufferEnd && newEnd > bufferStart)
                 {
                     return false; // Overlap detected with buffer
                 }
