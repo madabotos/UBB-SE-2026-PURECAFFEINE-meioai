@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
+using H.NotifyIcon;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Toolkit.Uwp.Notifications;
@@ -14,6 +15,7 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
 using Microsoft.Windows.AppLifecycle;
@@ -36,9 +38,15 @@ namespace Property_and_Management
     public partial class App : Application
     {
         // Public application state
+        public Window MainWindow { get; set; }
         public Frame RootFrame { get; set; }
-        public string AppUserModelId { get; set; }
-        public int CurrentUserID { get; set; }
+        public string AppUserModelId { get; }
+        public int CurrentUserID { get; }
+
+
+        // Tray icon
+        private TaskbarIcon _trayIcon;
+
 
         // Private dependencies and state
         private Window? _mainWindow;
@@ -52,17 +60,18 @@ namespace Property_and_Management
         /// </summary>
         public App()
         {
-            int userId = GetUserIdFromArgs();
+            CurrentUserID = GetUserIdFromArgs();
 
-            AppUserModelId = $"user-{userId}";
+            AppUserModelId = $"BoardRent -- user-{CurrentUserID}";
 
             // Create manager and wire its generic handlers (handlers may reference fields initialized later)
             _notificationManager = new NotificationManager();
+
             SetupNotificationManager();
 
             EnsureSingleInstance(AppUserModelId);
 
-            InitializeServices(userId);
+            InitializeServices(CurrentUserID);
 
             InitializeComponent();
         }
@@ -97,6 +106,7 @@ namespace Property_and_Management
                     if (eventArguments.Arguments.ContainsKey("navigate") &&
                         eventArguments.Arguments["navigate"] == nameof(NotificationsPage))
                     {
+                        ActivateWindow();
                         RootFrame.Navigate(typeof(NotificationsPage), _notificationsViewModel);
                     }
                 });
@@ -113,6 +123,12 @@ namespace Property_and_Management
                 appInstance.RedirectActivationToAsync(Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs()).AsTask().Wait();
                 Environment.Exit(0);
             }
+
+            // Get the current instance and activate the window
+            appInstance.Activated += (sender, args) =>
+            {
+                ActivateWindow();
+            };
         }
 
         private void InitializeServices(int userId)
@@ -137,16 +153,87 @@ namespace Property_and_Management
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
             CreateAndShowMainWindow();
+
+
+            // Wrap your Frame in a Grid so the tray icon can be added later
+            Grid rootGrid = new Grid();
+            rootGrid.Children.Add(RootFrame);  // Your navigation frame
+            MainWindow.Content = rootGrid;            // Set Grid as window content
+
+
+            CreateTrayIcon();
         }
 
         private void CreateAndShowMainWindow()
         {
-            _mainWindow = new MainWindow();
+            MainWindow = _mainWindow = new MainWindow();
             _mainWindow.Content = RootFrame;
             _mainWindow.Activate();
 
             // Display the AppUserModelId in the window title for debugging / identification
             _mainWindow.Title = AppUserModelId;
+        }
+
+        private void ActivateWindow()
+        {
+            _mainWindow?.DispatcherQueue.TryEnqueue(() =>
+            {
+                if (_mainWindow is MainWindow win)
+                {
+                    win.AppWindow.Show();
+                }
+                _mainWindow.Activate();
+            });
+        }
+
+        private void CreateTrayIcon()
+        {
+            _trayIcon = new TaskbarIcon
+            {
+                ToolTipText = $"BoardRent -- {AppUserModelId}",
+                IconSource = new BitmapImage(new Uri(Constants.APP_TRAY_ICON_URI)),
+            };
+
+            // 1. Create a Command for Open
+            var openCommand = new XamlUICommand();
+            openCommand.ExecuteRequested += (s, e) =>
+            {
+                ActivateWindow();
+            };
+
+            var openItem = new MenuFlyoutItem
+            {
+                Text = "Open",
+                Command = openCommand // Bind to Command instead of Click
+            };
+
+            // 2. Create a Command for Exit
+            var exitCommand = new XamlUICommand();
+            exitCommand.ExecuteRequested += (s, e) =>
+            {
+                _trayIcon.Dispose();
+                Environment.Exit(0);
+            };
+
+            var exitItem = new MenuFlyoutItem
+            {
+                Text = "Exit",
+                Command = exitCommand // Bind to Command instead of Click
+            };
+
+            _trayIcon.ContextFlyout = new MenuFlyout
+            {
+                Items =
+                {
+                    openItem, exitItem
+                }
+            };
+
+            if (_mainWindow.Content is Grid rootGrid)
+            {
+                rootGrid.Children.Add(_trayIcon);
+            }
+
         }
     }
 }
