@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Property_and_Management.src.DTO;
+using Property_and_Management.src.Model;
 
 namespace Property_and_Management.src.Interface
 {
@@ -50,5 +51,11 @@ namespace Property_and_Management.src.Interface
         /// Stops the listening on the client
         /// </summary>
         void StopListening();
+
+        /// <summary>
+        /// Schedule an upcoming rental reminder 24 hours before the rental start for both renter and owner.
+        /// </summary>
+        /// <param name="rental">The rental for which to schedule the reminder.</param>
+        void ScheduleUpcomingRentalReminder(Rental rental);
     }
 }
