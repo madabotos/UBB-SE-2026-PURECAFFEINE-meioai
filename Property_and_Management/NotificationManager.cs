@@ -13,11 +13,11 @@ namespace Property_and_Management
 
         public event EventHandler<AppNotificationActivatedEventArgs> NotificationClicked;
 
-        private bool m_isRegistered;
+        private bool _isRegistered;
 
         public NotificationManager()
         {
-            m_isRegistered = false;
+            _isRegistered = false;
         }
 
         ~NotificationManager()
@@ -37,7 +37,7 @@ namespace Property_and_Management
             try
             {
                 notificationManager.Register();
-                m_isRegistered = true;
+                _isRegistered = true;
             }
             catch (Exception ex)
             {
@@ -49,11 +49,11 @@ namespace Property_and_Management
 
         public void Unregister()
         {
-            if (m_isRegistered)
+            if (_isRegistered)
             {
                 AppNotificationManager.Default.NotificationInvoked -= OnNotificationInvoked;
                 AppNotificationManager.Default.Unregister();
-                m_isRegistered = false;
+                _isRegistered = false;
             }
         }
 

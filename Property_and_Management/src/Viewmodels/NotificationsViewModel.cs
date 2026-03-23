@@ -19,14 +19,14 @@ namespace Property_and_Management.src.Viewmodels
     {
         private ObservableCollection<NotificationDTO> _notifications = new ObservableCollection<NotificationDTO>();
         private ObservableCollection<NotificationDTO> _pagedNotifications = new ObservableCollection<NotificationDTO>();
-        private NotificationService _notificationService;
+        private readonly NotificationService _notificationService;
 
         private ImmutableList<NotificationDTO> _allNotifications = ImmutableList<NotificationDTO>.Empty;
 
         public int CurrentUserId { get; private set; }
 
-        private const int PageSizeConst = 4;
-        public int PageSize => PageSizeConst;
+        private const int s_pageSizeConst = 4;
+        public static int PageSize => s_pageSizeConst;
 
         private int _currentPage = 1;
         public int CurrentPage
@@ -109,7 +109,7 @@ namespace Property_and_Management.src.Viewmodels
         }
 
         // small internal wrapper to convert repository results -> DTO list (keeps call sites short)
-        private System.Collections.Immutable.ImmutableList<NotificationDTO> _notification_service_wrapper()
+        private System.Collections.Immutable.ImmutableList<NotificationDTO> GetNotificationsForCurrentUser()
         {
             return _notificationService.GetNotificationsForUser(CurrentUserId);
         }
@@ -150,7 +150,7 @@ namespace Property_and_Management.src.Viewmodels
             // call service to delete and then refresh list for current user
             _notificationService.DeleteNotificationById(id);
             // reload all notifications for user
-            _allNotifications = _notification_service_wrapper();
+            _allNotifications = GetNotificationsForCurrentUser();
             Notifications = new ObservableCollection<NotificationDTO>(_allNotifications);
 
             // ensure current page is valid

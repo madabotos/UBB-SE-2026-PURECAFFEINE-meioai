@@ -5,16 +5,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.UI.Composition;
+using Microsoft.Windows.AppNotifications;
+using Microsoft.Windows.AppNotifications.Builder;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
 using Property_and_Management.src.Repository;
 using Property_and_Management.src.Service.Listeners;
+using Property_and_Management.src.Views;
 using ServerCommunication;
 using Windows.UI.Notifications;
-using Microsoft.Windows.AppNotifications;
-using Microsoft.Windows.AppNotifications.Builder;
-using Property_and_Management.src.Views;
 
 namespace Property_and_Management.src.Service
 {

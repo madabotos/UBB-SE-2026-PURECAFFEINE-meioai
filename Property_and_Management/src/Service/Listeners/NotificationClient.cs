@@ -14,11 +14,11 @@ namespace Property_and_Management.src.Service.Listeners
     public class NotificationClient : IServerClient
     {
 
-        private List<IObserver<MessageBase>> _subscribers = new();
-        private UdpClient _udpClient;
+        private readonly List<IObserver<MessageBase>> _subscribers = new();
+        private readonly UdpClient _udpClient;
 
         private readonly CancellationTokenSource _cancellationTokenSource = new();
-        private CancellationToken _cancellationToken => _cancellationTokenSource.Token;
+        private CancellationToken CancellationToken => _cancellationTokenSource.Token;
 
         public IPEndPoint ServerEndpoint => new IPEndPoint(IPAddress.Loopback, 4544);
 
@@ -34,19 +34,7 @@ namespace Property_and_Management.src.Service.Listeners
                 switch (wrappedMessage.Type)
                 {
                     case nameof(SendNotificationMessage):
-                        // Deserialize the message
-                        SendNotificationMessage? message = wrappedMessage.Deserialize<SendNotificationMessage>();
-
-                        if (message == null)
-                        {
-                            throw new ArgumentNullException(nameof(message));
-                        }
-
-                        // Send the message to the subscribers
-                        foreach (var subscriber in _subscribers)
-                        {
-                            subscriber.OnNext(message);
-                        }
+                        HandleSendNotificationMessage(wrappedMessage);
                         break;
                     default:
                         Console.WriteLine($"Message type cannot be handled: {wrappedMessage.Type}");
@@ -59,15 +47,32 @@ namespace Property_and_Management.src.Service.Listeners
             }
         }
 
+        private void HandleSendNotificationMessage(MessageWrapper wrappedMessage)
+        {
+            // Deserialize the message
+            SendNotificationMessage? message = wrappedMessage.Deserialize<SendNotificationMessage>();
+
+            if (message == null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+
+            // Send the message to the subscribers
+            foreach (var subscriber in _subscribers)
+            {
+                subscriber.OnNext(message);
+            }
+        }
+
         public void StopListening() => _cancellationTokenSource.Cancel();
 
         public async Task ListenAsync()
         {
             try
             {
-                while (!_cancellationToken.IsCancellationRequested)
+                while (!CancellationToken.IsCancellationRequested)
                 {
-                    var result = await _udpClient.ReceiveAsync(_cancellationToken);
+                    var result = await _udpClient.ReceiveAsync(CancellationToken);
                     MessageWrapper? wrappedMessage = CommunicationHelper.GetMessageWrapper(result.Buffer);
 
                     if (wrappedMessage == null)
