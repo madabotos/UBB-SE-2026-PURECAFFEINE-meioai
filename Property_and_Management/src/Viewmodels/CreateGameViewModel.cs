@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Property_and_Management.src.Service;
-using Property_and_Management.src.Model;
 using Property_and_Management.src.Interface;
+using Property_and_Management.src.Model;
 using Property_and_Management.src.Repository;
+using Property_and_Management.src.Service;
 
 namespace Property_and_Management.src.Viewmodels
 {

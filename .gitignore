@@ -11,6 +11,11 @@
 *.suo
 
 # ==========================================
+# Demo builds
+# ==========================================
+demo-builds/
+
+# ==========================================
 # WinUI 3 / Windows App SDK Specific
 # ==========================================
 # App package directories generated during MSIX builds
