@@ -189,11 +189,11 @@ namespace Property_and_Management.src.Service
             // Delete the request
             _requestRepository.Delete(requestId);
 
-            //_notification_service.SendNotification(
-            //    userId: request.Renter?.Id ?? 0,
-            //    message: $"Your request for game {request.Game?.Id} " +
-            //             $"({request.StartDate:d}–{request.EndDate:d}) was declined. " +
-            //             $"Reason: {reason}");
+            /*_notification_service.SendNotification(
+                userId: request.Renter?.Id ?? 0,
+                message: $"Your request for game {request.Game?.Id} " +
+                         $"({request.StartDate:d}–{request.EndDate:d}) was declined. " +
+                         $"Reason: {reason}");*/
 
             return requestId;
         }
