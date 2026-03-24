@@ -167,6 +167,8 @@ namespace Property_and_Management
             RootFrame.Navigate(typeof(MenuBarView), _gameService);
 
             CreateTrayIcon();
+
+            // debug:
         }
 
         private void CreateAndShowMainWindow()

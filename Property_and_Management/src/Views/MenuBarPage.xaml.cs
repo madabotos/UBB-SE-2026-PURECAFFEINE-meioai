@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation; // Need this for OnNavigatedTo
 using Property_and_Management.src.Interface;
@@ -9,6 +11,8 @@ namespace Property_and_Management.src.Views
     {
         public MenuBarViewModel ViewModel { get; }
 
+        
+
         // The Menu stores a private copy of the service to pass out later
         private IGameService _passedGameService;
 
@@ -18,6 +22,8 @@ namespace Property_and_Management.src.Views
             ViewModel = new MenuBarViewModel();
             this.DataContext = ViewModel;
             ViewModel.RequestNavigation += OnViewModelRequestedNavigation;
+
+            
         }
 
         // Catch the service that App.xaml.cs threw to us
