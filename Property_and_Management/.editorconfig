@@ -34,8 +34,7 @@ dotnet_search_reference_assemblies = true
 #### .NET Coding Conventions ####
 
 # Organize usings
-dotnet_sort_system_directives_first = false
-dotnet_separate_import_directive_groups = false
+dotnet_sort_system_directives_first = true
 file_header_template = unset
 
 # this. and Me. preferences
@@ -95,18 +94,18 @@ dotnet_style_allow_statement_immediately_after_block_experimental = true
 
 # var preferences
 csharp_style_var_elsewhere = false
-csharp_style_var_when_type_is_apparent = true:suggestion
-csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_for_built_in_types = false
+csharp_style_var_when_type_is_apparent = false
 
 # Expression-bodied members
-csharp_style_expression_bodied_accessors = true:silent
-csharp_style_expression_bodied_constructors = false:silent
-csharp_style_expression_bodied_indexers = true:silent
-csharp_style_expression_bodied_lambdas = true:silent
+csharp_style_expression_bodied_accessors = true
+csharp_style_expression_bodied_constructors = false
+csharp_style_expression_bodied_indexers = true
+csharp_style_expression_bodied_lambdas = true
 csharp_style_expression_bodied_local_functions = false
-csharp_style_expression_bodied_methods = when_on_single_line:suggestion
-csharp_style_expression_bodied_operators = false:silent
-csharp_style_expression_bodied_properties = true:silent
+csharp_style_expression_bodied_methods = false
+csharp_style_expression_bodied_operators = false
+csharp_style_expression_bodied_properties = true
 
 # Pattern matching preferences
 csharp_style_pattern_matching_over_as_with_null_check = true
@@ -122,7 +121,7 @@ csharp_style_conditional_delegate_call = true
 # Modifier preferences
 csharp_prefer_static_anonymous_function = true
 csharp_prefer_static_local_function = true
-csharp_preferred_modifier_order = public,private,protected,internal,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,volatile,async:suggestion
+csharp_preferred_modifier_order = public,private,protected,internal,file,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,required,volatile,async
 csharp_style_prefer_readonly_struct = true
 csharp_style_prefer_readonly_struct_member = true
 
