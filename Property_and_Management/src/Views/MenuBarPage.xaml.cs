@@ -11,8 +11,6 @@ namespace Property_and_Management.src.Views
     {
         public MenuBarViewModel ViewModel { get; }
 
-        
-
         // The Menu stores a private copy of the service to pass out later
         private IGameService _passedGameService;
 
@@ -23,7 +21,7 @@ namespace Property_and_Management.src.Views
             this.DataContext = ViewModel;
             ViewModel.RequestNavigation += OnViewModelRequestedNavigation;
 
-            
+
         }
 
         // Catch the service that App.xaml.cs threw to us

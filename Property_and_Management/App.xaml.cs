@@ -108,6 +108,7 @@ namespace Property_and_Management
                     if (eventArguments.Arguments.ContainsKey("navigate") &&
                         eventArguments.Arguments["navigate"] == nameof(NotificationsPage))
                     {
+                        // To modify this because now theoretically it WILL change the whole page yo notifications, overriding the menu
                         ActivateWindow();
                         RootFrame.Navigate(typeof(NotificationsPage), NotificationsViewModel);
                     }
