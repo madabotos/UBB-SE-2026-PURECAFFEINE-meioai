@@ -21,7 +21,7 @@ namespace Property_and_Management.src.Views
         // UI-LST-05: Redirect to Create Game page
         private void CreateGameButton_Click(object sender, RoutedEventArgs e)
         {
-
+            // Your Frame is accessible or handled via an event. 
         }
 
         // UI-LST-04: Redirect to Edit Game page
@@ -32,7 +32,7 @@ namespace Property_and_Management.src.Views
 
             if (gameToEdit != null)
             {
-
+                // Pass the specific game DTO to the Edit page
             }
         }
 
@@ -59,6 +59,7 @@ namespace Property_and_Management.src.Views
 
             if (result == ContentDialogResult.Primary)
             {
+                // Execute deletion in the ViewModel
                 ViewModel.DeleteGame(gameToDelete);
             }
         }
@@ -69,6 +70,7 @@ namespace Property_and_Management.src.Views
 
             if (e.Parameter is GameService gameService)
             {
+                // We still need the current user ID. 
                 var app = (Property_and_Management.App)Application.Current;
 
                 ViewModel = new ListingsViewModel(gameService, app.CurrentUserID);
