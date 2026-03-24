@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.Data.SqlClient;
+using System.Transactions;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
@@ -73,29 +74,44 @@ namespace Property_and_Management.src.Service
         public int CreateRequest(int gameId, int renterId, int ownerId,
                                  DateTime startDate, DateTime endDate)
         {
-            // A user cannot rent their own game
+            // An Owner cannot rent their own game
             if (renterId == ownerId)
                 return (int)CreateRequestError.OWNER_CANNOT_RENT_ERROR;
 
-            // The game must exist and be active
-            try { _gameRepository.Get(gameId); }
+            // The GameID must exist in the database
+            try
+            {
+                _gameRepository.Get(gameId);
+            }
             catch (KeyNotFoundException)
-            { return (int)CreateRequestError.GAMEID_DOES_NOT_EXIST_ERROR; }
+            {
+                return (int)CreateRequestError.GAMEID_DOES_NOT_EXIST_ERROR;
+            }
 
-            // Dates must be available (checks rentals + requests + 48h buffer + 1-month cap)
+            // The requested dates must be available
             if (!CheckAvailability(gameId, startDate, endDate))
                 return (int)CreateRequestError.DATES_UNAVAILABLE_ERROR;
 
+            // If all checks pass, we create the Request object in memory
             var request = new Request(
-                0,
-                new Game { Id = gameId },
-                new User { Id = renterId },
-                new User { Id = ownerId },
-                startDate,
-                endDate);
+                id: 0,
+                game: new Game { Id = gameId },
+                renter: new User { Id = renterId },
+                owner: new User { Id = ownerId },
+                startDate: startDate,
+                endDate: endDate);
 
+            // Tell the repo to execute the raw SQL INSERT
             _requestRepository.Add(request);
-            return request.Id; // Id is set by the repository via SCOPE_IDENTITY()
+
+            // Not sure why we wrote the return this way, so I changed it so we do not have efficiency problems (downloading every single request for that renter) and race conditions (from the .Last() if two users hit Rent at the same time)
+            /*return _requestRepository
+                .GetRequestsByRenter(renterId)
+                .Last(r => r.Game?.Id == gameId &&
+                   r.StartDate == startDate &&
+                   r.EndDate == endDate)
+                .Id;*/
+            return request.Id;
         }
 
         // ----------------------------------------------------------------
@@ -105,10 +121,12 @@ namespace Property_and_Management.src.Service
         {
             // Fetch the request first (outside the transaction — read-only)
             Request request;
+            // Check if the request exists
             try { request = _requestRepository.Get(requestId); }
             catch (KeyNotFoundException)
             { return (int)ApproveRequestError.NOT_FOUND_ERROR; }
 
+            // Check if the person approving the request is the owner of the game
             if (request.Owner?.Id != ownerId)
                 return (int)ApproveRequestError.UNAUTHORIZED_ERROR;
 
@@ -130,38 +148,52 @@ namespace Property_and_Management.src.Service
             using var transaction = connection.BeginTransaction();
             try
             {
-                // (a) Create the rental
-                var rental = new Rental(
-                    0, request.Game, request.Renter,
-                    request.Owner, request.StartDate, request.EndDate);
-
-                _rentalRepository.Add(rental); // TODO: add transaction overload to IRentalRepository
-
-                // (b) + (c) Delete overlapping requests and notify their renters
-                foreach (var overlap in overlapping)
+                using (var transaction = new System.Transactions.TransactionScope())
                 {
-                    _notificationService.SendNotificationToUser(
-                        overlap.Renter?.Id ?? 0,
-                        new NotificationDTO(
-                            id: 0,
-                            user: overlap.Renter,
-                            timestamp: DateTime.Now,
-                            title: "Rental request unavailable",
-                            body: $"Your request for game {overlap.Game?.Id} " +
-                                       $"({overlap.StartDate:d}–{overlap.EndDate:d}) could not be fulfilled " +
-                                       $"because the game was booked by another user. " +
-                                       $"You can make a new booking at: /booking/{overlap.Game?.Id}"));
+                    // Create a new Rental entity using the data from the approved Reuqest
+                    var rental = new Rental(
+                    id: 0,
+                    game: request.Game,
+                    renter: request.Renter,
+                    owner: request.Owner,
+                    startDate: request.StartDate,
+                    endDate: request.EndDate);
 
-                    _requestRepository.Delete(overlap.Id, connection, transaction);
+                    _rentalRepository.Add(rental);
+
+                    // Find and delete all OTHER requests that overlap 
+                    var overlappingRequests = _requestRepository
+                        .GetRequestsByGame(request.Game?.Id ?? 0)
+                        .Where(r => r.Id != requestId &&
+                                    r.StartDate < bufferedEnd &&
+                                    r.EndDate > bufferedStart)
+                        .ToList();
+
+                    foreach (var overlap in overlappingRequests)
+                    {
+                        _requestRepository.Delete(overlap.Id);
+                        _notificationService.SendNotificationToUser(
+                            overlap.Renter?.Id ?? 0,
+                            new NotificationDTO
+                            {
+                                Title = "Booking Unavailable",
+                                Body = $"Your request for game {request.Game?.Id} ({overlap.StartDate:d}–{overlap.EndDate:d}) was declined because the game is no longer available in that period.",
+                                Timestamp = DateTime.UtcNow
+                            }
+                        );
+                    }
+
+                    // Delete the original request
+                    _requestRepository.Delete(requestId);
+
+                    // Commiting the transaction. If any of the above operations threw an exception, this line will not be reached and the transaction will be rolled back.
+                    transaction.Complete();
+
+                    // Return newly generated rental_id
+                    return rental.Id;
                 }
-
-                // (d) Delete the accepted request itself
-                _requestRepository.Delete(requestId, connection, transaction);
-
-                transaction.Commit();
-                return rental.Id;
             }
-            catch
+            catch (Exception)
             {
                 transaction.Rollback();
                 return (int)ApproveRequestError.TRANSACTION_FAILED_ERROR;
@@ -174,13 +206,16 @@ namespace Property_and_Management.src.Service
         public int DenyRequest(int requestId, int ownerId, string reason)
         {
             Request request;
+            // Check if the request exists
             try { request = _requestRepository.Get(requestId); }
             catch (KeyNotFoundException)
             { return (int)DenyRequestError.NOT_FOUND_ERROR; }
 
+            // Check if the person declining the request is the owner of the game
             if (request.Owner?.Id != ownerId)
                 return (int)DenyRequestError.UNAUTHORIZED_ERROR;
 
+            // Delete the request
             _requestRepository.Delete(requestId);
 
             _notificationService.SendNotificationToUser(
