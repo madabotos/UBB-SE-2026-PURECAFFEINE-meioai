@@ -18,7 +18,7 @@ public sealed partial class RequestsFromOthersPage : Page
         if (e.Parameter is RequestsFromOthersViewModel vm)
         {
             DataContext = vm;
-            if (ItemsListView != null) ItemsListView.ItemsSource = vm.pagedRequests;
+            if (ItemsListView != null) ItemsListView.ItemsSource = vm.PagedRequests;
         }
     }
 

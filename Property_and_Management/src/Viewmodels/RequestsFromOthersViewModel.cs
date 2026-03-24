@@ -19,10 +19,10 @@ namespace Property_and_Management.src.Viewmodels
         private ObservableCollection<RequestDTO> _pagedRequests = new();
         private ImmutableList<RequestDTO> _allRequests = ImmutableList<RequestDTO>.Empty;
 
-        public int ownerId { get; private set; }
+        public int OwnerId { get; private set; }
 
-        private const int pageSizeConst = 5;
-        public static int PageSize => pageSizeConst;
+        private const int s_pageSizeConst = 5;
+        public static int PageSize => s_pageSizeConst;
 
         private int _currentPage = 1;
         public int CurrentPage
@@ -43,7 +43,7 @@ namespace Property_and_Management.src.Viewmodels
         public int PageCount => Math.Max(1, (int)Math.Ceiling((double)TotalCount / PageSize));
         public int DisplayedCount => _pagedRequests?.Count ?? 0;
 
-        public ObservableCollection<RequestDTO> requests
+        public ObservableCollection<RequestDTO> Requests
         {
             get => _requests;
             set
@@ -56,7 +56,7 @@ namespace Property_and_Management.src.Viewmodels
             }
         }
 
-        public ObservableCollection<RequestDTO> pagedRequests
+        public ObservableCollection<RequestDTO> PagedRequests
         {
             get => _pagedRequests;
             set
@@ -84,13 +84,13 @@ namespace Property_and_Management.src.Viewmodels
         // [UI-ORQ-01]
         public void LoadRequests(int page, int pageSize)
         {
-            ownerId = 1;
-            var allRequests = _requestService.GetRequestsForOwner(ownerId)
+            OwnerId = 1;
+            var allRequests = _requestService.GetRequestsForOwner(OwnerId)
                 .OrderByDescending(r => r.StartDate)  // [UI-ORQ-03]
                 .ToImmutableList();
 
             _allRequests = allRequests;
-            requests = new ObservableCollection<RequestDTO>(allRequests);
+            Requests = new ObservableCollection<RequestDTO>(allRequests);
 
             CurrentPage = page;
             UpdatePaging();
@@ -100,7 +100,7 @@ namespace Property_and_Management.src.Viewmodels
         {
             var skip = (CurrentPage - 1) * PageSize;
             var pageItems = _allRequests.Skip(skip).Take(PageSize).ToList();
-            pagedRequests = new ObservableCollection<RequestDTO>(pageItems);
+            PagedRequests = new ObservableCollection<RequestDTO>(pageItems);
         }
 
         public void NextPage() => CurrentPage = Math.Min(CurrentPage + 1, PageCount);
@@ -108,13 +108,13 @@ namespace Property_and_Management.src.Viewmodels
 
         public void ApproveRequest(int requestId)
         {
-            var result = _requestService.ApproveRequest(requestId, ownerId);
+            var result = _requestService.ApproveRequest(requestId, OwnerId);
             if (result > 0) LoadRequests(CurrentPage, PageSize);
         }
 
         public void DenyRequest(int requestId, string reason)
         {
-            var result = _requestService.DenyRequest(requestId, ownerId, reason);
+            var result = _requestService.DenyRequest(requestId, OwnerId, reason);
             if (result > 0) LoadRequests(CurrentPage, PageSize);
         }
 
