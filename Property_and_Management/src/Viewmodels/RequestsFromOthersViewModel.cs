@@ -1,3 +1,7 @@
+using Property_and_Management.src.DTO;
+using Property_and_Management.src.Interface;
+using Property_and_Management.src.Service;
+using ServerCommunication;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -5,10 +9,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Property_and_Management.src.DTO;
-using Property_and_Management.src.Service;
-using Property_and_Management.src.Interface;
-using ServerCommunication;
 
 namespace Property_and_Management.src.Viewmodels
 {

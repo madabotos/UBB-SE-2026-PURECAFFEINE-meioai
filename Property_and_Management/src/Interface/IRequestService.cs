@@ -26,6 +26,6 @@ namespace Property_and_Management.src.Interface
         void OnGameDeactivated(int gameId);
 
         bool CheckAvailability(int gameId, DateTime startDate, DateTime endDate);
-        ImmutableList<(DateTime, DateTime)> GetBookedDates(int gameId, int month, int year);   
+        ImmutableList<(DateTime, DateTime)> GetBookedDates(int gameId, int month, int year);
     }
 }
