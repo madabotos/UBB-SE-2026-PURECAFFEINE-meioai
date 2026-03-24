@@ -22,10 +22,6 @@ namespace Property_and_Management.src.Viewmodels
         // UI Binding Properties
         public string Name { get; set; } = string.Empty;
         public double Price { get; set; }
-
-        // Binds to the ComboBox SelectedIndex (0 = Per Hour, 1 = Per Day, 2 = Per Week)
-        public int RateTypeIndex { get; set; } = 0;
-
         public int MinPlayers { get; set; } = 1;
         public int MaxPlayers { get; set; } = 4;
         public string Description { get; set; } = string.Empty;
@@ -48,7 +44,7 @@ namespace Property_and_Management.src.Viewmodels
             {
                 // Store the read-only IDs
                 GameId = existingGame.Id;
-                OwnerId = existingGame.OwnerId;
+                OwnerId = OwnerId = existingGame.Owner?.Id ?? 0; ;
 
                 // Pre-populate the form fields with current values 
                 Name = existingGame.Name;
@@ -59,8 +55,6 @@ namespace Property_and_Management.src.Viewmodels
                 IsActive = existingGame.IsActive;
                 Image = existingGame.Image;
 
-                // Reverse map the RateType enum back to the ComboBox index (0, 1, or 2)
-                RateTypeIndex = (int)existingGame.RateType - 1;
             }
         }
 
@@ -87,31 +81,21 @@ namespace Property_and_Management.src.Viewmodels
         // Updates the Game in the database and returns the DTO
         public GameDTO UpdateGame()
         {
-            if (!ValidateInputs())
-            {
-                return null;
-            }
+            if (!ValidateInputs()) return null;
 
-            // Map the UI ComboBox index back to the RateType Enum
-            int rateTypeValue = RateTypeIndex + 1;
-
-            // Create the updated DTO
             var updatedGameDto = new GameDTO(
                 id: GameId,
-                ownerId: OwnerId, // Preserve original owner
+                owner: new User(OwnerId),
                 name: Name,
                 price: Price,
-                rateType: (RateType)rateTypeValue,
                 minimumPlayerNumber: MinPlayers,
-                maximumPlayerNumber: MaxPlayers,
+                maximumPlayerNumaber: MaxPlayers,
                 description: Description,
                 image: Image,
                 isActive: IsActive
             );
 
-            // [UI-EDG-06] On successful validation, update the corresponding record [cite: 134]
             _gameService.UpdateGameById(GameId, updatedGameDto);
-
             return updatedGameDto;
         }
     }
