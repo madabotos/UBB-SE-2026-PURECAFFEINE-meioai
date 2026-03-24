@@ -26,7 +26,7 @@ namespace Property_and_Management.src.Viewmodels
             Listings.Clear();
             // UI-LST-01: Fetch games where owner_id equals current user
             var games = _gameService.GetGamesForOwner(_currentUserId);
-            
+
             foreach (var game in games)
             {
                 Listings.Add(game);
