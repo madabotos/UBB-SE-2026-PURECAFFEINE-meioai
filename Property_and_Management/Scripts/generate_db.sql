@@ -35,7 +35,7 @@ BEGIN
         maximum_player_number INT NOT NULL,
         description NVARCHAR(500) NOT NULL,
         image VARBINARY(MAX),
-        is_active BIT NOT NULL DEFAULT 1,
+        is_active INT NOT NULL DEFAULT 1,
         
         CONSTRAINT PK_Games PRIMARY KEY (game_id),
         CONSTRAINT FK_Games_Owner FOREIGN KEY (owner_id) REFERENCES [Users](id),
