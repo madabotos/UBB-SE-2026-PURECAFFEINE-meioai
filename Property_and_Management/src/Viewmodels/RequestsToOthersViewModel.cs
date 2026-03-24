@@ -19,7 +19,7 @@ namespace Property_and_Management.src.Viewmodels
         private ObservableCollection<RequestDTO> _pagedRequests = new();
         private ImmutableList<RequestDTO> _allRequests = ImmutableList<RequestDTO>.Empty;
 
-        public int RenterId { get; private set; }
+        public int RenterId { get; private set; } = (App.Current as App).CurrentUserID;
 
         private const int s_pageSizeConst = 5;
         public static int PageSize => s_pageSizeConst;
@@ -84,7 +84,7 @@ namespace Property_and_Management.src.Viewmodels
         // [UI-MRQ-01]
         public void LoadRequests(int page, int pageSize)
         {
-            RenterId = 1;
+            RenterId = (App.Current as App).CurrentUserID;
             _allRequests = _requestService.GetRequestsForRenter(RenterId)  // [UI-MRQ-01]
                 .OrderByDescending(r => r.StartDate)  // [UI-MRQ-03]
                 .ToImmutableList();

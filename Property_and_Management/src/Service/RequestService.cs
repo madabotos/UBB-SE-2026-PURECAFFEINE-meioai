@@ -187,6 +187,11 @@ namespace Property_and_Management.src.Service
                 // Commiting the transaction. If any of the above operations threw an exception, this line will not be reached and the transaction will be rolled back.
                 transaction.Commit();
 
+                // 
+
+                // Schedule sending of message
+                _notificationService.ScheduleUpcomingRentalReminder(rental);
+
                 // Return newly generated rental_id
                 return rental.Id;
             }

@@ -13,6 +13,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Navigation;
+using Property_and_Management.src.Service;
 using Property_and_Management.src.Viewmodels;
 using Property_and_Management.src.Viewmodels;
 using Windows.Foundation;
@@ -49,10 +50,24 @@ namespace Property_and_Management.src.Views
             }
         }
 
-        private void ApproveButton_Click(object sender, RoutedEventArgs e)
+        private async void ApproveButton_Click(object sender, RoutedEventArgs e)
         {
-            // Call the ViewModel method to do the database work
-            ViewModel.Approve();
+            int result;
+            try
+            {
+                result = ViewModel.Approve();
+            }
+            catch (Exception ex)
+            {
+                await ShowErrorDialogAsync($"Approve failed: {ex.Message}");
+                return;
+            }
+
+            if (result <= 0)
+            {
+                await ShowErrorDialogAsync(GetApproveErrorMessage(result));
+                return;
+            }
 
             // [MOCK-UI-CHT-03] Immediately close the Chat Page and redirect back
             if (Frame.CanGoBack)
@@ -61,16 +76,54 @@ namespace Property_and_Management.src.Views
             }
         }
 
-        private void DenyButton_Click(object sender, RoutedEventArgs e)
+        private async void DenyButton_Click(object sender, RoutedEventArgs e)
         {
-            // Call the ViewModel method to do the database work
-            ViewModel.Deny();
+            int result;
+            try
+            {
+                result = ViewModel.Deny();
+            }
+            catch (Exception ex)
+            {
+                await ShowErrorDialogAsync($"Deny failed: {ex.Message}");
+                return;
+            }
+
+            if (result <= 0)
+            {
+                await ShowErrorDialogAsync("Deny failed. The request may no longer exist or you may not be authorized.");
+                return;
+            }
 
             // [MOCK-UI-CHT-03] Immediately close the Chat Page and redirect back
             if (Frame.CanGoBack)
             {
                 Frame.GoBack();
             }
+        }
+
+        private async System.Threading.Tasks.Task ShowErrorDialogAsync(string message)
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "Operation failed",
+                Content = message,
+                CloseButtonText = "OK",
+                XamlRoot = this.XamlRoot
+            };
+
+            await dialog.ShowAsync();
+        }
+
+        private static string GetApproveErrorMessage(int result)
+        {
+            return result switch
+            {
+                (int)ApproveRequestError.UNAUTHORIZED_ERROR => "Approve failed: you are not authorized for this request.",
+                (int)ApproveRequestError.NOT_FOUND_ERROR => "Approve failed: request was not found.",
+                (int)ApproveRequestError.TRANSACTION_FAILED_ERROR => "Approve failed due to a database transaction error.",
+                _ => "Approve failed due to an unexpected error."
+            };
         }
     }
 }

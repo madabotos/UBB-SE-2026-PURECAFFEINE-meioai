@@ -87,7 +87,7 @@ namespace Property_and_Management.src.Viewmodels
             _notificationService = notificationService;
 
             // Default user
-            LoadNotificationsForUser(1);
+            LoadNotificationsForUser((App.Current as App).CurrentUserID);
 
             notificationService.Subscribe(this);
         }

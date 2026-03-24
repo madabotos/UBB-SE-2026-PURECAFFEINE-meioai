@@ -108,14 +108,34 @@ namespace Property_and_Management
                     if (eventArguments.Arguments.ContainsKey("navigate") &&
                         eventArguments.Arguments["navigate"] == nameof(NotificationsPage))
                     {
-                        // To modify this because now theoretically it WILL change the whole page yo notifications, overriding the menu
                         ActivateWindow();
-                        RootFrame.Navigate(typeof(NotificationsPage), NotificationsViewModel);
+                        NavigateToNotificationsWithinShell();
                     }
                 });
             };
 
             _notificationManager.Init();
+        }
+
+        private void NavigateToNotificationsWithinShell()
+        {
+            if (RootFrame?.Content is MenuBarView currentShell)
+            {
+                currentShell.NavigateToNotifications();
+                return;
+            }
+
+            void OnShellLoaded(object sender, NavigationEventArgs e)
+            {
+                if (e.Content is MenuBarView loadedShell)
+                {
+                    RootFrame.Navigated -= OnShellLoaded;
+                    loadedShell.NavigateToNotifications();
+                }
+            }
+
+            RootFrame.Navigated += OnShellLoaded;
+            RootFrame.Navigate(typeof(MenuBarView), _gameService);
         }
 
         private void EnsureSingleInstance(string appUserModelId)
