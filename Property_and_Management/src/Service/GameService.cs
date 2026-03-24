@@ -11,7 +11,7 @@ using Property_and_Management.src.Repository;
 
 namespace Property_and_Management.src.Service
 {
-    internal class GameService
+    internal class GameService : IGameService
     {
         private IGameRepository _gameRepository;
 
