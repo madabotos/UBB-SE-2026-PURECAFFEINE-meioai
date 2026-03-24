@@ -21,7 +21,7 @@ namespace Property_and_Management.src.Views
         // UI-LST-05: Redirect to Create Game page
         private void CreateGameButton_Click(object sender, RoutedEventArgs e)
         {
-            // Your Frame is accessible or handled via an event. 
+            //this.Frame.Navigate(typeof(CreateGamePage));
         }
 
         // UI-LST-04: Redirect to Edit Game page
@@ -32,7 +32,7 @@ namespace Property_and_Management.src.Views
 
             if (gameToEdit != null)
             {
-                // Pass the specific game DTO to the Edit page
+                //this.Frame.Navigate(typeof(EditGamePage), gameToEdit);
             }
         }
 
@@ -52,7 +52,7 @@ namespace Property_and_Management.src.Views
                 PrimaryButtonText = "Delete",
                 CloseButtonText = "Cancel",
                 DefaultButton = ContentDialogButton.Close,
-                XamlRoot = this.XamlRoot
+                XamlRoot = this.XamlRoot // Required in WinUI 3
             };
 
             var result = await deleteDialog.ShowAsync();
