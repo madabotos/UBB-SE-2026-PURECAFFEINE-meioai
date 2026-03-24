@@ -53,6 +53,8 @@ namespace Property_and_Management
         private Window? _mainWindow;
         private NotificationRepository _notificationRepository;
         private NotificationService _notification_service;
+        private GameRepository _gameRepository;
+        private GameService _gameService;
         private readonly NotificationManager _notificationManager;
 
         /// <summary>
@@ -139,6 +141,8 @@ namespace Property_and_Management
             // Instantiate repository/service/viewmodel
             _notificationRepository = new NotificationRepository();
             _notification_service = new NotificationService(_notificationRepository);
+            _gameRepository = new GameRepository();
+            _gameService = new GameService(_gameRepository);
             NotificationsViewModel = new NotificationsViewModel(_notification_service);
 
             // Start listening and subscribe for the configured user
@@ -160,7 +164,7 @@ namespace Property_and_Management
             rootGrid.Children.Add(RootFrame);  // Your navigation frame
             MainWindow.Content = rootGrid;            // Set Grid as window content
 
-            RootFrame.Navigate(typeof(MenuBarView));
+            RootFrame.Navigate(typeof(MenuBarView), _gameService);
 
             CreateTrayIcon();
         }

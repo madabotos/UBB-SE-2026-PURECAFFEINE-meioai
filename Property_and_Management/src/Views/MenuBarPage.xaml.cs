@@ -1,4 +1,6 @@
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Navigation; // Need this for OnNavigatedTo
+using Property_and_Management.src.Interface;
 using Property_and_Management.src.Viewmodels;
 
 namespace Property_and_Management.src.Views
@@ -7,22 +9,33 @@ namespace Property_and_Management.src.Views
     {
         public MenuBarViewModel ViewModel { get; }
 
+        // The Menu stores a private copy of the service to pass out later
+        private IGameService _passedGameService;
+
         public MenuBarView()
         {
             this.InitializeComponent();
-
-            // 1. Create the ViewModel and set it as the DataContext for bindings
             ViewModel = new MenuBarViewModel();
             this.DataContext = ViewModel;
-
-            // 2. Listen for the ViewModel asking to navigate
             ViewModel.RequestNavigation += OnViewModelRequestedNavigation;
         }
 
-        // 3. When the ViewModel says "Go", the View physically moves the Frame
+        // 1. Catch the service that App.xaml.cs threw to us
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            base.OnNavigatedTo(e);
+
+            if (e.Parameter is IGameService gameService)
+            {
+                _passedGameService = gameService;
+            }
+        }
+
+        // 2. When the user clicks "Listings", pass the service to the new page!
         private void OnViewModelRequestedNavigation(System.Type pageType)
         {
-            ContentFrame.Navigate(pageType);
+            // Pass the service right through the ContentFrame!
+            ContentFrame.Navigate(pageType, _passedGameService);
         }
     }
 }

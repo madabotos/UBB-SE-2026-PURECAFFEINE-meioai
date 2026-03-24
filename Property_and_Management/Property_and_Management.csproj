@@ -21,6 +21,7 @@
     </PropertyGroup>
     <ItemGroup>
       <None Remove="Assets\tray_icon.ico" />
+      <None Remove="src\Views\ListingsPage.xaml" />
       <None Remove="src\Views\NotificationsPage.xaml" />
     </ItemGroup>
 
@@ -64,6 +65,11 @@
       <Content Update="Assets\tray_icon.ico">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
+    </ItemGroup>
+    <ItemGroup>
+      <Page Update="src\Views\ListingsPage.xaml">
+        <Generator>MSBuild:Compile</Generator>
+      </Page>
     </ItemGroup>
     <ItemGroup>
       <Page Update="src\Views\MenuBarPage.xaml">

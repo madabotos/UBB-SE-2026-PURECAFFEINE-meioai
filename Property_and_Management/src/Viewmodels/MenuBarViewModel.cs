@@ -33,7 +33,7 @@ namespace Property_and_Management.src.Viewmodels
             switch (pageName)
             {
                 case "Listings":
-                    //RequestNavigation?.Invoke(typeof(Views.ListingsPage));
+                    RequestNavigation?.Invoke(typeof(Views.ListingsPage));
                     break;
                 case "Notifications":
                     RequestNavigation?.Invoke(typeof(Views.NotificationsPage));
