@@ -107,8 +107,8 @@ namespace Property_and_Management.src.Viewmodels
         //[UI-MRQ-04]
         public void CancelRequest(int requestId)
         {
-            _requestService.CancelRequest(requestId); 
-            LoadRequests(CurrentPage, PageSize); 
+            _requestService.CancelRequest(requestId);
+            LoadRequests(CurrentPage, PageSize);
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
