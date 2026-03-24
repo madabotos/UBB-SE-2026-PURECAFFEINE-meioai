@@ -9,7 +9,7 @@ using Property_and_Management.src.Model;
 
 namespace Property_and_Management.src.Interface
 {
-    interface INotificationService
+    public interface INotificationService
     {
         /// <summary>Get a notification by its identifier.</summary>
         /// <param name="id">The identifier of the notification.</param>

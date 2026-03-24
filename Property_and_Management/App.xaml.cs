@@ -195,7 +195,7 @@ namespace Property_and_Management
         {
             _trayIcon = new TaskbarIcon
             {
-                ToolTipText = $"BoardRent -- {AppUserModelId}",
+                ToolTipText = $"{AppUserModelId}",
                 IconSource = new BitmapImage(new Uri(Constants.APP_TRAY_ICON_URI)),
             };
 
