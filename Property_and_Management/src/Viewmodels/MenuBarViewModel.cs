@@ -37,7 +37,6 @@ namespace Property_and_Management.src.Viewmodels
                 case "Notifications":
                     RequestNavigation?.Invoke(typeof(Views.NotificationsPage));
                     break;
-                    // Add the rest of your cases here
             }
         }
 

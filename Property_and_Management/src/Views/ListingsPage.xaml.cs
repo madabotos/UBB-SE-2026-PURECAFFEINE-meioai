@@ -21,9 +21,7 @@ namespace Property_and_Management.src.Views
         // UI-LST-05: Redirect to Create Game page
         private void CreateGameButton_Click(object sender, RoutedEventArgs e)
         {
-            // Assuming your Frame is accessible or handled via an event. 
-            // If navigating directly:
-            //this.Frame.Navigate(typeof(CreateGamePage));
+
         }
 
         // UI-LST-04: Redirect to Edit Game page
@@ -34,8 +32,7 @@ namespace Property_and_Management.src.Views
 
             if (gameToEdit != null)
             {
-                // Pass the specific game DTO to the Edit page
-                //this.Frame.Navigate(typeof(EditGamePage), gameToEdit);
+
             }
         }
 
@@ -55,14 +52,13 @@ namespace Property_and_Management.src.Views
                 PrimaryButtonText = "Delete",
                 CloseButtonText = "Cancel",
                 DefaultButton = ContentDialogButton.Close,
-                XamlRoot = this.XamlRoot // Required in WinUI 3
+                XamlRoot = this.XamlRoot
             };
 
             var result = await deleteDialog.ShowAsync();
 
             if (result == ContentDialogResult.Primary)
             {
-                // Execute deletion in the ViewModel
                 ViewModel.DeleteGame(gameToDelete);
             }
         }
@@ -73,9 +69,6 @@ namespace Property_and_Management.src.Views
 
             if (e.Parameter is GameService gameService)
             {
-                // We still need the current user ID. 
-                // (You can either make CurrentUserID public in App.xaml.cs, 
-                // or pass a custom object that holds BOTH the service and the ID!)
                 var app = (Property_and_Management.App)Application.Current;
 
                 ViewModel = new ListingsViewModel(gameService, app.CurrentUserID);
