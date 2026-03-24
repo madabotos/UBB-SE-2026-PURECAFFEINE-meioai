@@ -152,11 +152,15 @@ namespace Property_and_Management.src.Service
                     foreach (var overlap in overlappingRequests)
                     {
                         _requestRepository.Delete(overlap.Id);
-                        //_notification_service.SendNotification(
-                        //    userId: overlap.Renter?.Id ?? 0,
-                        //    message: $"Your request for game {request.Game?.Id} " +
-                        //             $"({overlap.StartDate:d}–{overlap.EndDate:d}) was declined " +
-                        //             $"because the game is no longer available in that period.");
+                        _notificationService.SendNotificationToUser(
+                            overlap.Renter?.Id ?? 0,
+                            new NotificationDTO
+                            {
+                                Title = "Booking Unavailable",
+                                Body = $"Your request for game {request.Game?.Id} ({overlap.StartDate:d}–{overlap.EndDate:d}) was declined because the game is no longer available in that period.",
+                                Timestamp = DateTime.UtcNow
+                            }
+                        );
                     }
 
                     // Delete the original request
@@ -191,11 +195,15 @@ namespace Property_and_Management.src.Service
             // Delete the request
             _requestRepository.Delete(requestId);
 
-            /*_notification_service.SendNotification(
-                userId: request.Renter?.Id ?? 0,
-                message: $"Your request for game {request.Game?.Id} " +
-                         $"({request.StartDate:d}–{request.EndDate:d}) was declined. " +
-                         $"Reason: {reason}");*/
+            _notificationService.SendNotificationToUser(
+                request.Renter?.Id ?? 0,
+                new NotificationDTO
+                {
+                    Title = "Rental Request Declined",
+                    Body = $"Your request for game {request.Game?.Id} ({request.StartDate:d}–{request.EndDate:d}) was declined. Reason: {reason}",
+                    Timestamp = DateTime.UtcNow
+                }
+            );
 
             return requestId;
         }
@@ -211,16 +219,20 @@ namespace Property_and_Management.src.Service
         {
             var pending = _requestRepository.GetRequestsByGame(gameId);
 
-            //foreach (var request in pending)
-            //{
-            //    _requestRepository.Delete(request.Id);
+            foreach (var request in pending)
+            {
+                _requestRepository.Delete(request.Id);
 
-            //    _notification_service.SendNotification(
-            //        userId: request.Renter?.Id ?? 0,
-            //        message: $"Your request for game {gameId} " +
-            //                 $"({request.StartDate:d}–{request.EndDate:d}) has been declined " +
-            //                 $"because the game is no longer available.");
-            //}
+                _notificationService.SendNotificationToUser(
+                    request.Renter?.Id ?? 0,
+                    new NotificationDTO
+                    {
+                        Title = "Rental Request Declined",
+                        Body = $"Your request for game {gameId} ({request.StartDate:d}–{request.EndDate:d}) has been declined because the game is no longer available.",
+                        Timestamp = DateTime.UtcNow
+                    }
+                );
+            }
         }
 
         //[API-GBD-04] The method shall return a list of objects. Each object shall contain:
