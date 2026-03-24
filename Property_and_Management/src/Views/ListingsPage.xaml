@@ -39,8 +39,8 @@
                         </StackPanel>
 
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button Content="Edit" Margin="0,0,10,0" Click="EditButton_Click" Tag="{Binding}"/>
-                            <Button Content="Delete" Background="#C50F1F" Foreground="White" Click="DeleteButton_Click" Tag="{Binding}"/>
+                            <Button Content="Edit" Margin="0,0,10,0" Click="EditGameButton_Click" Tag="{Binding}"/>
+                            <Button Content="Delete" Background="#C50F1F" Foreground="White" Click="DeleteGameButton_Click" Tag="{Binding}"/>
                         </StackPanel>
                     </Grid>
                 </DataTemplate>

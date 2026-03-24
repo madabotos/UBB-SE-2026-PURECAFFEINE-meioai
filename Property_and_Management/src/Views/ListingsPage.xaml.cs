@@ -27,7 +27,7 @@ namespace Property_and_Management.src.Views
         }
 
         // UI-LST-04: Redirect to Edit Game page
-        private void EditButton_Click(object sender, RoutedEventArgs e)
+        private void EditGameButton_Click(object sender, RoutedEventArgs e)
         {
             var btn = sender as Button;
             var gameToEdit = btn?.Tag as GameDTO;
@@ -40,7 +40,7 @@ namespace Property_and_Management.src.Views
         }
 
         // UI-LST-03: Prompt for confirmation, then delete
-        private async void DeleteButton_Click(object sender, RoutedEventArgs e)
+        private async void DeleteGameButton_Click(object sender, RoutedEventArgs e)
         {
             var btn = sender as Button;
             var gameToDelete = btn?.Tag as GameDTO;
