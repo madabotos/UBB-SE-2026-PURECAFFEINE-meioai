@@ -12,6 +12,10 @@
         <EnableMsixTooling>true</EnableMsixTooling>
         <Nullable>enable</Nullable>
     </PropertyGroup>
+    <ItemGroup>
+      <None Remove="src\Views\CreateGameView.xaml" />
+      <None Remove="src\Views\EditGameView.xaml" />
+    </ItemGroup>
 
     <ItemGroup>
         <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -40,6 +44,16 @@
         <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7705" />
         <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260209005" />
         <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.5" />
+    </ItemGroup>
+    <ItemGroup>
+      <Page Update="src\Views\EditGameView.xaml">
+        <Generator>MSBuild:Compile</Generator>
+      </Page>
+    </ItemGroup>
+    <ItemGroup>
+      <Page Update="src\Views\CreateGameView.xaml">
+        <Generator>MSBuild:Compile</Generator>
+      </Page>
     </ItemGroup>
     <ItemGroup>
       <Page Update="src\Views\ChatView.xaml">
