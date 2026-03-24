@@ -1,9 +1,9 @@
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.IO;
+using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Media.Imaging;
 
-namespace Property_and_Management.src.Converters
+namespace Property_and_Management.src.Utilities
 {
     public class ByteArrayToImageConverter : IValueConverter
     {

@@ -2,7 +2,7 @@
     x:Class="Property_and_Management.src.Views.ListingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:converters="using:Property_and_Management.src.Converters"
+    xmlns:converters="using:Property_and_Management.src.Utilities"
     Background="#1E1E1E">
 
     <Page.Resources>

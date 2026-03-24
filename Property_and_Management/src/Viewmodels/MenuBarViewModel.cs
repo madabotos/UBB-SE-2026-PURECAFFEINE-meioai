@@ -1,7 +1,6 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-// Notice: No Microsoft.UI.Xaml imports here! Pure C# logic.
 
 namespace Property_and_Management.src.Viewmodels
 {

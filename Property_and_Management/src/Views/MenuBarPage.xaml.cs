@@ -20,7 +20,7 @@ namespace Property_and_Management.src.Views
             ViewModel.RequestNavigation += OnViewModelRequestedNavigation;
         }
 
-        // 1. Catch the service that App.xaml.cs threw to us
+        // Catch the service that App.xaml.cs threw to us
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
@@ -31,7 +31,7 @@ namespace Property_and_Management.src.Views
             }
         }
 
-        // 2. When the user clicks "Listings", pass the service to the new page!
+        // When the user clicks "Listings", pass the service to the new page!
         private void OnViewModelRequestedNavigation(System.Type pageType)
         {
             // Pass the service right through the ContentFrame!

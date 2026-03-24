@@ -25,7 +25,7 @@ namespace Property_and_Management.src.Viewmodels
         {
             Listings.Clear();
             // UI-LST-01: Fetch games where owner_id equals current user
-            var games = _gameService.GetGamesForOwner(_currentUserId); 
+            var games = _gameService.GetGamesForOwner(_currentUserId);
             
             foreach (var game in games)
             {
@@ -36,7 +36,7 @@ namespace Property_and_Management.src.Viewmodels
         public void DeleteGame(GameDTO game)
         {
             // UI-LST-03: Deletes the Game entity
-            _gameService.DeleteGameById(game.Id); 
+            _gameService.DeleteGameById(game.Id);
             Listings.Remove(game);
         }
     }
