@@ -23,7 +23,6 @@ namespace Property_and_Management.src.Views
             {
                 DataContext = vm;
 
-                // Notifications compatibility
                 if (this.FindName("ItemsListView") is ItemsControl items)
                 {
                     items.ItemsSource = vm.PagedRequests;
@@ -56,7 +55,7 @@ namespace Property_and_Management.src.Views
                 var request = btn?.DataContext as RequestDTO;
                 if (request == null) return;
 
-                // [UI-MRQ-04] Confirmation dialog
+                // [UI-MRQ-04]
                 var dialog = new ContentDialog()
                 {
                     Title = "Confirm Cancel",

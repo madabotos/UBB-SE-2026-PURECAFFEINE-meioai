@@ -1,7 +1,3 @@
-using Property_and_Management.src.DTO;
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Service;
-using ServerCommunication;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -9,6 +5,10 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Property_and_Management.src.DTO;
+using Property_and_Management.src.Interface;
+using Property_and_Management.src.Service;
+using ServerCommunication;
 
 namespace Property_and_Management.src.Viewmodels
 {
@@ -19,7 +19,7 @@ namespace Property_and_Management.src.Viewmodels
         private ObservableCollection<RequestDTO> _pagedRequests = new();
         private ImmutableList<RequestDTO> _allRequests = ImmutableList<RequestDTO>.Empty;
 
-        public int ownerId { get; private set; }  // Matches UML exactly
+        public int ownerId { get; private set; }
 
         private const int pageSizeConst = 5;
         public static int PageSize => pageSizeConst;
@@ -33,7 +33,7 @@ namespace Property_and_Management.src.Viewmodels
                 if (_currentPage != value)
                 {
                     _currentPage = value;
-                    OnPropertyChanged();  // Fixed typo
+                    OnPropertyChanged();
                     UpdatePaging();
                 }
             }
@@ -78,13 +78,13 @@ namespace Property_and_Management.src.Viewmodels
         public RequestsFromOthersViewModel(IRequestService requestService)
         {
             _requestService = requestService;
-            LoadRequests(1, PageSize);  // Matches UML method signature exactly
+            LoadRequests(1, PageSize);
         }
 
-        // EXACTLY matches UML signature [UI-ORQ-01]
+        // [UI-ORQ-01]
         public void LoadRequests(int page, int pageSize)
         {
-            ownerId = 1; // Get from auth service in real app
+            ownerId = 1;
             var allRequests = _requestService.GetRequestsForOwner(ownerId)
                 .OrderByDescending(r => r.StartDate)  // [UI-ORQ-03]
                 .ToImmutableList();

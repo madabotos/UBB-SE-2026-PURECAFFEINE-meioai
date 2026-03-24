@@ -19,7 +19,7 @@ namespace Property_and_Management.src.Viewmodels
         private ObservableCollection<RequestDTO> _pagedRequests = new();
         private ImmutableList<RequestDTO> _allRequests = ImmutableList<RequestDTO>.Empty;
 
-        public int renterId { get; private set; }  // Current authenticated user
+        public int renterId { get; private set; }
 
         private const int pageSizeConst = 5;
         public static int PageSize => pageSizeConst;
@@ -78,13 +78,13 @@ namespace Property_and_Management.src.Viewmodels
         public RequestsToOthersViewModel(IRequestService requestService)
         {
             _requestService = requestService;
-            LoadRequests(1, PageSize);  // UML exact signature
+            LoadRequests(1, PageSize);
         }
 
-        // UML EXACT: + loadRequests(page:int, pageSize:int):void [UI-MRQ-01]
+        // [UI-MRQ-01]
         public void LoadRequests(int page, int pageSize)
         {
-            renterId = 1; // Replace with AuthService.CurrentUserId
+            renterId = 1;
             _allRequests = _requestService.GetRequestsForRenter(renterId)  // [UI-MRQ-01]
                 .OrderByDescending(r => r.StartDate)  // [UI-MRQ-03]
                 .ToImmutableList();
@@ -104,11 +104,11 @@ namespace Property_and_Management.src.Viewmodels
         public void NextPage() => CurrentPage = Math.Min(CurrentPage + 1, PageCount);
         public void PrevPage() => CurrentPage = Math.Max(CurrentPage - 1, 1);
 
-        // UML EXACT: + cancelRequest(requestId:int):void [UI-MRQ-04]
+        //[UI-MRQ-04]
         public void CancelRequest(int requestId)
         {
-            _requestService.CancelRequest(requestId);  // ENT-REQ-06
-            LoadRequests(CurrentPage, PageSize);  // Refresh
+            _requestService.CancelRequest(requestId); 
+            LoadRequests(CurrentPage, PageSize); 
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
