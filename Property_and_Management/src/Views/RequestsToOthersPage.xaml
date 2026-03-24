@@ -4,6 +4,8 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:local="using:Property_and_Management.src.Views"
       xmlns:dto="using:Property_and_Management.src.DTO"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       mc:Ignorable="d">
 
     <Grid Padding="12">
@@ -41,7 +43,7 @@
                               Tapped="RequestItem_Tapped">
 
                             <!-- Game Picture - Placeholder (add byte[] converter later) -->
-                            <Image Grid.Column="0" Source="ms-appx:///Assets/placeholder_game.png" 
+                            <Image Grid.Column="0" Source="ms-appx:///Assets/placeholder_game.png"
                                    Stretch="UniformToFill" VerticalAlignment="Center"/>
 
                             <!-- Seller + Game Name -->
@@ -52,17 +54,17 @@
 
                             <!-- Dates -->
                             <StackPanel Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <TextBlock Text="{x:Bind StartDate, StringFormat='{0:dd/MM}'}" FontWeight="SemiBold"/>
-                                <TextBlock Text="{x:Bind EndDate, StringFormat='{0:dd/MM}'}"/>
+                                <TextBlock Text="{x:Bind StartDateDisplay}" FontWeight="SemiBold"/>
+                                <TextBlock Text="{x:Bind EndDateDisplay}"/>
                             </StackPanel>
 
                             <!-- Status -->
-                            <TextBlock Grid.Column="3" Text="Pending" Foreground="Orange" FontWeight="SemiBold" 
+                            <TextBlock Grid.Column="3" Text="Pending" Foreground="Orange" FontWeight="SemiBold"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
                             <!-- Cancel Button -->
-                            <Button Grid.Column="4" Click="CancelButton_Click" Background="LightCoral" Foreground="White" 
-                                    FontWeight="Bold" Content="✕ Cancel" Padding="12,6" 
+                            <Button Grid.Column="4" Click="CancelButton_Click" Background="LightCoral" Foreground="White"
+                                    FontWeight="Bold" Content="✕ Cancel" Padding="12,6"
                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                     </DataTemplate>

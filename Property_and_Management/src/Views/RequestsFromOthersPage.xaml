@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Page x:Class="Property_and_Management.src.Views.RequestsFromOthersPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -5,24 +6,24 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       mc:Ignorable="d">
-    
+
     <Page.Resources>
         <BitmapImage x:Key="DefaultGameImage" UriSource="ms-appx:///Assets/default-game-placeholder.png"/>
     </Page.Resources>
-    
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        
-        <!-- Header [UI-ORQ-02] info -->
+
+        <!-- Header [UI-ORQ-02] info  -->
         <TextBlock Grid.Row="0" Text="{Binding ShowingText}" Style="{StaticResource SubtitleTextBlockStyle}" Margin="12"/>
-        
+
         <!-- ListView for requests [UI-ORQ-01,02,03] -->
         <ListView x:Name="ItemsListView" Grid.Row="1" 
-                  ItemsSource="{Binding pagedRequests}"
+                  ItemsSource="{Binding PagedRequests}"
                   SelectionMode="None"
                   IsItemClickEnabled="True"
                   DoubleTapped="RequestItem_Tapped">
@@ -47,16 +48,14 @@
                         <StackPanel Grid.Column="1" Margin="12,0,0,0">
                             <TextBlock Text="{Binding Game.Name}" Style="{StaticResource BaseTextBlockStyle}" FontWeight="SemiBold"/>
                             <TextBlock Text="{Binding Renter.DisplayName}" Style="{StaticResource BodyTextBlockStyle}" Opacity="0.8"/>
-                            <TextBlock Text="{Binding StartDate, StringFormat='Start: {0:dd/MM/yyyy}'}" 
-                                       Style="{StaticResource CaptionTextBlockStyle}"/>
-                            <TextBlock Text="{Binding EndDate, StringFormat='End: {0:dd/MM/yyyy}'}" 
-                                       Style="{StaticResource CaptionTextBlockStyle}"/>
+                            <TextBlock Text="{Binding StartDateDisplayLong}" Style="{StaticResource CaptionTextBlockStyle}"/>
+                            <TextBlock Text="{Binding EndDateDisplayLong}" Style="{StaticResource CaptionTextBlockStyle}"/>
                         </StackPanel>
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
-        
+
         <!-- Paging and Actions -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="12">
             <Button Content="Previous" Command="{Binding PrevPageCommand}" Margin="4"/>

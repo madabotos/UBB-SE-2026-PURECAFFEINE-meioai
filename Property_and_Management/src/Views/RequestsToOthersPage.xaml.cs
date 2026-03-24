@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -38,7 +39,7 @@ namespace Property_and_Management.src.Views
                 var request = grid?.DataContext as RequestDTO;
                 if (request?.Id > 0)
                 {
-                    Frame?.Navigate(typeof(ChatPage), request.Id);  // [UI-MRQ-05]
+                    // Frame?.Navigate(typeof(ChatPage), request.Id);  // [UI-MRQ-05]
                 }
             }
             catch (System.Exception ex)
@@ -65,12 +66,12 @@ namespace Property_and_Management.src.Views
                     DefaultButton = ContentDialogButton.Primary
                 };
 
-                if (dialog.ShowAsync() == ContentDialogResult.Primary)
-                {
-                    var root = this.Content as FrameworkElement;
-                    var vm = root?.DataContext as RequestsToOthersViewModel;
-                    vm?.CancelRequest(request.Id);
-                }
+                //if (dialog.ShowAsync() == ContentDialogResult.Primary)
+                //{
+                //    var root = this.Content as FrameworkElement;
+                //    var vm = root?.DataContext as RequestsToOthersViewModel;
+                //    vm?.CancelRequest(request.Id);
+                //}
             }
             catch (System.Exception ex)
             {
