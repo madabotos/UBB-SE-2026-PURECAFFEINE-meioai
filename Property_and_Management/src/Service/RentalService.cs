@@ -21,10 +21,10 @@ namespace Property_and_Management.src.Service
         public bool IsSlotAvailable(int gameId, DateTime newStart, DateTime newEnd)
         {
             var existingRentals = _rentalRepository.GetRentalsByGame(gameId);
+            const int bufferHours = 48;
 
             foreach (var rental in existingRentals)
             {
-                const int bufferHours = 48;
                 // start_date cannot be in the interval (existent_start - 48h, existent_end + 48h)
                 var bufferStart = rental.StartDate.AddHours(-bufferHours);
                 var bufferEnd = rental.EndDate.AddHours(bufferHours);
