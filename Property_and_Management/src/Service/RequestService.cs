@@ -27,7 +27,7 @@ namespace Property_and_Management.src.Service
         UNAUTHORIZED_ERROR = -1,
         NOT_FOUND_ERROR = -2
     }
-    public class RequestService
+    public class RequestService : IRequestService
     {
 
         private IRequestRepository _requestRepository;
