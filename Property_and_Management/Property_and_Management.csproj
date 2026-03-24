@@ -69,7 +69,7 @@
       </Page>
     </ItemGroup>
     <ItemGroup>
-      <Page Update="src\Views\NotificationsPage.xaml">
+      <Page Update="src\Views\NotificationsPage.xaml"/>
       <Page Update="src\Views\ChatView.xaml">
         <Generator>MSBuild:Compile</Generator>
       </Page>
