@@ -20,7 +20,7 @@ namespace Property_and_Management.src.Views
             ViewModel.RequestNavigation += OnViewModelRequestedNavigation;
         }
 
-        // Catch the service that App.xaml.cs threw to us
+        // Catch the service that App.xaml.cs threw at us
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
