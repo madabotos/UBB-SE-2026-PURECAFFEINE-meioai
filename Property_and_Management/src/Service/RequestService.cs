@@ -32,7 +32,7 @@ namespace Property_and_Management.src.Service
 
         private IRequestRepository _requestRepository;
         private IRentalRepository _rentalRepository;
-        private NotificationService _notificationService;
+        private INotificationService _notificationService;
         private IGameRepository _gameRepository;
         // Db connection handling should be refactored to an interface later, removing it from this refactor since SQL attributes module is gone.
 
@@ -56,7 +56,7 @@ namespace Property_and_Management.src.Service
             _requestRepository = newRequestRepository;
         public void SetRentalRepository(IRentalRepository newRentalRepository) =>
             _rentalRepository = newRentalRepository;
-        public void SetNotificationService(NotificationService newNotificationService) =>
+        public void SetNotificationService(INotificationService newNotificationService) =>
             _notificationService = newNotificationService;
 
         //[BL-LFC-01] A new Request is created. We say it is PENDING while existing in the database.
