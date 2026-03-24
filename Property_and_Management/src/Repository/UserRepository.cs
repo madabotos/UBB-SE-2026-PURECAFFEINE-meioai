@@ -72,7 +72,7 @@ namespace Property_and_Management.src.Repository
         {
             if (updatedEntityId != newEntity.Id)
                 throw new ArgumentException("Id mismatch");
-                
+
             using (var connection = new SqlConnection(_connectionString))
             {
                 connection.Open();

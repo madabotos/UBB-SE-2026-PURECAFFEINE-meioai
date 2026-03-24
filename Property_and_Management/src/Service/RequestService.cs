@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Microsoft.Data.SqlClient;
 using System.Transactions;
+using Microsoft.Data.SqlClient;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
@@ -148,50 +148,47 @@ namespace Property_and_Management.src.Service
             using var transaction = connection.BeginTransaction();
             try
             {
-                using (var transaction = new System.Transactions.TransactionScope())
+                // Create a new Rental entity using the data from the approved Reuqest
+                var rental = new Rental(
+                id: 0,
+                game: request.Game,
+                renter: request.Renter,
+                owner: request.Owner,
+                startDate: request.StartDate,
+                endDate: request.EndDate);
+
+                _rentalRepository.Add(rental);
+
+                // Find and delete all OTHER requests that overlap 
+                var overlappingRequests = _requestRepository
+                    .GetRequestsByGame(request.Game?.Id ?? 0)
+                    .Where(r => r.Id != requestId &&
+                                r.StartDate < bufferedEnd &&
+                                r.EndDate > bufferedStart)
+                    .ToList();
+
+                foreach (var overlap in overlappingRequests)
                 {
-                    // Create a new Rental entity using the data from the approved Reuqest
-                    var rental = new Rental(
-                    id: 0,
-                    game: request.Game,
-                    renter: request.Renter,
-                    owner: request.Owner,
-                    startDate: request.StartDate,
-                    endDate: request.EndDate);
-
-                    _rentalRepository.Add(rental);
-
-                    // Find and delete all OTHER requests that overlap 
-                    var overlappingRequests = _requestRepository
-                        .GetRequestsByGame(request.Game?.Id ?? 0)
-                        .Where(r => r.Id != requestId &&
-                                    r.StartDate < bufferedEnd &&
-                                    r.EndDate > bufferedStart)
-                        .ToList();
-
-                    foreach (var overlap in overlappingRequests)
-                    {
-                        _requestRepository.Delete(overlap.Id);
-                        _notificationService.SendNotificationToUser(
-                            overlap.Renter?.Id ?? 0,
-                            new NotificationDTO
-                            {
-                                Title = "Booking Unavailable",
-                                Body = $"Your request for game {request.Game?.Id} ({overlap.StartDate:d}–{overlap.EndDate:d}) was declined because the game is no longer available in that period.",
-                                Timestamp = DateTime.UtcNow
-                            }
-                        );
-                    }
-
-                    // Delete the original request
-                    _requestRepository.Delete(requestId);
-
-                    // Commiting the transaction. If any of the above operations threw an exception, this line will not be reached and the transaction will be rolled back.
-                    transaction.Complete();
-
-                    // Return newly generated rental_id
-                    return rental.Id;
+                    _requestRepository.Delete(overlap.Id);
+                    _notificationService.SendNotificationToUser(
+                        overlap.Renter?.Id ?? 0,
+                        new NotificationDTO
+                        {
+                            Title = "Booking Unavailable",
+                            Body = $"Your request for game {request.Game?.Id} ({overlap.StartDate:d}–{overlap.EndDate:d}) was declined because the game is no longer available in that period.",
+                            Timestamp = DateTime.UtcNow
+                        }
+                    );
                 }
+
+                // Delete the original request
+                _requestRepository.Delete(requestId);
+
+                // Commiting the transaction. If any of the above operations threw an exception, this line will not be reached and the transaction will be rolled back.
+                transaction.Commit();
+
+                // Return newly generated rental_id
+                return rental.Id;
             }
             catch (Exception)
             {
