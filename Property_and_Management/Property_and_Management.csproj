@@ -13,6 +13,9 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
     <ItemGroup>
+      <None Remove="Assets\tray_icon.ico" />
+      <None Remove="src\Views\ListingsPage.xaml" />
+      <None Remove="src\Views\NotificationsPage.xaml" />
       <None Remove="src\Views\CreateGameView.xaml" />
       <None Remove="src\Views\EditGameView.xaml" />
     </ItemGroup>
@@ -56,6 +59,17 @@
       </Page>
     </ItemGroup>
     <ItemGroup>
+      <Page Update="src\Views\ListingsPage.xaml">
+        <Generator>MSBuild:Compile</Generator>
+      </Page>
+    </ItemGroup>
+    <ItemGroup>
+      <Page Update="src\Views\MenuBarPage.xaml">
+        <Generator>MSBuild:Compile</Generator>
+      </Page>
+    </ItemGroup>
+    <ItemGroup>
+      <Page Update="src\Views\NotificationsPage.xaml"/>
       <Page Update="src\Views\ChatView.xaml">
         <Generator>MSBuild:Compile</Generator>
       </Page>

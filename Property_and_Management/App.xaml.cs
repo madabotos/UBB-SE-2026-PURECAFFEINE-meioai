@@ -42,6 +42,7 @@ namespace Property_and_Management
         public Frame RootFrame { get; set; }
         public string AppUserModelId { get; }
         public int CurrentUserID { get; }
+        public NotificationsViewModel NotificationsViewModel { get; private set; }
 
 
         // Tray icon
@@ -52,7 +53,8 @@ namespace Property_and_Management
         private Window? _mainWindow;
         private NotificationRepository _notificationRepository;
         private NotificationService _notification_service;
-        private NotificationsViewModel _notificationsViewModel;
+        private GameRepository _gameRepository;
+        private GameService _gameService;
         private readonly NotificationManager _notificationManager;
 
         /// <summary>
@@ -107,7 +109,7 @@ namespace Property_and_Management
                         eventArguments.Arguments["navigate"] == nameof(NotificationsPage))
                     {
                         ActivateWindow();
-                        RootFrame.Navigate(typeof(NotificationsPage), _notificationsViewModel);
+                        RootFrame.Navigate(typeof(NotificationsPage), NotificationsViewModel);
                     }
                 });
             };
@@ -139,7 +141,9 @@ namespace Property_and_Management
             // Instantiate repository/service/viewmodel
             _notificationRepository = new NotificationRepository();
             _notification_service = new NotificationService(_notificationRepository);
-            _notificationsViewModel = new NotificationsViewModel(_notification_service);
+            _gameRepository = new GameRepository();
+            _gameService = new GameService(_gameRepository);
+            NotificationsViewModel = new NotificationsViewModel(_notification_service);
 
             // Start listening and subscribe for the configured user
             _notification_service.StartListening();
@@ -160,6 +164,7 @@ namespace Property_and_Management
             rootGrid.Children.Add(RootFrame);  // Your navigation frame
             MainWindow.Content = rootGrid;            // Set Grid as window content
 
+            RootFrame.Navigate(typeof(MenuBarView), _gameService);
 
             CreateTrayIcon();
         }

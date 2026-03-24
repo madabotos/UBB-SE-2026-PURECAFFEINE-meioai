@@ -29,6 +29,10 @@ namespace Property_and_Management.src.Views
         public NotificationsPage()
         {
             InitializeComponent();
+
+            // Grab the ViewModel straight from the App!
+            var app = (Property_and_Management.App)Application.Current;
+            this.DataContext = app.NotificationsViewModel;
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
