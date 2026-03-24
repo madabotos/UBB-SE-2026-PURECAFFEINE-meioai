@@ -5,10 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Property_and_Management.src.DTO;
+using Property_and_Management.src.Model;
 
 namespace Property_and_Management.src.Interface
 {
-    interface INotificationService
+    public interface INotificationService
     {
         /// <summary>Get a notification by its identifier.</summary>
         /// <param name="id">The identifier of the notification.</param>
@@ -34,5 +35,27 @@ namespace Property_and_Management.src.Interface
         /// <param name="userId">The identifier of the user.</param>
         /// <returns>A list of <see cref="NotificationDTO"/> objects for the specified user.</returns>
         ImmutableList<NotificationDTO> GetNotificationsForUser(int userId);
+
+        /// <summary>
+        /// Subscribes to recive notifications for the given userId
+        /// </summary>
+        /// <param name="userId"></param>
+        void SubscribeToServer(int userId);
+
+        /// <summary>
+        /// Starts the listening on the client
+        /// </summary>
+        void StartListening();
+
+        /// <summary>
+        /// Stops the listening on the client
+        /// </summary>
+        void StopListening();
+
+        /// <summary>
+        /// Schedule an upcoming rental reminder 24 hours before the rental start for both renter and owner.
+        /// </summary>
+        /// <param name="rental">The rental for which to schedule the reminder.</param>
+        void ScheduleUpcomingRentalReminder(Rental rental);
     }
 }
