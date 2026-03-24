@@ -8,7 +8,7 @@ using Property_and_Management.src.Model;
 
 namespace Property_and_Management.src.DTO
 {
-    internal class GameDTO : IDTO<Game>
+    public class GameDTO : IDTO<Game>
     {
         public int Id { get; set; }
         public User Owner { get; set; }

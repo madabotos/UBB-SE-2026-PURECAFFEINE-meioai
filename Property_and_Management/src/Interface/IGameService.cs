@@ -8,7 +8,7 @@ using Property_and_Management.src.DTO;
 
 namespace Property_and_Management.src.Interface
 {
-    internal interface IGameService
+    public interface IGameService
     {
         /// <summary>Add a new game.</summary>
         /// <param name="game">The added game data.</param>
