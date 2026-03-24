@@ -4,6 +4,10 @@ This script should be run when setting up the project, so that you actually have
 Run in SSMS.
 */
 
+/*
+Corrected Database Script
+*/
+
 -- 1. Create the Database
 IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'BoardRent')
 BEGIN
