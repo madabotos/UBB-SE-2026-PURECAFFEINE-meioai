@@ -11,6 +11,15 @@
     <Page.Resources>
                 <converters:ByteArrayToImageConverter x:Key="ImageConverter"/>
         <BitmapImage x:Key="DefaultGameImage" UriSource="ms-appx:///Assets/default-game-placeholder.jpg"/>
+        <Style TargetType="ListViewItem">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <ContentPresenter/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Page.Resources>
 
     <Grid>
@@ -20,10 +29,10 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header [UI-ORQ-02] info  -->
-        <TextBlock Grid.Row="0" Text="{Binding ShowingText}" Style="{StaticResource SubtitleTextBlockStyle}" Margin="12"/>
+        
+        <TextBlock Grid.Row="0" Text="Others' Requests" Style="{StaticResource SubtitleTextBlockStyle}" Margin="12"/>
 
-        <!-- ListView for requests [UI-ORQ-01,02,03] -->
+        <!-- ListView for requests [REQ-REQ-01]-->
         <ListView x:Name="ItemsListView" Grid.Row="1" 
                   ItemsSource="{Binding PagedRequests}"
                   SelectionMode="None"
@@ -31,12 +40,13 @@
                   DoubleTapped="RequestItem_Tapped">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:RequestDTO">
-                    <Grid Tapped="RequestItem_Tapped" Padding="12" Margin="0,4">
+                    <Grid Tapped="RequestItem_Tapped" Background="#2D2D2D" Margin="0,0,0,10" Padding="15" CornerRadius="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="80"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <!-- Game picture or placeholder [UI-ORQ-02] -->
+                        <!-- Game picture or placeholder [REQ-REQ-01] -->
                            <Image Grid.Column="0" Source="{Binding Game.Image, Converter={StaticResource ImageConverter}}" 
                                Width="72" Height="72" Stretch="UniformToFill"
                                ImageFailed="Image_ImageFailed">
@@ -46,26 +56,40 @@
                                 </Style>
                             </Image.Style>
                         </Image>
-                        <!-- Game name, renter, dates [UI-ORQ-02] -->
+
+                        <!-- Game name, renter, dates [REQ-REQ-01] -->
                         <StackPanel Grid.Column="1" Margin="12,0,0,0">
                             <TextBlock Text="{Binding Game.Name}" Style="{StaticResource BaseTextBlockStyle}" FontWeight="SemiBold"/>
                             <TextBlock Text="{Binding Renter.DisplayName}" Style="{StaticResource BodyTextBlockStyle}" Opacity="0.8"/>
                             <TextBlock Text="{Binding StartDateDisplayLong}" Style="{StaticResource CaptionTextBlockStyle}"/>
                             <TextBlock Text="{Binding EndDateDisplayLong}" Style="{StaticResource CaptionTextBlockStyle}"/>
                         </StackPanel>
+
+                        <!-- [REQ-REQ-03] As an Owner, I should be able to decline requests.-->
+                        <Button Grid.Column="2"
+                            Content="Delete"
+                            Tag="{Binding Id}"
+                            Click="DenyButton_Click"
+                            Tapped="DenyButton_Tapped"
+                            Margin="8,0,0,0"
+                            Background="#C50F1F"
+                            Foreground="White"
+                            VerticalAlignment="Center"/>
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
 
         <!-- Paging and Actions -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="12">
-            <Button Content="Previous" Click="PrevButton_Click" Margin="4"/>
-            <TextBlock Text="{Binding CurrentPage}" VerticalAlignment="Center" Margin="12,0"/>
-            <TextBlock Text="/" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <TextBlock Text="{Binding PageCount}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-            <Button Content="Next" Click="NextButton_Click" Margin="4"/>
-            <!-- Approve/Deny buttons can be per-item or bulk -->
-        </StackPanel>
+        <Grid Grid.Row="2" Margin="12">
+            <TextBlock Text="{Binding ShowingText}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Previous" Click="PrevButton_Click" Margin="4"/>
+                <TextBlock Text="{Binding CurrentPage}" VerticalAlignment="Center" Margin="12,0"/>
+                <TextBlock Text="/" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock Text="{Binding PageCount}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <Button Content="Next" Click="NextButton_Click" Margin="4"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Page>

@@ -25,7 +25,6 @@ namespace Property_and_Management.src.Views
             if (e.Parameter is RequestsFromOthersViewModel vm)
             {
                 DataContext = vm;
-                // if (ItemsListView != null) ItemsListView.ItemsSource = vm.PagedRequests;
                 return;
             }
 
@@ -33,7 +32,9 @@ namespace Property_and_Management.src.Views
             {
                 var requestService = new RequestService();
                 requestService.SetRequestRepository(new RequestRepository());
-
+                requestService.SetRentalRepository(new RentalRepository());
+                requestService.SetGameRepository(new GameRepository());
+                requestService.SetNotificationService(new NotificationService(new NotificationRepository()));
                 DataContext = new RequestsFromOthersViewModel(requestService);
             }
         }
@@ -42,7 +43,7 @@ namespace Property_and_Management.src.Views
         {
             if (sender is FrameworkElement element && element.DataContext is RequestDTO request && request.Id > 0)
             {
-                Frame?.Navigate(typeof(ChatView), request.Id);  // [UI-ORQ-04]
+                Frame?.Navigate(typeof(ChatView), request.Id); 
             }
         }
 
@@ -50,10 +51,37 @@ namespace Property_and_Management.src.Views
         {
             if (sender is FrameworkElement element && element.DataContext is RequestDTO request && request.Id > 0)
             {
-                Frame?.Navigate(typeof(ChatView), request.Id);  // [UI-ORQ-04]
+                Frame?.Navigate(typeof(ChatView), request.Id);  
             }
         }
 
+        private void DenyButton_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            e.Handled = true;
+        }
+        private async void DenyButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button btn || btn.Tag is not int requestId)
+                return;
+
+            ContentDialog deleteDialog = new ContentDialog
+            {
+                Title = "Delete Request?",
+                Content = $"Are you sure you want to permanently delete this request and all associated active requests? Existing rentals will not be deleted.",
+                PrimaryButtonText = "Delete",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = this.XamlRoot
+            };
+
+            var result = await deleteDialog.ShowAsync();
+
+            if (result == ContentDialogResult.Primary)
+            {
+                var vm = DataContext as RequestsFromOthersViewModel;
+                vm?.DenyRequest(requestId, "The owner declined your request");
+            }
+        }
         private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
         {
             if (sender is not Image img)

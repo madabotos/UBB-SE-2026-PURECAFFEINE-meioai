@@ -1,6 +1,4 @@
 using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -27,12 +25,6 @@ namespace Property_and_Management.src.Views
             if (e.Parameter is RequestsToOthersViewModel vm)
             {
                 DataContext = vm;
-
-                if (this.FindName("ItemsListView") is ItemsControl items)
-                {
-                    items.ItemsSource = vm.PagedRequests;
-                }
-
                 return;
             }
 
@@ -40,78 +32,81 @@ namespace Property_and_Management.src.Views
             {
                 var requestService = new RequestService();
                 requestService.SetRequestRepository(new RequestRepository());
-
-                var fallbackVm = new RequestsToOthersViewModel(requestService);
-                DataContext = fallbackVm;
-
-                if (this.FindName("ItemsListView") is ItemsControl items)
-                {
-                    items.ItemsSource = fallbackVm.PagedRequests;
-                }
+                requestService.SetRentalRepository(new RentalRepository());
+                requestService.SetGameRepository(new GameRepository());
+                requestService.SetNotificationService(new NotificationService(new NotificationRepository()));
+                DataContext = new RequestsToOthersViewModel(requestService);
             }
+        }
+
+        private void RequestItem_Tapped(object sender, DoubleTappedRoutedEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.DataContext is RequestDTO request && request.Id > 0)
+                Frame?.Navigate(typeof(ChatView), request.Id);
         }
 
         private void RequestItem_Tapped(object sender, TappedRoutedEventArgs e)
         {
-            try
-            {
-                var grid = sender as Grid;
-                var request = grid?.DataContext as RequestDTO;
-                if (request?.Id > 0)
-                {
-                    Frame?.Navigate(typeof(ChatView), request.Id);  // [UI-MRQ-05]
-                }
-            }
-            catch (System.Exception ex)
-            {
-                Debug.WriteLine($"RequestItem_Tapped error: {ex}");
-            }
+            if (sender is FrameworkElement element && element.DataContext is RequestDTO request && request.Id > 0)
+                Frame?.Navigate(typeof(ChatView), request.Id);
+        }
+
+        private void CancelButton_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            e.Handled = true;
         }
 
         private async void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                var btn = sender as Button;
-                var request = btn?.DataContext as RequestDTO;
-                if (request == null) return;
+            if (sender is not Button btn || btn.Tag is not int requestId)
+                return;
 
-                // [UI-MRQ-04]
-                var dialog = new ContentDialog()
-                {
-                    Title = "Confirm Cancel",
-                    Content = $"Cancel request for {request.Game.Name} ({request.StartDate:dd/MM} - {request.EndDate:dd/MM})?",
-                    PrimaryButtonText = "Cancel Request",
-                    CloseButtonText = "Keep",
-                    DefaultButton = ContentDialogButton.Primary
-                };
-
-                var dialogResult = await dialog.ShowAsync();
-                if (dialogResult == ContentDialogResult.Primary)
-                {
-                    var root = this.Content as FrameworkElement;
-                    var vm = root?.DataContext as RequestsToOthersViewModel;
-                    vm?.CancelRequest(request.Id);
-                }
-            }
-            catch (System.Exception ex)
+            ContentDialog cancelDialog = new ContentDialog
             {
-                Debug.WriteLine($"CancelButton_Click error: {ex}");
+                Title = "Cancel Request?",
+                Content = "Are you sure you want to cancel this request?",
+                PrimaryButtonText = "Cancel Request",
+                CloseButtonText = "Go Back",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = this.XamlRoot
+            };
+
+            var result = await cancelDialog.ShowAsync();
+
+            if (result == ContentDialogResult.Primary)
+            {
+                var vm = DataContext as RequestsToOthersViewModel;
+                vm?.CancelRequest(requestId);
             }
+        }
+
+        private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
+        {
+            if (sender is not Image img) return;
+
+            if (Resources.TryGetValue("DefaultGameImage", out var localResource) && localResource is BitmapImage localImage)
+            {
+                img.Source = localImage;
+                return;
+            }
+
+            if (Application.Current.Resources.TryGetValue("DefaultGameImage", out var appResource) && appResource is BitmapImage appImage)
+            {
+                img.Source = appImage;
+                return;
+            }
+
+            img.Source = new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.png"));
         }
 
         private void NextButton_Click(object sender, RoutedEventArgs e)
         {
-            var root = this.Content as FrameworkElement;
-            var vm = root?.DataContext as RequestsToOthersViewModel;
-            vm?.NextPage();
+            (DataContext as RequestsToOthersViewModel)?.NextPage();
         }
 
         private void PrevButton_Click(object sender, RoutedEventArgs e)
         {
-            var root = this.Content as FrameworkElement;
-            var vm = root?.DataContext as RequestsToOthersViewModel;
-            vm?.PrevPage();
+            (DataContext as RequestsToOthersViewModel)?.PrevPage();
         }
     }
 }
