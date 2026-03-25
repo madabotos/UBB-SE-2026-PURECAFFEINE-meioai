@@ -32,22 +32,17 @@ namespace Property_and_Management.src.Service
 
     public class RequestService : IRequestService
     {
-<<<<<<< HEAD
-=======
         // ----------------------------------------------------------------
         //  Dependencies — all held as interfaces for testability
         // ----------------------------------------------------------------
->>>>>>> ef92232aa41b6a7f9d707302a97f244856abfd59
         private IRequestRepository _requestRepository;
         private IRentalRepository _rentalRepository;
         private INotificationService _notificationService;
         private IGameRepository _gameRepository;
-<<<<<<< HEAD
-        private const int s_bufferPeriodInDays = 2;
-        // Db connection handling should be refactored to an interface later, removing it from this refactor since SQL attributes module is gone.
-=======
->>>>>>> ef92232aa41b6a7f9d707302a97f244856abfd59
 
+        private const int s_bufferPeriodInDays = 2;
+
+        // Db connection handling should be refactored to an interface later, removing it from this refactor since SQL attributes module is gone.
         private readonly string _connectionString =
             System.Configuration.ConfigurationManager
                   .ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
@@ -288,11 +283,7 @@ namespace Property_and_Management.src.Service
                 .GetRequestsByGame(gameId)
                 .Where(r => r.StartDate.Month == month && r.StartDate.Year == year)
                 .OrderBy(r => r.StartDate)
-<<<<<<< HEAD
-                .Select(r => (r.StartDate, r.EndDate))
-=======
                 .Select(r => (r.StartDate, r.EndDate.AddHours(48))) // 48-hour buffer per spec
->>>>>>> ef92232aa41b6a7f9d707302a97f244856abfd59
                 .ToImmutableList();
         }
 
@@ -331,12 +322,7 @@ namespace Property_and_Management.src.Service
             // (b) No overlap with other pending Requests
             bool requestConflict = _requestRepository
                 .GetRequestsByGame(gameId)
-<<<<<<< HEAD
                 .Any(r => r.StartDate < endDate.AddDays(s_bufferPeriodInDays) && r.EndDate.AddDays(s_bufferPeriodInDays) > startDate);
-=======
-                .Any(r => startDate < r.EndDate &&
-                          endDate > r.StartDate);
->>>>>>> ef92232aa41b6a7f9d707302a97f244856abfd59
 
             return !requestConflict;
         }
