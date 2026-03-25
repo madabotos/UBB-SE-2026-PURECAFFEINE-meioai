@@ -62,7 +62,7 @@ namespace Property_and_Management.src.Service
          .GetRentalsByRenter(renterId)
          .Select(r => new RentalDTO(r))
          .ToImmutableList();
-        
+
 
         public ImmutableList<RentalDTO> GetRentalsForOwner(int ownerId)
         =>
@@ -70,6 +70,6 @@ namespace Property_and_Management.src.Service
         .GetRentalsByOwner(ownerId)
         .Select(r => new RentalDTO(r))
         .ToImmutableList();
-        
+
     }
 }
