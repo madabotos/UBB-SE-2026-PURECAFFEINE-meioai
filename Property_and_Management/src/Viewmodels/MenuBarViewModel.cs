@@ -19,7 +19,7 @@ namespace Property_and_Management.src.Viewmodels
         {
             NavigationActions = new Dictionary<string, Action>
             {
-                { "Listings", () => RequestNavigation?.Invoke(typeof(ListingsPage)) },
+                { "My Games", () => RequestNavigation?.Invoke(typeof(ListingsPage)) },
                 { "Others' Requests", () => RequestNavigation?.Invoke(typeof(RequestsFromOthersPage)) },
                 { "Others' Rentals", () => RequestNavigation?.Invoke(typeof(RentalsFromOthersPage)) },
                 { "My Requests", () => RequestNavigation?.Invoke(typeof(RequestsToOthersPage)) },
