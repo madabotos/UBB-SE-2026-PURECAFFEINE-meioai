@@ -13,10 +13,10 @@ namespace Property_and_Management.src.Viewmodels
         private readonly IGameService _gameService;
         private readonly int _currentUserId;
 
-        // 1. We keep a hidden list of ALL games in memory
+        // We keep a hidden list of ALL games in memory
         private ObservableCollection<GameDTO> _allListings = new ObservableCollection<GameDTO>();
 
-        // 2. The UI binds to THIS list, which only holds the current page's games
+        // The UI binds to THIS list, which only holds the current page's games
         public ObservableCollection<GameDTO> PagedListings { get; set; } = new ObservableCollection<GameDTO>();
 
         // Pagination Properties
@@ -31,7 +31,7 @@ namespace Property_and_Management.src.Viewmodels
 
         public int PageCount => (int)Math.Ceiling((double)_allListings.Count / _pageSize) == 0 ? 1 : (int)Math.Ceiling((double)_allListings.Count / _pageSize);
 
-        public string ShowingText => $"Showing {PagedListings.Count} of {_allListings.Count} listings";
+        public string ShowingText => $"Showing {PagedListings.Count} of {_allListings.Count}";
 
         public ListingsViewModel(IGameService gameService, int currentUserId)
         {
@@ -57,7 +57,7 @@ namespace Property_and_Management.src.Viewmodels
         {
             PagedListings.Clear();
 
-            // The Magic: Skip previous pages, Take the next batch!
+            // Skip previous pages, Take the next batch!
             var pagedData = _allListings.Skip((CurrentPage - 1) * _pageSize).Take(_pageSize);
 
             foreach (var item in pagedData)
