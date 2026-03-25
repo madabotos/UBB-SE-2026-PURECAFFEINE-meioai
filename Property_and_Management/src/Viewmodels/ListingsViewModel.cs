@@ -13,7 +13,7 @@ namespace Property_and_Management.src.Viewmodels
         private readonly IGameService _gameService;
         private readonly int _currentUserId;
 
-        // We keep a hidden list of ALL games in memory
+        // We keep a hidden list of all games in memory
         private ObservableCollection<GameDTO> _allListings = new ObservableCollection<GameDTO>();
 
         // The UI binds to THIS list, which only holds the current page's games
