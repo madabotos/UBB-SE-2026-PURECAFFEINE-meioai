@@ -4,6 +4,10 @@ This script should be run when setting up the project, so that you actually have
 Run in SSMS.
 */
 
+/*
+Corrected Database Script
+*/
+
 -- 1. Create the Database
 IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'BoardRent')
 BEGIN
@@ -19,6 +23,7 @@ IF OBJECT_ID(N'[dbo].[Users]', 'U') IS NULL
 BEGIN
     CREATE TABLE Users (
         id INT IDENTITY(1,1) NOT NULL,
+        display_name NVARCHAR(50) NOT NULL DEFAULT 'Unknown User',
         CONSTRAINT PK_User PRIMARY KEY (id)
     );
 END;
@@ -35,7 +40,7 @@ BEGIN
         maximum_player_number INT NOT NULL,
         description NVARCHAR(500) NOT NULL,
         image VARBINARY(MAX),
-        is_active BIT NOT NULL DEFAULT 1,
+        is_active INT NOT NULL DEFAULT 1,
         
         CONSTRAINT PK_Games PRIMARY KEY (game_id),
         CONSTRAINT FK_Games_Owner FOREIGN KEY (owner_id) REFERENCES [Users](id),

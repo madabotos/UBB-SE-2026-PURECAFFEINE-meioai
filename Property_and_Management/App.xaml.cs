@@ -3,25 +3,32 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
+using H.NotifyIcon;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Toolkit.Uwp.Notifications;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
+using Microsoft.Windows.AppLifecycle;
+using Microsoft.Windows.AppNotifications;
 using Property_and_Management.src.Model;
 using Property_and_Management.src.Repository;
+using Property_and_Management.src.Service;
+using Property_and_Management.src.Viewmodels;
+using Property_and_Management.src.Views;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace Property_and_Management
 {
@@ -30,26 +37,138 @@ namespace Property_and_Management
     /// </summary>
     public partial class App : Application
     {
-        private Window? _window;
+        // Public application state
+        public Window MainWindow { get; set; }
+        public Frame RootFrame { get; set; }
+        public string AppUserModelId { get; }
+        public int CurrentUserID { get; }
+        public NotificationsViewModel NotificationsViewModel { get; private set; }
+
+
+        // Tray icon
+        private TaskbarIcon _trayIcon;
+
+
+        // Private dependencies and state
+        private Window? _mainWindow;
+        private NotificationRepository _notificationRepository;
+        private NotificationService _notification_service;
+        private GameRepository _gameRepository;
+        private GameService _gameService;
+        private readonly NotificationManager _notificationManager;
 
         /// <summary>
-        /// Initializes the singleton application object.  This is the first line of authored code
-        /// executed, and as such is the logical equivalent of main() or WinMain().
+        /// Initializes the singleton application object.
         /// </summary>
         public App()
         {
+            CurrentUserID = GetUserIdFromArgs();
+
+            AppUserModelId = $"BoardRent -- user-{CurrentUserID}";
+
+            // Create manager and wire its generic handlers (handlers may reference fields initialized later)
+            _notificationManager = new NotificationManager();
+
+            SetupNotificationManager();
+
+            EnsureSingleInstance(AppUserModelId);
+
+            InitializeServices(CurrentUserID);
+
             InitializeComponent();
+        }
 
-            using (SqlCommand cmd = new SqlCommand())
+        private int GetUserIdFromArgs()
+        {
+            int defaultUserId = 1;
+            string[] commandLineArgs = Environment.GetCommandLineArgs(); // first arg is the executable path
+            if (commandLineArgs.Length > 1 && int.TryParse(commandLineArgs[1], out int parsedUserId))
             {
-                // Notification test = new Notification(1, 1, DateTime.Now, "hello2", "world2");
-
-                // string t = SqlQueryHelper<Notification>.CreateInsertQuery(cmd, test, false);
-                // Dbrepo test
-                NotificationRepository notificationRepository = new NotificationRepository();
-
-                //Console.WriteLine(notificationRepository.Get(3));
+                return parsedUserId;
             }
+
+            return defaultUserId;
+        }
+
+        private void SetupNotificationManager()
+        {
+            // Ensure the manager is unregistered when the process exits
+            AppDomain.CurrentDomain.ProcessExit += (sender, eventArgs) =>
+            {
+                _notificationManager.Unregister();
+            };
+
+            // When a notification is clicked, bring the window to foreground and optionally navigate
+            _notificationManager.NotificationClicked += (sender, eventArguments) =>
+            {
+                _mainWindow?.DispatcherQueue.TryEnqueue(() =>
+                {
+                    _mainWindow?.Activate();
+
+                    if (eventArguments.Arguments.ContainsKey("navigate") &&
+                        eventArguments.Arguments["navigate"] == nameof(NotificationsPage))
+                    {
+                        ActivateWindow();
+                        NavigateToNotificationsWithinShell();
+                    }
+                });
+            };
+
+            _notificationManager.Init();
+        }
+
+        private void NavigateToNotificationsWithinShell()
+        {
+            if (RootFrame?.Content is MenuBarView currentShell)
+            {
+                currentShell.NavigateToNotifications();
+                return;
+            }
+
+            void OnShellLoaded(object sender, NavigationEventArgs e)
+            {
+                if (e.Content is MenuBarView loadedShell)
+                {
+                    RootFrame.Navigated -= OnShellLoaded;
+                    loadedShell.NavigateToNotifications();
+                }
+            }
+
+            RootFrame.Navigated += OnShellLoaded;
+            RootFrame.Navigate(typeof(MenuBarView), _gameService);
+        }
+
+        private void EnsureSingleInstance(string appUserModelId)
+        {
+            var appInstance = Microsoft.Windows.AppLifecycle.AppInstance.FindOrRegisterForKey(appUserModelId);
+            if (!appInstance.IsCurrent)
+            {
+                appInstance.RedirectActivationToAsync(Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs()).AsTask().Wait();
+                Environment.Exit(0);
+            }
+
+            // Get the current instance and activate the window
+            appInstance.Activated += (sender, args) =>
+            {
+                ActivateWindow();
+            };
+        }
+
+        private void InitializeServices(int userId)
+        {
+            // Initialize navigation frame
+            RootFrame = new Frame();
+
+            // Instantiate repository/service/viewmodel
+            _notificationRepository = new NotificationRepository();
+            _notification_service = new NotificationService(_notificationRepository);
+            _gameRepository = new GameRepository();
+            _gameService = new GameService(_gameRepository);
+            NotificationsViewModel = new NotificationsViewModel(_notification_service);
+
+            // Start listening and subscribe for the configured user
+            _notification_service.StartListening();
+            _notification_service.SubscribeToServer(userId);
         }
 
         /// <summary>
@@ -58,8 +177,91 @@ namespace Property_and_Management
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            _window = new MainWindow();
-            _window.Activate();
+            CreateAndShowMainWindow();
+
+
+            // Wrap your Frame in a Grid so the tray icon can be added later
+            Grid rootGrid = new Grid();
+            rootGrid.Children.Add(RootFrame);  // Your navigation frame
+            MainWindow.Content = rootGrid;            // Set Grid as window content
+
+            RootFrame.Navigate(typeof(MenuBarView), _gameService);
+
+            CreateTrayIcon();
+
+            // debug:
+        }
+
+        private void CreateAndShowMainWindow()
+        {
+            MainWindow = _mainWindow = new MainWindow();
+            _mainWindow.Content = RootFrame;
+            _mainWindow.Activate();
+
+            // Display the AppUserModelId in the window title for debugging / identification
+            _mainWindow.Title = AppUserModelId;
+        }
+
+        private void ActivateWindow()
+        {
+            _mainWindow?.DispatcherQueue.TryEnqueue(() =>
+            {
+                if (_mainWindow is MainWindow win)
+                {
+                    win.AppWindow.Show();
+                }
+                _mainWindow.Activate();
+            });
+        }
+
+        private void CreateTrayIcon()
+        {
+            _trayIcon = new TaskbarIcon
+            {
+                ToolTipText = $"{AppUserModelId}",
+                IconSource = new BitmapImage(new Uri(Constants.APP_TRAY_ICON_URI)),
+            };
+
+            // 1. Create a Command for Open
+            var openCommand = new XamlUICommand();
+            openCommand.ExecuteRequested += (s, e) =>
+            {
+                ActivateWindow();
+            };
+
+            var openItem = new MenuFlyoutItem
+            {
+                Text = "Open",
+                Command = openCommand // Bind to Command instead of Click
+            };
+
+            // 2. Create a Command for Exit
+            var exitCommand = new XamlUICommand();
+            exitCommand.ExecuteRequested += (s, e) =>
+            {
+                _trayIcon.Dispose();
+                Environment.Exit(0);
+            };
+
+            var exitItem = new MenuFlyoutItem
+            {
+                Text = "Exit",
+                Command = exitCommand // Bind to Command instead of Click
+            };
+
+            _trayIcon.ContextFlyout = new MenuFlyout
+            {
+                Items =
+                {
+                    openItem, exitItem
+                }
+            };
+
+            if (_mainWindow.Content is Grid rootGrid)
+            {
+                rootGrid.Children.Add(_trayIcon);
+            }
+
         }
     }
 }

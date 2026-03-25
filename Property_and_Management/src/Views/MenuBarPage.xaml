@@ -1,0 +1,42 @@
+<Page
+    x:Class="Property_and_Management.src.Views.MenuBarView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    mc:Ignorable="d">
+
+    <Grid Background="#1E1E1E">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <ListView Grid.Column="0" Background="#080808" Width="180" Padding="5" 
+          SelectionMode="Single"
+          RequestedTheme="Dark"
+          ItemsSource="{Binding NavigationActions.Keys }"
+          SelectedValue="{Binding SelectedPageName, Mode=TwoWay}">
+
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="FontSize" Value="18"/>
+                    <Setter Property="Margin" Value="0,0,0,5"/>
+                    <Setter Property="Padding" Value="10"/>
+                </Style>
+            </ListView.ItemContainerStyle>
+
+            <ListView.Resources>
+                <SolidColorBrush x:Key="ListViewItemForegroundPointerOver" Color="White" />
+                <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="#333333" />
+
+                <SolidColorBrush x:Key="ListViewItemForegroundSelected" Color="White" />
+                <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="#0078D7" />
+            </ListView.Resources>
+
+        </ListView>
+
+        <Frame x:Name="ContentFrame" Grid.Column="1" />
+
+    </Grid>
+</Page>
