@@ -87,7 +87,7 @@ namespace Property_and_Management.src.Viewmodels
         {
             OwnerId = (App.Current as App).CurrentUserID;
             var allRequests = _requestService.GetRequestsForOwner(OwnerId)
-                .OrderByDescending(r => r.StartDate)  
+                .OrderByDescending(r => r.StartDate)
                 .ToImmutableList();
 
             _allRequests = allRequests;
