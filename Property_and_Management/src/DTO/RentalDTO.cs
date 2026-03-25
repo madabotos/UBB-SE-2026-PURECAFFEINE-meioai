@@ -13,6 +13,11 @@ namespace Property_and_Management.src.DTO
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
 
+        public string StartDateDisplay => StartDate.ToString("dd/MM");
+        public string EndDateDisplay => EndDate.ToString("dd/MM");
+        public string StartDateDisplayLong => $"Start: {StartDate:dd/MM/yyyy}";
+        public string EndDateDisplayLong => $"End: {EndDate:dd/MM/yyyy}";
+
         public RentalDTO(int id, Game game, User renter, User owner, DateTime startDate, DateTime endDate)
         {
             Id = id;

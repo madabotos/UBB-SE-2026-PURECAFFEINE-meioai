@@ -21,9 +21,9 @@ namespace Property_and_Management.src.Viewmodels
             {
                 { "Listings", () => RequestNavigation?.Invoke(typeof(ListingsPage)) },
                 { "Others' Requests", () => RequestNavigation?.Invoke(typeof(RequestsFromOthersPage)) },
-                { "Others' Rentals", () => throw new NotImplementedException("Others' Rentals navigation is not yet implemented.") },
+                { "Others' Rentals", () => RequestNavigation?.Invoke(typeof(RentalsFromOthersPage)) },
                 { "My Requests", () => RequestNavigation?.Invoke(typeof(RequestsToOthersPage)) },
-                { "My Rentals", () => throw new NotImplementedException("My Rentals navigation is not yet implemented.") },
+                { "My Rentals", () => RequestNavigation?.Invoke(typeof(RentalsToOthersPage)) },
                 { "Notifications", () => RequestNavigation?.Invoke(typeof(Views.NotificationsPage)) }
             };
         }
