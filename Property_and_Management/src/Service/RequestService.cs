@@ -40,6 +40,9 @@ namespace Property_and_Management.src.Service
         private INotificationService _notificationService;
         private IGameRepository _gameRepository;
 
+        private const int s_bufferPeriodInDays = 2;
+
+        // Db connection handling should be refactored to an interface later, removing it from this refactor since SQL attributes module is gone.
         private readonly string _connectionString =
             System.Configuration.ConfigurationManager
                   .ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
@@ -319,8 +322,7 @@ namespace Property_and_Management.src.Service
             // (b) No overlap with other pending Requests
             bool requestConflict = _requestRepository
                 .GetRequestsByGame(gameId)
-                .Any(r => startDate < r.EndDate &&
-                          endDate > r.StartDate);
+                .Any(r => r.StartDate < endDate.AddDays(s_bufferPeriodInDays) && r.EndDate.AddDays(s_bufferPeriodInDays) > startDate);
 
             return !requestConflict;
         }

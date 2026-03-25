@@ -77,5 +77,15 @@ namespace Property_and_Management.src.Views
                 this.DataContext = ViewModel;
             }
         }
+
+        private void PrevButton_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel?.PrevPage();
+        }
+
+        private void NextButton_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel?.NextPage();
+        }
     }
 }
