@@ -21,7 +21,7 @@ namespace Property_and_Management.src.Viewmodels
 
         public int OwnerId { get; private set; } = (App.Current as App).CurrentUserID;
 
-        private const int s_pageSizeConst = 5;
+        private const int s_pageSizeConst = 3;
         public static int PageSize => s_pageSizeConst;
 
         private int _currentPage = 1;
@@ -75,18 +75,19 @@ namespace Property_and_Management.src.Viewmodels
 
         public string ShowingText => $"Showing {DisplayedCount} of {TotalCount} requests";
 
+        //[REQ-REQ-01] As an Owner, I must be able to see if one of my games is requested for a certain future time period by another user and to accept or decline that request. I should see the name of the user that requested it, the time period, the game requested, the game picture.
         public RequestsFromOthersViewModel(IRequestService requestService)
         {
             _requestService = requestService;
             LoadRequests(1, PageSize);
         }
 
-        // [UI-ORQ-01]
+        //[REQ-REQ-04] As an Owner, I should see the requests in descending order by the start date of the request.
         public void LoadRequests(int page, int pageSize)
         {
             OwnerId = (App.Current as App).CurrentUserID;
             var allRequests = _requestService.GetRequestsForOwner(OwnerId)
-                .OrderByDescending(r => r.StartDate)  // [UI-ORQ-03]
+                .OrderByDescending(r => r.StartDate)
                 .ToImmutableList();
 
             _allRequests = allRequests;
@@ -106,6 +107,7 @@ namespace Property_and_Management.src.Viewmodels
         public void NextPage() => CurrentPage = Math.Min(CurrentPage + 1, PageCount);
         public void PrevPage() => CurrentPage = Math.Max(CurrentPage - 1, 1);
 
+        //[REQ-REQ-02] As an Owner, once I accepted a request I shouldn’t have to manually decline the other requests for that game with overlapping time intervals with the accepted request, it should be handled by the system.
         public void ApproveRequest(int requestId)
         {
             var result = _requestService.ApproveRequest(requestId, OwnerId);
@@ -127,5 +129,6 @@ namespace Property_and_Management.src.Viewmodels
         public void OnCompleted() => LoadRequests(CurrentPage, PageSize);
         public void OnError(Exception error) => System.Diagnostics.Debug.WriteLine(error.Message);
         public void OnNext(RequestDTO value) => LoadRequests(CurrentPage, PageSize);
+
     }
 }

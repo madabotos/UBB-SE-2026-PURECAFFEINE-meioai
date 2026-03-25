@@ -5,10 +5,9 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Windows;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
-using ServerCommunication;
+using Property_and_Management.src.Service;
 
 namespace Property_and_Management.src.Viewmodels
 {
@@ -21,7 +20,7 @@ namespace Property_and_Management.src.Viewmodels
 
         public int RenterId { get; private set; } = (App.Current as App).CurrentUserID;
 
-        private const int s_pageSizeConst = 5;
+        private const int s_pageSizeConst = 3;
         public static int PageSize => s_pageSizeConst;
 
         private int _currentPage = 1;
@@ -41,7 +40,7 @@ namespace Property_and_Management.src.Viewmodels
 
         public int TotalCount => _allRequests?.Count ?? 0;
         public int PageCount => Math.Max(1, (int)Math.Ceiling((double)TotalCount / PageSize));
-        public int DisplayedCount => PagedRequests?.Count ?? 0;
+        public int DisplayedCount => _pagedRequests?.Count ?? 0;
 
         public ObservableCollection<RequestDTO> Requests
         {
@@ -75,21 +74,24 @@ namespace Property_and_Management.src.Viewmodels
 
         public string ShowingText => $"Showing {DisplayedCount} of {TotalCount} requests";
 
+        // [REQ-REQ-05] As a Renter, I must be able to see all the games I requested.
         public RequestsToOthersViewModel(IRequestService requestService)
         {
             _requestService = requestService;
             LoadRequests(1, PageSize);
         }
 
-        // [UI-MRQ-01]
+        // [REQ-REQ-07] As a Renter, I should see the requests in descending order by the start date.
         public void LoadRequests(int page, int pageSize)
         {
             RenterId = (App.Current as App).CurrentUserID;
-            _allRequests = _requestService.GetRequestsForRenter(RenterId)  // [UI-MRQ-01]
-                .OrderByDescending(r => r.StartDate)  // [UI-MRQ-03]
+            var allRequests = _requestService.GetRequestsForRenter(RenterId)
+                .OrderByDescending(r => r.StartDate)
                 .ToImmutableList();
 
-            Requests = new ObservableCollection<RequestDTO>(_allRequests);
+            _allRequests = allRequests;
+            Requests = new ObservableCollection<RequestDTO>(allRequests);
+
             CurrentPage = page;
             UpdatePaging();
         }
@@ -104,7 +106,7 @@ namespace Property_and_Management.src.Viewmodels
         public void NextPage() => CurrentPage = Math.Min(CurrentPage + 1, PageCount);
         public void PrevPage() => CurrentPage = Math.Max(CurrentPage - 1, 1);
 
-        //[UI-MRQ-04]
+        // [REQ-REQ-06] As a Renter, I must be able to cancel my own pending request at any time.
         public void CancelRequest(int requestId)
         {
             _requestService.CancelRequest(requestId);

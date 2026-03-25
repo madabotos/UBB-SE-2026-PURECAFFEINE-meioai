@@ -2,91 +2,93 @@
 <Page x:Class="Property_and_Management.src.Views.RequestsToOthersPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:local="using:Property_and_Management.src.Views"
-      xmlns:dto="using:Property_and_Management.src.DTO"
+      xmlns:local="using:Property_and_Management.src.DTO"
+      xmlns:converters="using:Property_and_Management.src.Utilities"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       mc:Ignorable="d">
 
-    <Grid Padding="12">
+    <Page.Resources>
+        <converters:ByteArrayToImageConverter x:Key="ImageConverter"/>
+        <BitmapImage x:Key="DefaultGameImage" UriSource="ms-appx:///Assets/default-game-placeholder.jpg"/>
+        <Style TargetType="ListViewItem">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <ContentPresenter/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,8">
-            <TextBlock Text="My Requests" FontSize="20" FontWeight="Bold"/>
-        </StackPanel>
+        <TextBlock Grid.Row="0" Text="My Requests" Style="{StaticResource SubtitleTextBlockStyle}" Margin="12"/>
 
-        <!-- Table header -->
-        <Grid Grid.Row="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
+        <!-- ListView for requests [REQ-REQ-05] -->
+        <ListView x:Name="ItemsListView" Grid.Row="1"
+                  ItemsSource="{Binding PagedRequests}"
+                  SelectionMode="None"
+                  IsItemClickEnabled="True"
+                  DoubleTapped="RequestItem_Tapped">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="local:RequestDTO">
+                    <Grid Tapped="RequestItem_Tapped" Background="#2D2D2D" Margin="0,0,0,10" Padding="15" CornerRadius="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-            <Grid ColumnDefinitions="80,*,180,150,80" Background="#F6F6F6" Padding="8" Grid.Row="0">
-                <TextBlock Grid.Column="0" Text="Game" FontWeight="Bold" HorizontalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="Seller" FontWeight="Bold"/>
-                <TextBlock Grid.Column="2" Text="Dates" FontWeight="Bold" HorizontalAlignment="Center"/>
-                <TextBlock Grid.Column="3" Text="Status" FontWeight="Bold" HorizontalAlignment="Center"/>
-                <TextBlock Grid.Column="4" Text="Action" FontWeight="Bold" HorizontalAlignment="Center"/>
-            </Grid>
+                        <!-- Game picture [REQ-REQ-05] -->
+                        <Image Grid.Column="0" Source="{Binding Game.Image, Converter={StaticResource ImageConverter}}"
+                               Width="72" Height="72" Stretch="UniformToFill"
+                               ImageFailed="Image_ImageFailed">
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Setter Property="Source" Value="{StaticResource DefaultGameImage}"/>
+                                </Style>
+                            </Image.Style>
+                        </Image>
 
-            <!-- Items -->
-            <ItemsControl x:Name="ItemsListView" Grid.Row="1" ItemsSource="{Binding PagedRequests}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="dto:RequestDTO">
-                        <Grid ColumnDefinitions="80,*,180,150,80" Padding="12" BorderBrush="#EEE" BorderThickness="0,0,0,1"
-                              Tapped="RequestItem_Tapped">
+                        <!-- Game name, owner name, dates [REQ-REQ-05] -->
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                            <TextBlock Text="{Binding Game.Name}" Style="{StaticResource BaseTextBlockStyle}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding Owner.DisplayName}" Style="{StaticResource BodyTextBlockStyle}" Opacity="0.8"/>
+                            <TextBlock Text="{Binding StartDateDisplayLong}" Style="{StaticResource CaptionTextBlockStyle}"/>
+                            <TextBlock Text="{Binding EndDateDisplayLong}" Style="{StaticResource CaptionTextBlockStyle}"/>
+                        </StackPanel>
 
-                            <!-- Game Picture - Placeholder (add byte[] converter later) -->
-                            <Image Grid.Column="0" Source="ms-appx:///Assets/placeholder_game.png"
-                                   Stretch="UniformToFill" VerticalAlignment="Center"/>
+                        <!-- Cancel button [REQ-REQ-06] -->
+                        <Button Grid.Column="2"
+                                Content="Cancel"
+                                Tag="{Binding Id}"
+                                Click="CancelButton_Click"
+                                Tapped="CancelButton_Tapped"
+                                Margin="8,0,0,0"
+                                Background="#C50F1F"
+                                Foreground="White"
+                                VerticalAlignment="Center"/>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
 
-                            <!-- Seller + Game Name -->
-                            <StackPanel Grid.Column="1" Margin="12,0">
-                                <TextBlock Text="{x:Bind Game.Owner.DisplayName}" FontSize="16" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="{x:Bind Game.Name}" FontSize="14" Foreground="Gray" TextTrimming="CharacterEllipsis"/>
-                            </StackPanel>
-
-                            <!-- Dates -->
-                            <StackPanel Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <TextBlock Text="{x:Bind StartDateDisplay}" FontWeight="SemiBold"/>
-                                <TextBlock Text="{x:Bind EndDateDisplay}"/>
-                            </StackPanel>
-
-                            <!-- Status -->
-                            <TextBlock Grid.Column="3" Text="Pending" Foreground="Orange" FontWeight="SemiBold"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-
-                            <!-- Cancel Button -->
-                            <Button Grid.Column="4" Click="CancelButton_Click" Background="LightCoral" Foreground="White"
-                                    FontWeight="Bold" Content="✕ Cancel" Padding="12,6"
-                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Grid>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Grid>
-
-        <!-- Pagination -->
-        <Grid Grid.Row="2" Margin="0,12,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="{Binding ShowingText}"/>
-
-            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-                <Button Content="Prev" Click="PrevButton_Click"/>
-                <TextBlock VerticalAlignment="Center" Text="{Binding CurrentPage}"/>
-                <TextBlock VerticalAlignment="Center" Text="/"/>
-                <TextBlock VerticalAlignment="Center" Text="{Binding PageCount}"/>
-                <Button Content="Next" Click="NextButton_Click"/>
+        <!-- Paging -->
+        <Grid Grid.Row="2" Margin="12">
+            <TextBlock Text="{Binding ShowingText}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Previous" Click="PrevButton_Click" Margin="4"/>
+                <TextBlock Text="{Binding CurrentPage}" VerticalAlignment="Center" Margin="12,0"/>
+                <TextBlock Text="/" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock Text="{Binding PageCount}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <Button Content="Next" Click="NextButton_Click" Margin="4"/>
             </StackPanel>
         </Grid>
     </Grid>
