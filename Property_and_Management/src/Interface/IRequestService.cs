@@ -1,100 +1,85 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using Property_and_Management.src.DTO;
-using Property_and_Management.src.Service;
 
 namespace Property_and_Management.src.Interface
 {
     public interface IRequestService
     {
         /// <summary>
-        /// Approves a pending request, creates a new rental, and declines overlapping requests.
+        /// Returns ImmutableList<RequestDTO> of all requests made by a specific renter.
         /// </summary>
-        /// <param name="requestId">The ID of the request to approve.</param>
-        /// <param name="ownerId">The ID of the owner approving the request.</param>
-        /// <returns>The ID of the new rental, or an error code from <see cref="ApproveRequestError"/>.</returns>
-        int ApproveRequest(int requestId, int ownerId);
-
-        /// <summary>
-        /// Cancels a pending request. Can be called by the renter without owner approval.
-        /// </summary>
-        /// <param name="requestId">The ID of the request to cancel.</param>
-        void Cancelrequest(int requestId);
-
-        /// <summary>
-        /// Checks if a game is available for rental within a specified date range.
-        /// </summary>
-        /// <param name="gameId">The ID of the game.</param>
-        /// <param name="startDate">The start date of the desired rental period.</param>
-        /// <param name="endDate">The end date of the desired rental period.</param>
-        /// <returns>True if the game is available; otherwise, false.</returns>
-        bool CheckAvailability(int gameId, DateTime startDate, DateTime endDate);
-
-        /// <summary>
-        /// Creates a new rental request for a game.
-        /// </summary>
-        /// <param name="gameId">The ID of the game.</param>
-        /// <param name="renterId">The ID of the renter making the request.</param>
-        /// <param name="ownerId">The ID of the game's owner.</param>
-        /// <param name="startDate">The start date of the requested rental.</param>
-        /// <param name="endDate">The end date of the requested rental.</param>
-        /// <returns>The ID of the created request, or an error code from <see cref="CreateRequestError"/>.</returns>
-        int CreateRequest(int gameId, int renterId, int ownerId, DateTime startDate, DateTime endDate);
-
-        /// <summary>
-        /// Denies a pending request.
-        /// </summary>
-        /// <param name="requestId">The ID of the request to deny.</param>
-        /// <param name="ownerId">The ID of the owner denying the request.</param>
-        /// <param name="reason">The reason for the denial.</param>
-        /// <returns>The ID of the denied request, or an error code from <see cref="DenyRequestError"/>.</returns>
-        int DenyRequest(int requestId, int ownerId, string reason);
-
-        /// <summary>
-        /// Gets a list of booked dates (including buffer periods) for a game in a specific month and year.
-        /// </summary>
-        /// <param name="gameId">The ID of the game.</param>
-        /// <param name="month">The month to filter by (default is current month).</param>
-        /// <param name="year">The year to filter by (default is current year).</param>
-        /// <returns>A list of booked date ranges sorted by start date.</returns>
-        ImmutableList<(DateTime, DateTime)> GetBookedDates(int gameId, int month = 0, int year = 0);
-
-        /// <summary>
-        /// Retrieves all pending requests for a specific owner.
-        /// </summary>
-        /// <param name="ownerId">The ID of the owner.</param>
-        /// <returns>A list of pending requests for the owner.</returns>
-        ImmutableList<RequestDTO> GetRequestsForOwner(int ownerId);
-
-        /// <summary>
-        /// Retrieves all pending requests for a specific renter.
-        /// </summary>
-        /// <param name="renterId">The ID of the renter.</param>
-        /// <returns>A list of pending requests made by the renter.</returns>
+        /// <param name="renterId"></param>
+        /// <returns></returns>
         ImmutableList<RequestDTO> GetRequestsForRenter(int renterId);
 
         /// <summary>
-        /// Declines all pending requests for a game when it is deactivated.
+        /// Returns owner's incoming rental requests as immutable list.
         /// </summary>
-        /// <param name="gameId">The ID of the deactivated game.</param>
+        /// <param name="ownerId"></param>
+        /// <returns></returns>
+        ImmutableList<RequestDTO> GetRequestsForOwner(int ownerId);
+
+        /// <summary>
+        /// Creates new request with game ID, renter/owner IDs, and date range; returns new request ID.
+        /// </summary>
+        /// <param name="gameId"></param>
+        /// <param name="renterId"></param>
+        /// <param name="ownerId"></param>
+        /// <param name="startDate"></param>
+        /// <param name="endDate"></param>
+        /// <returns></returns>
+        int CreateRequest(int gameId, int renterId, int ownerId, DateTime startDate, DateTime endDate);
+
+        /// <summary>
+        /// Owner approves specific request; returns status code.
+        /// </summary>
+        /// <param name="requestId"></param>
+        /// <param name="ownerId"></param>
+        /// <returns></returns>
+        int ApproveRequest(int requestId, int ownerId);
+
+        /// <summary>
+        /// Owner rejects with reason.
+        /// </summary>
+        /// <param name="requestId"></param>
+        /// <param name="ownerId"></param>
+        /// <param name="reason"></param>
+        /// <returns></returns>
+        int DenyRequest(int requestId, int ownerId, string reason);
+
+        /// <summary>
+        /// Any party cancels existing request (void).
+        /// </summary>
+        /// <param name="requestId"></param>
+        void CancelRequest(int requestId);
+
+        /// <summary>
+        /// Handles cleanup when game/property is deactivated (void).
+        /// </summary>
+        /// <param name="gameId"></param>
         void OnGameDeactivated(int gameId);
 
         /// <summary>
-        /// Sets the notification service dependency.
+        /// Returns bool if dates are free for game.
         /// </summary>
-        /// <param name="newNotificationService">The notification service instance.</param>
-        void SetNotificationService(INotificationService newNotificationService);
+        /// <param name="gameId"></param>
+        /// <param name="startDate"></param>
+        /// <param name="endDate"></param>
+        /// <returns></returns>
+        bool CheckAvailability(int gameId, DateTime startDate, DateTime endDate);
 
         /// <summary>
-        /// Sets the rental repository dependency.
+        /// Returns ImmutableList<(DateTime, DateTime)> of booked date ranges for calendar/month view.
         /// </summary>
-        /// <param name="newRentalRepository">The rental repository instance.</param>
-        void SetRentalRepository(IRentalRepository newRentalRepository);
-
-        /// <summary>
-        /// Sets the request repository dependency.
-        /// </summary>
-        /// <param name="newRequestRepository">The request repository instance.</param>
-        void SetRequestRepository(IRequestRepository newRequestRepository);
+        /// <param name="gameId"></param>
+        /// <param name="month"></param>
+        /// <param name="year"></param>
+        /// <returns></returns>
+        ImmutableList<(DateTime, DateTime)> GetBookedDates(int gameId, int month, int year);
     }
 }
