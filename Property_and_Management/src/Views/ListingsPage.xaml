@@ -7,6 +7,8 @@
 
     <Page.Resources>
         <converters:ByteArrayToImageConverter x:Key="ImageConverter" />
+
+        <BitmapImage x:Key="DefaultGameImage" UriSource="ms-appx:///Assets/default-game-placeholder.jpg"/>
     </Page.Resources>
 
     <Grid Padding="20">
@@ -17,7 +19,7 @@
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0" Margin="0,0,0,20">
-            <TextBlock Text="My Games" FontSize="28" Foreground="White" FontWeight="Bold" VerticalAlignment="Center"/>
+            <TextBlock Text="My Listings" FontSize="28" Foreground="white" FontWeight="Bold" VerticalAlignment="Center"/>
             <Button Content="+ Create Game" HorizontalAlignment="Right" Style="{StaticResource AccentButtonStyle}" Click="CreateGameButton_Click"/>
         </Grid>
 
@@ -32,16 +34,23 @@
                         </Grid.ColumnDefinitions>
 
                         <Image Grid.Column="0" Source="{Binding Image, Converter={StaticResource ImageConverter}}" 
-                               Width="80" Height="80" Stretch="UniformToFill" HorizontalAlignment="Left"/>
+           Width="80" Height="80" Stretch="UniformToFill" HorizontalAlignment="Left"
+           ImageFailed="Image_ImageFailed">
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Setter Property="Source" Value="{StaticResource DefaultGameImage}"/>
+                                </Style>
+                            </Image.Style>
+                        </Image>
 
                         <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding Name}" FontSize="20" FontWeight="SemiBold" Foreground="White"/>
-                            <TextBlock Text="{Binding Description}" Foreground="#CCCCCC" TextWrapping="WrapWholeWords" MaxHeight="40" Margin="0,5,0,0"/>
+                            <TextBlock Text="{Binding Name}" FontSize="20" FontWeight="SemiBold" Foreground="white"/>
+                            <TextBlock Text="{Binding Description}" Foreground="white" TextWrapping="WrapWholeWords" MaxHeight="40" Margin="0,5,0,0"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                             <Button Content="Edit" Margin="0,0,10,0" Click="EditGameButton_Click" Tag="{Binding}"/>
-                            <Button Content="Delete" Background="#C50F1F" Foreground="White" Click="DeleteGameButton_Click" Tag="{Binding}"/>
+                            <Button Content="Delete" Background="#C50F1F" Foreground="black" Click="DeleteGameButton_Click" Tag="{Binding}"/>
                         </StackPanel>
                     </Grid>
                 </DataTemplate>
@@ -49,12 +58,12 @@
         </ListView>
 
         <Grid Grid.Row="2" Margin="12,20,12,0">
-            <TextBlock Text="{Binding ShowingText}" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="#CCCCCC"/>
+            <TextBlock Text="{Binding ShowingText}" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="white"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="Prev" Click="PrevButton_Click" Margin="4"/>
-                <TextBlock Text="{Binding CurrentPage}" VerticalAlignment="Center" Margin="12,0" Foreground="White"/>
-                <TextBlock Text="/" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="White"/>
-                <TextBlock Text="{Binding PageCount}" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="White"/>
+                <Button Content="Previous" Click="PrevButton_Click" Margin="4"/>
+                <TextBlock Text="{Binding CurrentPage}" VerticalAlignment="Center" Margin="12,0" Foreground="white"/>
+                <TextBlock Text="/" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="white"/>
+                <TextBlock Text="{Binding PageCount}" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="white"/>
                 <Button Content="Next" Click="NextButton_Click" Margin="4"/>
             </StackPanel>
         </Grid>

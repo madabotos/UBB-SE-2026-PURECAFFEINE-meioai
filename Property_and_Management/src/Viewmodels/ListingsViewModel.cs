@@ -31,7 +31,7 @@ namespace Property_and_Management.src.Viewmodels
 
         public int PageCount => (int)Math.Ceiling((double)_allListings.Count / _pageSize) == 0 ? 1 : (int)Math.Ceiling((double)_allListings.Count / _pageSize);
 
-        public string ShowingText => $"Showing {PagedListings.Count} of {_allListings.Count}";
+        public string ShowingText => $"Showing {PagedListings.Count} of {_allListings.Count} games";
 
         public ListingsViewModel(IGameService gameService, int currentUserId)
         {
