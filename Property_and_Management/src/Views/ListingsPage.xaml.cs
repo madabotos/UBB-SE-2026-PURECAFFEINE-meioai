@@ -21,7 +21,7 @@ namespace Property_and_Management.src.Views
         // UI-LST-05: Redirect to Create Game page
         private void CreateGameButton_Click(object sender, RoutedEventArgs e)
         {
-            //this.Frame.Navigate(typeof(CreateGamePage));
+            this.Frame.Navigate(typeof(CreateGamePage));
         }
 
         // UI-LST-04: Redirect to Edit Game page
@@ -32,7 +32,7 @@ namespace Property_and_Management.src.Views
 
             if (gameToEdit != null)
             {
-                //this.Frame.Navigate(typeof(EditGamePage), gameToEdit);
+                this.Frame.Navigate(typeof(EditGamePage), gameToEdit);
             }
         }
 
