@@ -36,6 +36,7 @@ namespace Property_and_Management.src.Views
             if (e.Parameter is int incomingGameId)
             {
                 ViewModel.LoadGame(incomingGameId);
+                this.Bindings.Update();
             }
         }
 
