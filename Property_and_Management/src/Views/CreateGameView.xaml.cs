@@ -53,5 +53,48 @@ namespace Property_and_Management.src.Views
                 await dialog.ShowAsync();
             }
         }
+
+        private async void UploadImageButton_Click(object sender, RoutedEventArgs e)
+        {
+            // 1. Set up the Windows File Picker
+            var picker = new Windows.Storage.Pickers.FileOpenPicker();
+            picker.ViewMode = Windows.Storage.Pickers.PickerViewMode.Thumbnail;
+            picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.PicturesLibrary;
+            picker.FileTypeFilter.Add(".jpg");
+            picker.FileTypeFilter.Add(".jpeg");
+            picker.FileTypeFilter.Add(".png");
+
+            // WinUI 3 Quirk: We have to explicitly tell the picker which window it belongs to
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+            // 2. Open the picker and wait for the user to select a file
+            Windows.Storage.StorageFile file = await picker.PickSingleFileAsync();
+
+            if (file != null)
+            {
+                FileNameTextBlock.Text = file.Name;
+
+                // 3. Convert the image file into a byte array for the Database
+                using (var stream = await file.OpenStreamForReadAsync())
+                {
+                    using (var memoryStream = new System.IO.MemoryStream())
+                    {
+                        await stream.CopyToAsync(memoryStream);
+
+                        // Save the bytes to your ViewModel!
+                        ViewModel.Image = memoryStream.ToArray();
+                    }
+                }
+
+                // 4. Update the little UI preview box so the user sees what they picked
+                var bitmapImage = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage();
+                using (var irandomAccessStream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read))
+                {
+                    await bitmapImage.SetSourceAsync(irandomAccessStream);
+                }
+                ImagePreview.Source = bitmapImage;
+            }
+        }
     }
 }

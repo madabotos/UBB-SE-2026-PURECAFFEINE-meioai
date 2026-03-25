@@ -50,7 +50,10 @@ namespace Property_and_Management.src.Repository
                     command.Parameters.AddWithValue("@min_players", newEntity.MinimumPlayerNumber);
                     command.Parameters.AddWithValue("@max_players", newEntity.MaximumPlayerNumber);
                     command.Parameters.AddWithValue("@description", newEntity.Description ?? string.Empty);
-                    command.Parameters.AddWithValue("@image", (object)newEntity.Image ?? DBNull.Value);
+                    command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@image", System.Data.SqlDbType.VarBinary)
+                    {
+                        Value = (object)newEntity.Image ?? DBNull.Value
+                    });
                     command.Parameters.AddWithValue("@is_active", newEntity.IsActive);
 
                     command.ExecuteNonQuery();
@@ -98,7 +101,10 @@ namespace Property_and_Management.src.Repository
                     command.Parameters.AddWithValue("@min_players", newEntity.MinimumPlayerNumber);
                     command.Parameters.AddWithValue("@max_players", newEntity.MaximumPlayerNumber);
                     command.Parameters.AddWithValue("@description", newEntity.Description ?? string.Empty);
-                    command.Parameters.AddWithValue("@image", (object)newEntity.Image ?? DBNull.Value);
+                    command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@image", System.Data.SqlDbType.VarBinary)
+                    {
+                        Value = (object)newEntity.Image ?? DBNull.Value
+                    });
                     command.Parameters.AddWithValue("@is_active", newEntity.IsActive);
                     command.ExecuteNonQuery();
                 }
