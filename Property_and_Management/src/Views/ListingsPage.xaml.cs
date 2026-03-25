@@ -33,7 +33,7 @@ namespace Property_and_Management.src.Views
 
             if (gameToEdit != null)
             {
-                this.Frame.Navigate(typeof(EditGameView), gameToEdit);
+                this.Frame.Navigate(typeof(EditGameView), gameToEdit.Id);
             }
         }
 

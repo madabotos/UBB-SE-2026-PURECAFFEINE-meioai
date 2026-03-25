@@ -24,6 +24,12 @@
             <TextBox Header="Description (10-500 chars)*" Text="{x:Bind ViewModel.Description, Mode=TwoWay}" 
                      AcceptsReturn="True" Height="100" MaxLength="500" TextWrapping="Wrap"/>
 
+            <StackPanel Orientation="Horizontal" Spacing="15" Margin="0,10,0,10">
+                <Button Content="Upload Game Image (Optional)" Click="UploadImageButton_Click" VerticalAlignment="Center"/>
+                <Image x:Name="ImagePreview" Width="80" Height="80" Stretch="UniformToFill"/>
+                <TextBlock x:Name="FileNameTextBlock" VerticalAlignment="Center" Foreground="Gray" Text="No image selected."/>
+            </StackPanel>
+
             <ToggleSwitch Header="Listing is Active" IsOn="{x:Bind ViewModel.IsActive, Mode=TwoWay}"/>
 
             <Button Content="Save Listing" Click="SaveButton_Click" Background="DarkBlue" Foreground="White" 

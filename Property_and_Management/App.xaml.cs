@@ -38,7 +38,7 @@ namespace Property_and_Management
     public partial class App : Application
     {
         // Public application state
-        public Window MainWindow { get; set; }
+        public static Window MainWindow { get; set; }
         public Frame RootFrame { get; set; }
         public string AppUserModelId { get; }
         public int CurrentUserID { get; }
