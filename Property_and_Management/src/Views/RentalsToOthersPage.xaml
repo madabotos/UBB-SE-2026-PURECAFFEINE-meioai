@@ -10,6 +10,7 @@
 
     <Page.Resources>
         <converters:ByteArrayToImageConverter x:Key="ImageConverter"/>
+        <converters:BooleanToOpacityConverter x:Key="BooleanToOpacityConverter"/>
         <BitmapImage x:Key="DefaultGameImage" UriSource="ms-appx:///Assets/default-game-placeholder.jpg"/>
         <Style TargetType="ListViewItem">
             <Setter Property="Template">
@@ -38,7 +39,12 @@
                   DoubleTapped="RentalItem_Tapped">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:RentalDTO">
-                    <Grid Tapped="RentalItem_Tapped" Background="#2D2D2D" Margin="0,0,0,10" Padding="15" CornerRadius="8">
+                    <Grid Tapped="RentalItem_Tapped"
+                          Background="#2D2D2D"
+                          Margin="0,0,0,10"
+                          Padding="15"
+                          CornerRadius="8"
+                          Opacity="{Binding IsExpired, Converter={StaticResource BooleanToOpacityConverter}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="80"/>
                             <ColumnDefinition Width="*"/>
