@@ -29,11 +29,11 @@ namespace Property_and_Management.src.Service
     }
     public class RequestService : IRequestService
     {
-
         private IRequestRepository _requestRepository;
         private IRentalRepository _rentalRepository;
         private INotificationService _notificationService;
         private IGameRepository _gameRepository;
+        private const int s_bufferPeriodInDays = 2;
         // Db connection handling should be refactored to an interface later, removing it from this refactor since SQL attributes module is gone.
 
         public ImmutableList<RequestDTO> GetRequestsForRenter(int renterId)
@@ -201,7 +201,7 @@ namespace Property_and_Management.src.Service
                 .GetRequestsByGame(gameId)
                 .Where(r => r.StartDate.Month == month && r.StartDate.Year == year)
                 .OrderBy(r => r.StartDate)
-                .Select(r => (r.StartDate, r.EndDate.AddDays(2)))
+                .Select(r => (r.StartDate, r.EndDate))
                 .ToImmutableList();
         }
 
@@ -224,7 +224,7 @@ namespace Property_and_Management.src.Service
 
             bool inAvailableTimeInterval = !_requestRepository
                 .GetRequestsByGame(gameId)
-                .Any(r => r.StartDate <= endDate && r.EndDate >= startDate);
+                .Any(r => r.StartDate < endDate.AddDays(s_bufferPeriodInDays) && r.EndDate.AddDays(s_bufferPeriodInDays) > startDate);
 
             return isDateWithin1Month && isTheGameActive && inAvailableTimeInterval;
         }

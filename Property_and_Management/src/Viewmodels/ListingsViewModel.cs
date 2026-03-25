@@ -1,7 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq; // You need this for Skip() and Take()
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
@@ -20,7 +20,7 @@ namespace Property_and_Management.src.Viewmodels
         public ObservableCollection<GameDTO> PagedListings { get; set; } = new ObservableCollection<GameDTO>();
 
         // Pagination Properties
-        private int _pageSize = 5; // Change this to show more/less items per page
+        private int _pageSize = 3; // Change this to show more/less items per page
         private int _currentPage = 1;
 
         public int CurrentPage

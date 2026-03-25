@@ -1,5 +1,5 @@
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Navigation; // Need this for OnNavigatedTo
+using Microsoft.UI.Xaml.Navigation;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Viewmodels;
 
@@ -20,7 +20,6 @@ namespace Property_and_Management.src.Views
             ViewModel.RequestNavigation += OnViewModelRequestedNavigation;
         }
 
-        // Catch the service that App.xaml.cs threw at us
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
