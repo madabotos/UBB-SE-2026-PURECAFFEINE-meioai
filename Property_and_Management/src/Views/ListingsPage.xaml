@@ -19,7 +19,7 @@
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0" Margin="0,0,0,20">
-            <TextBlock Text="My Listings" FontSize="28" Foreground="black" FontWeight="Bold" VerticalAlignment="Center"/>
+            <TextBlock Text="My Listings" FontSize="28" Foreground="white" FontWeight="Bold" VerticalAlignment="Center"/>
             <Button Content="+ Create Game" HorizontalAlignment="Right" Style="{StaticResource AccentButtonStyle}" Click="CreateGameButton_Click"/>
         </Grid>
 
@@ -44,8 +44,8 @@
                         </Image>
 
                         <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding Name}" FontSize="20" FontWeight="SemiBold" Foreground="black"/>
-                            <TextBlock Text="{Binding Description}" Foreground="black" TextWrapping="WrapWholeWords" MaxHeight="40" Margin="0,5,0,0"/>
+                            <TextBlock Text="{Binding Name}" FontSize="20" FontWeight="SemiBold" Foreground="white"/>
+                            <TextBlock Text="{Binding Description}" Foreground="white" TextWrapping="WrapWholeWords" MaxHeight="40" Margin="0,5,0,0"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
@@ -58,7 +58,7 @@
         </ListView>
 
         <Grid Grid.Row="2" Margin="12,20,12,0">
-            <TextBlock Text="{Binding ShowingText}" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="Black"/>
+            <TextBlock Text="{Binding ShowingText}" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="white"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="Previous" Click="PrevButton_Click" Margin="4"/>
                 <TextBlock Text="{Binding CurrentPage}" VerticalAlignment="Center" Margin="12,0" Foreground="black"/>
