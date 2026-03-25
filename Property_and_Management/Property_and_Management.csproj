@@ -21,6 +21,7 @@
       <None Remove="Assets\default-game-placeholder.jpg" />
       <None Remove="Assets\tray_icon.ico" />
       <None Remove="src\Views\NotificationsPage.xaml" />
+      <None Remove="src\Views\RentalsFromOthersPage.xaml" />
       <None Remove="src\Views\RequestsFromOthersPage.xaml" />
       <None Remove="src\Views\RequestsToOthersPage.xaml" />
     </ItemGroup>
@@ -68,6 +69,11 @@
       <Content Update="Assets\tray_icon.ico">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
+    </ItemGroup>
+    <ItemGroup>
+      <Page Update="src\Views\RentalsFromOthersPage.xaml">
+        <Generator>MSBuild:Compile</Generator>
+      </Page>
     </ItemGroup>
     <ItemGroup>
       <Page Update="src\Views\RequestsFromOthersPage.xaml">

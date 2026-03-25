@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Immutable;
 using System.Linq;
+using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
 
 namespace Property_and_Management.src.Service
 {
-    public class RentalService
+    public class RentalService : IRentalService
     {
         private readonly IRentalRepository _rentalRepository;
         private readonly IGameRepository _gameRepository;
@@ -54,5 +55,21 @@ namespace Property_and_Management.src.Service
 
             _rentalRepository.Add(rental);
         }
+
+        public ImmutableList<RentalDTO> GetRentalsForRenter(int renterId)
+        =>
+            _rentalRepository
+         .GetRentalsByRenter(renterId)
+         .Select(r => new RentalDTO(r))
+         .ToImmutableList();
+        
+
+        public ImmutableList<RentalDTO> GetRentalsForOwner(int ownerId)
+        =>
+            _rentalRepository
+        .GetRentalsByOwner(ownerId)
+        .Select(r => new RentalDTO(r))
+        .ToImmutableList();
+        
     }
 }
