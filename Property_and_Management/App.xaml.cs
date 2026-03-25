@@ -109,12 +109,33 @@ namespace Property_and_Management
                         eventArguments.Arguments["navigate"] == nameof(NotificationsPage))
                     {
                         ActivateWindow();
-                        RootFrame.Navigate(typeof(NotificationsPage), NotificationsViewModel);
+                        NavigateToNotificationsWithinShell();
                     }
                 });
             };
 
             _notificationManager.Init();
+        }
+
+        private void NavigateToNotificationsWithinShell()
+        {
+            if (RootFrame?.Content is MenuBarView currentShell)
+            {
+                currentShell.NavigateToNotifications();
+                return;
+            }
+
+            void OnShellLoaded(object sender, NavigationEventArgs e)
+            {
+                if (e.Content is MenuBarView loadedShell)
+                {
+                    RootFrame.Navigated -= OnShellLoaded;
+                    loadedShell.NavigateToNotifications();
+                }
+            }
+
+            RootFrame.Navigated += OnShellLoaded;
+            RootFrame.Navigate(typeof(MenuBarView), _gameService);
         }
 
         private void EnsureSingleInstance(string appUserModelId)
@@ -167,6 +188,8 @@ namespace Property_and_Management
             RootFrame.Navigate(typeof(MenuBarView), _gameService);
 
             CreateTrayIcon();
+
+            // debug:
         }
 
         private void CreateAndShowMainWindow()

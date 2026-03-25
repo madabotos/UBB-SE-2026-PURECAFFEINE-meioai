@@ -27,7 +27,9 @@ namespace Property_and_Management.src.Repository
                     {
                         while (reader.Read())
                         {
-                            list.Add(new User((int)reader["id"]));
+                            var id = (int)reader["id"];
+                            var displayName = reader["display_name"] as string ?? string.Empty;
+                            list.Add(new User(id, displayName));
                         }
                     }
                 }
@@ -42,7 +44,8 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "INSERT INTO Users DEFAULT VALUES; SELECT SCOPE_IDENTITY();";
+                    command.CommandText = "INSERT INTO Users (display_name) VALUES (@display_name); SELECT SCOPE_IDENTITY();";
+                    command.Parameters.AddWithValue("@display_name", newEntity.DisplayName ?? (object)DBNull.Value);
                     var newId = Convert.ToInt32(command.ExecuteScalar());
                     newEntity.Id = newId;
                 }
@@ -67,10 +70,20 @@ namespace Property_and_Management.src.Repository
 
         public void Update(int updatedEntityId, User newEntity)
         {
-            // only Id column exists in Users table in DB script; nothing to update
-            // keep method for interface compatibility
             if (updatedEntityId != newEntity.Id)
                 throw new ArgumentException("Id mismatch");
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = "UPDATE Users SET display_name = @display_name WHERE id = @id";
+                    command.Parameters.AddWithValue("@display_name", newEntity.DisplayName ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@id", updatedEntityId);
+                    command.ExecuteNonQuery();
+                }
+            }
         }
 
         public User Get(int id)
@@ -86,7 +99,9 @@ namespace Property_and_Management.src.Repository
                     {
                         if (reader.Read())
                         {
-                            return new User((int)reader["id"]);
+                            var userId = (int)reader["id"];
+                            var displayName = reader["display_name"] as string ?? string.Empty;
+                            return new User(userId, displayName);
                         }
                     }
                 }

@@ -20,12 +20,13 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT * FROM Notifications";
+                    command.CommandText = "SELECT n.*, u.display_name AS user_display_name FROM Notifications n LEFT JOIN Users u ON u.id = n.user_id";
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            var user = new User((int)reader["user_id"]);
+                            var userDisplayName = reader["user_display_name"] as string ?? string.Empty;
+                            var user = new User((int)reader["user_id"], userDisplayName);
                             var note = new Notification((int)reader["notification_id"], user, (DateTime)reader["timestamp"], (string)reader["title"], (string)reader["body"]);
                             list.Add(note);
                         }
@@ -94,13 +95,14 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT * FROM Notifications WHERE notification_id = @id";
+                    command.CommandText = "SELECT n.*, u.display_name AS user_display_name FROM Notifications n LEFT JOIN Users u ON u.id = n.user_id WHERE n.notification_id = @id";
                     command.Parameters.AddWithValue("@id", id);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
                         {
-                            var user = new User((int)reader["user_id"]);
+                            var userDisplayName = reader["user_display_name"] as string ?? string.Empty;
+                            var user = new User((int)reader["user_id"], userDisplayName);
                             return new Notification((int)reader["notification_id"], user, (DateTime)reader["timestamp"], (string)reader["title"], (string)reader["body"]);
                         }
                     }
@@ -117,13 +119,14 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT * FROM Notifications WHERE user_id = @user_id";
+                    command.CommandText = "SELECT n.*, u.display_name AS user_display_name FROM Notifications n LEFT JOIN Users u ON u.id = n.user_id WHERE n.user_id = @user_id";
                     command.Parameters.AddWithValue("@user_id", userId);
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            var user = new User((int)reader["user_id"]);
+                            var userDisplayName = reader["user_display_name"] as string ?? string.Empty;
+                            var user = new User((int)reader["user_id"], userDisplayName);
                             var note = new Notification((int)reader["notification_id"], user, (DateTime)reader["timestamp"], (string)reader["title"], (string)reader["body"]);
                             list.Add(note);
                         }

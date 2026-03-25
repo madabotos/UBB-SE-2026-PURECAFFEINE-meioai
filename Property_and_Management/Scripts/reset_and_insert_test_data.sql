@@ -1,16 +1,24 @@
 USE BoardRent;
 GO
 
--- 1. Reset all data (delete in reverse dependency order)
-DELETE FROM Notifications;
-DELETE FROM Rentals;
-DELETE FROM Requests;
-DELETE FROM Games;
-DELETE FROM Users;
+-- Reset identity columns
+IF OBJECT_ID('dbo.Notifications', 'U') IS NOT NULL DBCC CHECKIDENT ('Notifications', RESEED, 0);
+IF OBJECT_ID('dbo.Rentals', 'U') IS NOT NULL DBCC CHECKIDENT ('Rentals', RESEED, 0);
+IF OBJECT_ID('dbo.Requests', 'U') IS NOT NULL DBCC CHECKIDENT ('Requests', RESEED, 0);
+IF OBJECT_ID('dbo.Games', 'U') IS NOT NULL DBCC CHECKIDENT ('Games', RESEED, 0);
+IF OBJECT_ID('dbo.Users', 'U') IS NOT NULL DBCC CHECKIDENT ('Users', RESEED, 0);
+GO
+
+-- 1.5 Add display_name column if it does not exist
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[Users]') AND name = 'display_name')
+BEGIN
+    ALTER TABLE Users ADD display_name NVARCHAR(50) NOT NULL DEFAULT 'Unknown User';
+END;
+GO
 
 -- 2. Insert Test Data for Users 1 and 2
 SET IDENTITY_INSERT Users ON;
-INSERT INTO Users (id) VALUES (1), (2);
+INSERT INTO Users (id, display_name) VALUES (1, 'Darius Turcu'), (2, 'Mihai Tira');
 SET IDENTITY_INSERT Users OFF;
 GO
 

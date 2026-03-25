@@ -9,7 +9,7 @@ namespace Property_and_Management.src.Viewmodels
     public class ListingsViewModel
     {
         private readonly GameService _gameService;
-        private readonly int _currentUserId;
+        private readonly int _currentUserId = (App.Current as App).CurrentUserID;
 
         // The UI binds to this collection
         public ObservableCollection<GameDTO> Listings { get; set; } = new ObservableCollection<GameDTO>();

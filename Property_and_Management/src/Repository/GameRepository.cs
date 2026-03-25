@@ -20,12 +20,13 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT * FROM Games";
+                    command.CommandText = "SELECT g.*, u.display_name AS owner_display_name FROM Games g LEFT JOIN Users u ON u.id = g.owner_id";
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            var owner = new User((int)reader["owner_id"]);
+                            var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
+                            var owner = new User((int)reader["owner_id"], ownerDisplayName);
                             var game = new Game((int)reader["game_id"], owner, (string)reader["name"], Convert.ToDouble(reader["price"]), (int)reader["minimum_player_number"], (int)reader["maximum_player_number"], (string)reader["description"], reader["image"] as byte[], Convert.ToBoolean(reader["is_active"]));
                             list.Add(game);
                         }
@@ -65,13 +66,14 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT * FROM Games WHERE owner_id = @owner_id";
+                    command.CommandText = "SELECT g.*, u.display_name AS owner_display_name FROM Games g LEFT JOIN Users u ON u.id = g.owner_id WHERE g.owner_id = @owner_id";
                     command.Parameters.AddWithValue("@owner_id", ownerId);
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            var owner = new User((int)reader["owner_id"]);
+                            var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
+                            var owner = new User((int)reader["owner_id"], ownerDisplayName);
                             var game = new Game((int)reader["game_id"], owner, (string)reader["name"], Convert.ToDouble(reader["price"]), (int)reader["minimum_player_number"], (int)reader["maximum_player_number"], (string)reader["description"], reader["image"] as byte[], Convert.ToBoolean(reader["is_active"]));
                             list.Add(game);
                         }
@@ -110,13 +112,14 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT * FROM Games WHERE game_id = @id";
+                    command.CommandText = "SELECT g.*, u.display_name AS owner_display_name FROM Games g LEFT JOIN Users u ON u.id = g.owner_id WHERE g.game_id = @id";
                     command.Parameters.AddWithValue("@id", id);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
                         {
-                            var owner = new User((int)reader["owner_id"]);
+                            var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
+                            var owner = new User((int)reader["owner_id"], ownerDisplayName);
                             return new Game((int)reader["game_id"], owner, (string)reader["name"], Convert.ToDouble(reader["price"]), (int)reader["minimum_player_number"], (int)reader["maximum_player_number"], (string)reader["description"], reader["image"] as byte[], Convert.ToBoolean(reader["is_active"]));
                         }
                     }
