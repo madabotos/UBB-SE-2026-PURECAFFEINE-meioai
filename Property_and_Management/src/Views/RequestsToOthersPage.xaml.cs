@@ -1,10 +1,14 @@
+using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Property_and_Management.src.DTO;
+using Property_and_Management.src.Repository;
+using Property_and_Management.src.Service;
 using Property_and_Management.src.Viewmodels;
 
 namespace Property_and_Management.src.Views
@@ -28,6 +32,22 @@ namespace Property_and_Management.src.Views
                 {
                     items.ItemsSource = vm.PagedRequests;
                 }
+
+                return;
+            }
+
+            if (DataContext is not RequestsToOthersViewModel)
+            {
+                var requestService = new RequestService();
+                requestService.SetRequestRepository(new RequestRepository());
+
+                var fallbackVm = new RequestsToOthersViewModel(requestService);
+                DataContext = fallbackVm;
+
+                if (this.FindName("ItemsListView") is ItemsControl items)
+                {
+                    items.ItemsSource = fallbackVm.PagedRequests;
+                }
             }
         }
 
@@ -39,7 +59,7 @@ namespace Property_and_Management.src.Views
                 var request = grid?.DataContext as RequestDTO;
                 if (request?.Id > 0)
                 {
-                    // Frame?.Navigate(typeof(ChatPage), request.Id);  // [UI-MRQ-05]
+                    Frame?.Navigate(typeof(ChatView), request.Id);  // [UI-MRQ-05]
                 }
             }
             catch (System.Exception ex)
@@ -48,7 +68,7 @@ namespace Property_and_Management.src.Views
             }
         }
 
-        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        private async void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -66,12 +86,13 @@ namespace Property_and_Management.src.Views
                     DefaultButton = ContentDialogButton.Primary
                 };
 
-                //if (dialog.ShowAsync() == ContentDialogResult.Primary)
-                //{
-                //    var root = this.Content as FrameworkElement;
-                //    var vm = root?.DataContext as RequestsToOthersViewModel;
-                //    vm?.CancelRequest(request.Id);
-                //}
+                var dialogResult = await dialog.ShowAsync();
+                if (dialogResult == ContentDialogResult.Primary)
+                {
+                    var root = this.Content as FrameworkElement;
+                    var vm = root?.DataContext as RequestsToOthersViewModel;
+                    vm?.CancelRequest(request.Id);
+                }
             }
             catch (System.Exception ex)
             {
