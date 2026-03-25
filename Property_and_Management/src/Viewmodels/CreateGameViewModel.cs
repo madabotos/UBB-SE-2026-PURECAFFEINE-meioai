@@ -63,6 +63,21 @@ namespace Property_and_Management.src.Viewmodels
         {
             if (!ValidateInputs()) return null;
 
+            if (Image == null || Image.Length == 0)
+            {
+                try
+                {
+                    // Reads the default image from your Assets folder and converts it to bytes
+                    string defaultImagePath = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "Assets", "default-game-placeholder.png");
+                    Image = System.IO.File.ReadAllBytes(defaultImagePath);
+                }
+                catch
+                {
+                    // If the default image is missing, just send an empty array so the app doesn't crash
+                    Image = new byte[0];
+                }
+            }
+
             var newGameDto = new GameDTO(
                 id: 0,
                 owner: new User(CurrentUserId),
