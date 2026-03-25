@@ -8,7 +8,7 @@ using Property_and_Management.src.DTO;
 
 namespace Property_and_Management.src.Interface
 {
-    internal interface IRentalService
+    public interface IRentalService
     {
         /// <summary>
         /// Returns ImmutableList<RentalDTO> of all rentals where the user is the renter.
