@@ -2,6 +2,7 @@ using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Service;
@@ -86,6 +87,28 @@ namespace Property_and_Management.src.Views
         private void NextButton_Click(object sender, RoutedEventArgs e)
         {
             ViewModel?.NextPage();
+        }
+
+        private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
+        {
+            if (sender is not Image img)
+            {
+                return;
+            }
+
+            if (Resources.TryGetValue("DefaultGameImage", out var localResource) && localResource is BitmapImage localImage)
+            {
+                img.Source = localImage;
+                return;
+            }
+
+            if (Application.Current.Resources.TryGetValue("DefaultGameImage", out var appResource) && appResource is BitmapImage appImage)
+            {
+                img.Source = appImage;
+                return;
+            }
+
+            img.Source = new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.png"));
         }
     }
 }
