@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Property_and_Management.src.Interface;
@@ -18,6 +21,8 @@ namespace Property_and_Management.src.Views
             ViewModel = new MenuBarViewModel();
             this.DataContext = ViewModel;
             ViewModel.RequestNavigation += OnViewModelRequestedNavigation;
+
+
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -35,6 +40,13 @@ namespace Property_and_Management.src.Views
         {
             // Pass the service right through the ContentFrame!
             ContentFrame.Navigate(pageType, _passedGameService);
+        }
+
+        public void NavigateToNotifications()
+        {
+            var app = Application.Current as Property_and_Management.App;
+            ContentFrame.Navigate(typeof(NotificationsPage), app?.NotificationsViewModel);
+            ViewModel.SelectedPageName = "Notifications";
         }
     }
 }

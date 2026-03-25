@@ -15,7 +15,7 @@
         <ListView Grid.Column="0" Background="#080808" Width="180" Padding="5" 
           SelectionMode="Single"
           RequestedTheme="Dark"
-          SelectedValuePath="Content"
+          ItemsSource="{Binding NavigationActions.Keys }"
           SelectedValue="{Binding SelectedPageName, Mode=TwoWay}">
 
             <ListView.ItemContainerStyle>
@@ -34,12 +34,6 @@
                 <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="#0078D7" />
             </ListView.Resources>
 
-            <ListViewItem Content="Listings" />
-            <ListViewItem Content="Others' Requests" />
-            <ListViewItem Content="Others' Rentals" />
-            <ListViewItem Content="My Requests" />
-            <ListViewItem Content="My Rentals" />
-            <ListViewItem Content="Notifications" />
         </ListView>
 
         <Frame x:Name="ContentFrame" Grid.Column="1" />

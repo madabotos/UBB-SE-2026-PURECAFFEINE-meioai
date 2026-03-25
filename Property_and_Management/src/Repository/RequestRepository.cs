@@ -20,14 +20,16 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT * FROM Requests";
+                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name FROM Requests r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id";
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
                             var game = new Game { Id = (int)reader["game_id"] };
-                            var renter = new User((int)reader["renter_id"]);
-                            var owner = new User((int)reader["owner_id"]);
+                            var renterDisplayName = reader["renter_display_name"] as string ?? string.Empty;
+                            var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
+                            var renter = new User((int)reader["renter_id"], renterDisplayName);
+                            var owner = new User((int)reader["owner_id"], ownerDisplayName);
                             var req = new Request((int)reader["request_id"], game, renter, owner, (DateTime)reader["start_date"], (DateTime)reader["end_date"]);
                             list.Add(req);
                         }
@@ -120,15 +122,17 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT * FROM Requests WHERE request_id = @id";
+                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name FROM Requests r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id WHERE r.request_id = @id";
                     command.Parameters.AddWithValue("@id", id);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
                         {
                             var game = new Game { Id = (int)reader["game_id"] };
-                            var renter = new User((int)reader["renter_id"]);
-                            var owner = new User((int)reader["owner_id"]);
+                            var renterDisplayName = reader["renter_display_name"] as string ?? string.Empty;
+                            var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
+                            var renter = new User((int)reader["renter_id"], renterDisplayName);
+                            var owner = new User((int)reader["owner_id"], ownerDisplayName);
                             return new Request((int)reader["request_id"], game, renter, owner, (DateTime)reader["start_date"], (DateTime)reader["end_date"]);
                         }
                     }
@@ -145,15 +149,17 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT * FROM Requests WHERE owner_id = @owner_id";
+                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name FROM Requests r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id WHERE r.owner_id = @owner_id";
                     command.Parameters.AddWithValue("@owner_id", ownerId);
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
                             var game = new Game { Id = (int)reader["game_id"] };
-                            var renter = new User((int)reader["renter_id"]);
-                            var owner = new User((int)reader["owner_id"]);
+                            var renterDisplayName = reader["renter_display_name"] as string ?? string.Empty;
+                            var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
+                            var renter = new User((int)reader["renter_id"], renterDisplayName);
+                            var owner = new User((int)reader["owner_id"], ownerDisplayName);
                             var req = new Request((int)reader["request_id"], game, renter, owner, (DateTime)reader["start_date"], (DateTime)reader["end_date"]);
                             list.Add(req);
                         }
@@ -171,15 +177,17 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT * FROM Requests WHERE renter_id = @renter_id";
+                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name FROM Requests r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id WHERE r.renter_id = @renter_id";
                     command.Parameters.AddWithValue("@renter_id", renterId);
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
                             var game = new Game { Id = (int)reader["game_id"] };
-                            var renter = new User((int)reader["renter_id"]);
-                            var owner = new User((int)reader["owner_id"]);
+                            var renterDisplayName = reader["renter_display_name"] as string ?? string.Empty;
+                            var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
+                            var renter = new User((int)reader["renter_id"], renterDisplayName);
+                            var owner = new User((int)reader["owner_id"], ownerDisplayName);
                             var req = new Request((int)reader["request_id"], game, renter, owner, (DateTime)reader["start_date"], (DateTime)reader["end_date"]);
                             list.Add(req);
                         }
@@ -197,15 +205,17 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT * FROM Requests WHERE game_id = @game_id";
+                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name FROM Requests r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id WHERE r.game_id = @game_id";
                     command.Parameters.AddWithValue("@game_id", gameId);
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
                             var game = new Game { Id = (int)reader["game_id"] };
-                            var renter = new User((int)reader["renter_id"]);
-                            var owner = new User((int)reader["owner_id"]);
+                            var renterDisplayName = reader["renter_display_name"] as string ?? string.Empty;
+                            var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
+                            var renter = new User((int)reader["renter_id"], renterDisplayName);
+                            var owner = new User((int)reader["owner_id"], ownerDisplayName);
                             var req = new Request((int)reader["request_id"], game, renter, owner, (DateTime)reader["start_date"], (DateTime)reader["end_date"]);
                             list.Add(req);
                         }
