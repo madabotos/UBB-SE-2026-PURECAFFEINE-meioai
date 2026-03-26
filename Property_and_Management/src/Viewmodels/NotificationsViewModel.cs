@@ -25,7 +25,7 @@ namespace Property_and_Management.src.Viewmodels
 
         public int CurrentUserId { get; private set; }
 
-        private const int s_pageSizeConst = 4;
+        private const int s_pageSizeConst = 3;
         public static int PageSize => s_pageSizeConst;
 
         private int _currentPage = 1;
@@ -95,7 +95,10 @@ namespace Property_and_Management.src.Viewmodels
         public void LoadNotificationsForUser(int userId)
         {
             CurrentUserId = userId;
-            _allNotifications = _notificationService.GetNotificationsForUser(userId);
+            _allNotifications = _notificationService
+                .GetNotificationsForUser(userId)
+                .OrderByDescending(notification => notification.Timestamp)
+                .ToImmutableList();
 
             Notifications = new ObservableCollection<NotificationDTO>(_allNotifications);
 
