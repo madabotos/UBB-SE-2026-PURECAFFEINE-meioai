@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -20,6 +21,7 @@ namespace Property_and_Management.src.Viewmodels
         private ObservableCollection<NotificationDTO> _notifications = new ObservableCollection<NotificationDTO>();
         private ObservableCollection<NotificationDTO> _pagedNotifications = new ObservableCollection<NotificationDTO>();
         private readonly NotificationService _notificationService;
+        private HashSet<int> _dismissedNotificationIds = new HashSet<int>();
 
         private ImmutableList<NotificationDTO> _allNotifications = ImmutableList<NotificationDTO>.Empty;
 
@@ -95,8 +97,11 @@ namespace Property_and_Management.src.Viewmodels
         public void LoadNotificationsForUser(int userId)
         {
             CurrentUserId = userId;
+            LoadDismissedIdsForCurrentUser();
+
             _allNotifications = _notificationService
                 .GetNotificationsForUser(userId)
+                .Where(notification => !_dismissedNotificationIds.Contains(notification.Id))
                 .OrderByDescending(notification => notification.Timestamp)
                 .ToImmutableList();
 
@@ -150,10 +155,14 @@ namespace Property_and_Management.src.Viewmodels
 
         public void DeleteNotificationById(int id)
         {
-            // call service to delete and then refresh list for current user
-            _notificationService.DeleteNotificationById(id);
-            // reload all notifications for user
-            _allNotifications = GetNotificationsForCurrentUser();
+            // REQ-NOT-02: dismiss locally from view and persist locally, keep DB history untouched
+            _dismissedNotificationIds.Add(id);
+            SaveDismissedIdsForCurrentUser();
+
+            _allNotifications = GetNotificationsForCurrentUser()
+                .Where(notification => !_dismissedNotificationIds.Contains(notification.Id))
+                .OrderByDescending(notification => notification.Timestamp)
+                .ToImmutableList();
             Notifications = new ObservableCollection<NotificationDTO>(_allNotifications);
 
             // ensure current page is valid
@@ -163,6 +172,43 @@ namespace Property_and_Management.src.Viewmodels
             OnProperyChanged(nameof(TotalCount));
             OnProperyChanged(nameof(PageCount));
             OnProperyChanged(nameof(ShowingText));
+        }
+
+        private string GetDismissedStoragePath()
+        {
+            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BoardRent");
+            Directory.CreateDirectory(folder);
+            return Path.Combine(folder, $"dismissed-notifications-user-{CurrentUserId}.txt");
+        }
+
+        private void LoadDismissedIdsForCurrentUser()
+        {
+            var path = GetDismissedStoragePath();
+            if (!File.Exists(path))
+            {
+                _dismissedNotificationIds = new HashSet<int>();
+                return;
+            }
+
+            var serialized = File.ReadAllText(path);
+
+            if (string.IsNullOrWhiteSpace(serialized))
+            {
+                _dismissedNotificationIds = new HashSet<int>();
+                return;
+            }
+
+            _dismissedNotificationIds = serialized
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(token => int.TryParse(token, out var id) ? id : -1)
+                .Where(id => id > 0)
+                .ToHashSet();
+        }
+
+        private void SaveDismissedIdsForCurrentUser()
+        {
+            var path = GetDismissedStoragePath();
+            File.WriteAllText(path, string.Join(",", _dismissedNotificationIds.OrderBy(id => id)));
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
