@@ -1,4 +1,5 @@
 using System;
+using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -18,7 +19,7 @@ namespace Property_and_Management.src.Views
         public MenuBarView()
         {
             this.InitializeComponent();
-            ViewModel = new MenuBarViewModel();
+            ViewModel = App.Services.GetRequiredService<MenuBarViewModel>();
             this.DataContext = ViewModel;
             ViewModel.RequestNavigation += OnViewModelRequestedNavigation;
 

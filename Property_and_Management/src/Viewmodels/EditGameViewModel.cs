@@ -6,8 +6,6 @@ using System.Threading.Tasks;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
-using Property_and_Management.src.Repository;
-using Property_and_Management.src.Service;
 
 namespace Property_and_Management.src.Viewmodels
 {
@@ -28,11 +26,9 @@ namespace Property_and_Management.src.Viewmodels
         public bool IsActive { get; set; } = true;
         public byte[] Image { get; set; } = null;
 
-        public EditGameViewModel()
+        public EditGameViewModel(IGameService gameService)
         {
-            // Instantiate the repository and inject it into the service
-            IGameRepository gameRepository = new GameRepository();
-            _gameService = new GameService(gameRepository);
+            _gameService = gameService;
         }
 
         // Call this method when the page loads to pre-populate the form
@@ -88,7 +84,7 @@ namespace Property_and_Management.src.Viewmodels
                 try
                 {
                     // Reads the default image from your Assets folder and converts it to bytes
-                    string defaultImagePath = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "Assets", "default-game-placeholder.png");
+                    string defaultImagePath = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "Assets", "default-game-placeholder.jpg");
                     Image = System.IO.File.ReadAllBytes(defaultImagePath);
                 }
                 catch

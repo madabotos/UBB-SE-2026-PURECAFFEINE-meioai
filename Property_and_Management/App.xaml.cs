@@ -21,6 +21,7 @@ using Microsoft.UI.Xaml.Shapes;
 using Microsoft.Windows.AppLifecycle;
 using Microsoft.Windows.AppNotifications;
 using Property_and_Management.src.Model;
+using Property_and_Management.src.Interface;
 using Property_and_Management.src.Repository;
 using Property_and_Management.src.Service;
 using Property_and_Management.src.Viewmodels;
@@ -37,6 +38,8 @@ namespace Property_and_Management
     /// </summary>
     public partial class App : Application
     {
+        public static IServiceProvider Services { get; private set; } = default!;
+
         // Public application state
         public static Window MainWindow { get; set; }
         public Frame RootFrame { get; set; }
@@ -73,9 +76,49 @@ namespace Property_and_Management
 
             EnsureSingleInstance(AppUserModelId);
 
+            ConfigureServices();
             InitializeServices(CurrentUserID);
 
             InitializeComponent();
+        }
+
+        private void ConfigureServices()
+        {
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddSingleton<IGameRepository, GameRepository>();
+            serviceCollection.AddSingleton<IRequestRepository, RequestRepository>();
+            serviceCollection.AddSingleton<IRentalRepository, RentalRepository>();
+            serviceCollection.AddSingleton<INotificationRepository, NotificationRepository>();
+            serviceCollection.AddSingleton<NotificationRepository>(sp => (NotificationRepository)sp.GetRequiredService<INotificationRepository>());
+
+            serviceCollection.AddSingleton<IGameService, GameService>();
+            serviceCollection.AddSingleton<IRentalService, RentalService>();
+            serviceCollection.AddSingleton<INotificationService, NotificationService>();
+            serviceCollection.AddSingleton<NotificationService>(sp => (NotificationService)sp.GetRequiredService<INotificationService>());
+
+            serviceCollection.AddSingleton<IRequestService>(sp =>
+            {
+                var requestService = new RequestService();
+                requestService.SetRequestRepository(sp.GetRequiredService<IRequestRepository>());
+                requestService.SetRentalRepository(sp.GetRequiredService<IRentalRepository>());
+                requestService.SetGameRepository(sp.GetRequiredService<IGameRepository>());
+                requestService.SetNotificationService(sp.GetRequiredService<INotificationService>());
+                return requestService;
+            });
+
+            serviceCollection.AddSingleton<NotificationsViewModel>();
+            serviceCollection.AddSingleton<MenuBarViewModel>();
+            serviceCollection.AddTransient(sp => new ListingsViewModel(sp.GetRequiredService<IGameService>(), CurrentUserID));
+            serviceCollection.AddTransient<CreateGameViewModel>();
+            serviceCollection.AddTransient<EditGameViewModel>();
+            serviceCollection.AddTransient<ChatViewModel>();
+            serviceCollection.AddTransient<RequestsFromOthersViewModel>();
+            serviceCollection.AddTransient<RequestsToOthersViewModel>();
+            serviceCollection.AddTransient<RentalsFromOthersViewModel>();
+            serviceCollection.AddTransient<RentalsToOthersViewModel>();
+
+            Services = serviceCollection.BuildServiceProvider();
         }
 
         private int GetUserIdFromArgs()
@@ -159,12 +202,12 @@ namespace Property_and_Management
             // Initialize navigation frame
             RootFrame = new Frame();
 
-            // Instantiate repository/service/viewmodel
-            _notificationRepository = new NotificationRepository();
-            _notification_service = new NotificationService(_notificationRepository);
-            _gameRepository = new GameRepository();
-            _gameService = new GameService(_gameRepository);
-            NotificationsViewModel = new NotificationsViewModel(_notification_service);
+            // Resolve repository/service/viewmodel from DI container
+            _notificationRepository = Services.GetRequiredService<NotificationRepository>();
+            _notification_service = Services.GetRequiredService<NotificationService>();
+            _gameRepository = (GameRepository)Services.GetRequiredService<IGameRepository>();
+            _gameService = (GameService)Services.GetRequiredService<IGameService>();
+            NotificationsViewModel = Services.GetRequiredService<NotificationsViewModel>();
 
             // Start listening and subscribe for the configured user
             _notification_service.StartListening();

@@ -6,8 +6,6 @@ using System.Threading.Tasks;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
-using Property_and_Management.src.Repository;
-using Property_and_Management.src.Service;
 
 namespace Property_and_Management.src.Viewmodels
 {
@@ -25,13 +23,11 @@ namespace Property_and_Management.src.Viewmodels
         public byte[] Image { get; set; } = null; // Optional picture upload
 
         // MOCK USER: Hardcoded to simulate being logged in as the owner 
-        public int CurrentUserId { get; set; } = 1;
+        public int CurrentUserId { get; set; } = (App.Current as App).CurrentUserID;
 
-        public CreateGameViewModel()
+        public CreateGameViewModel(IGameService gameService)
         {
-            // Instantiate the repository and inject it into the service
-            IGameRepository gameRepository = new GameRepository();
-            _gameService = new GameService(gameRepository);
+            _gameService = gameService;
         }
 
         // [UI-CRG-03] The system shall validate all form inputs against the constraints 
@@ -68,7 +64,7 @@ namespace Property_and_Management.src.Viewmodels
                 try
                 {
                     // Reads the default image from your Assets folder and converts it to bytes
-                    string defaultImagePath = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "Assets", "default-game-placeholder.png");
+                    string defaultImagePath = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "Assets", "default-game-placeholder.jpg");
                     Image = System.IO.File.ReadAllBytes(defaultImagePath);
                 }
                 catch

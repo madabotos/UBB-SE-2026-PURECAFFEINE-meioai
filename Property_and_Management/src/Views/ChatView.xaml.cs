@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -35,7 +36,7 @@ namespace Property_and_Management.src.Views
         public ChatView()
         {
             this.InitializeComponent();
-            ViewModel = new ChatViewModel();
+            ViewModel = App.Services.GetRequiredService<ChatViewModel>();
         }
 
         // This runs the moment the page is opened!

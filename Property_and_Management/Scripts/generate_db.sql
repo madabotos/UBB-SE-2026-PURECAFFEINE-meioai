@@ -23,7 +23,7 @@ IF OBJECT_ID(N'[dbo].[Users]', 'U') IS NULL
 BEGIN
     CREATE TABLE Users (
         id INT IDENTITY(1,1) NOT NULL,
-        display_name NVARCHAR(50) NOT NULL DEFAULT 'Unknown User',
+        display_name VARCHAR(50) NOT NULL DEFAULT 'Unknown User',
         CONSTRAINT PK_User PRIMARY KEY (id)
     );
 END;
@@ -34,11 +34,11 @@ BEGIN
     CREATE TABLE Games (
         game_id INT IDENTITY(1,1) NOT NULL,
         owner_id INT NOT NULL,
-        name NVARCHAR(30) NOT NULL,
+        name VARCHAR(30) NOT NULL,
         price FLOAT NOT NULL,
         minimum_player_number INT NOT NULL,
         maximum_player_number INT NOT NULL,
-        description NVARCHAR(500) NOT NULL,
+        description VARCHAR(500) NOT NULL,
         image VARBINARY(MAX),
         is_active INT NOT NULL DEFAULT 1,
         
@@ -97,8 +97,8 @@ BEGIN
         notification_id INT IDENTITY(1,1) NOT NULL,
         user_id INT NOT NULL,
         timestamp DATETIME NOT NULL,
-        title NVARCHAR(30) NOT NULL,
-        body NVARCHAR(500) NOT NULL,
+        title VARCHAR(30) NOT NULL,
+        body VARCHAR(500) NOT NULL,
         
         CONSTRAINT PK_Notifications PRIMARY KEY (notification_id),
         CONSTRAINT FK_Notifications_User FOREIGN KEY (user_id) REFERENCES [Users](id)

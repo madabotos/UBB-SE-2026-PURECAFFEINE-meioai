@@ -1,12 +1,11 @@
 using System;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Property_and_Management.src.DTO;
-using Property_and_Management.src.Repository;
-using Property_and_Management.src.Service;
 using Property_and_Management.src.Viewmodels;
 
 namespace Property_and_Management.src.Views
@@ -30,8 +29,7 @@ namespace Property_and_Management.src.Views
 
             if (DataContext is not RentalsToOthersViewModel)
             {
-                var rentalService = new RentalService(new RentalRepository(), new GameRepository());
-                DataContext = new RentalsToOthersViewModel(rentalService);
+                DataContext = App.Services.GetRequiredService<RentalsToOthersViewModel>();
             }
         }
 
@@ -52,6 +50,13 @@ namespace Property_and_Management.src.Views
             if (sender is not Image img)
                 return;
 
+            if (img.Source is BitmapImage current &&
+                current.UriSource != null &&
+                current.UriSource.AbsoluteUri.EndsWith("/Assets/default-game-placeholder.jpg", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
             if (Resources.TryGetValue("DefaultGameImage", out var localResource) && localResource is BitmapImage localImage)
             {
                 img.Source = localImage;
@@ -64,7 +69,7 @@ namespace Property_and_Management.src.Views
                 return;
             }
 
-            img.Source = new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.png"));
+            img.Source = new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.jpg"));
         }
 
         private void NextButton_Click(object sender, RoutedEventArgs e)
