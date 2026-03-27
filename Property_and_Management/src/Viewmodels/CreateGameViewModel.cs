@@ -20,9 +20,8 @@ namespace Property_and_Management.src.Viewmodels
         public int MaxPlayers { get; set; } = 4;
         public string Description { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
-        public byte[] Image { get; set; } = null; // Optional picture upload
+        public byte[] Image { get; set; } = null;
 
-        // MOCK USER: Hardcoded to simulate being logged in as the owner 
         public int CurrentUserId { get; set; } = (App.Current as App).CurrentUserID;
 
         public CreateGameViewModel(IGameService gameService)
@@ -30,31 +29,21 @@ namespace Property_and_Management.src.Viewmodels
             _gameService = gameService;
         }
 
-        // [UI-CRG-03] The system shall validate all form inputs against the constraints 
         public bool ValidateInputs()
         {
-            // Check Name constraints: 5-30 characters 
             if (string.IsNullOrWhiteSpace(Name) || Name.Length < 5 || Name.Length > 30)
                 return false;
-
-            // Check Price constraints: > 0 
             if (Price <= 0)
                 return false;
-
-            // Check Player constraints: >= 1 and Max >= Min 
             if (MinPlayers < 1)
                 return false;
             if (MaxPlayers < MinPlayers)
                 return false;
-
-            // Check Description constraints: 10-500 characters 
             if (string.IsNullOrWhiteSpace(Description) || Description.Length < 10 || Description.Length > 500)
                 return false;
-
             return true;
         }
 
-        // Creates the GameDTO, sends it to the Service, and returns it (as required by UML) 
         public GameDTO SaveGame()
         {
             if (!ValidateInputs()) return null;
@@ -63,28 +52,30 @@ namespace Property_and_Management.src.Viewmodels
             {
                 try
                 {
-                    // Reads the default image from your Assets folder and converts it to bytes
-                    string defaultImagePath = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "Assets", "default-game-placeholder.jpg");
+                    string defaultImagePath = System.IO.Path.Combine(
+                        System.AppDomain.CurrentDomain.BaseDirectory,
+                        "Assets",
+                        "default-game-placeholder.jpg");
                     Image = System.IO.File.ReadAllBytes(defaultImagePath);
                 }
                 catch
                 {
-                    // If the default image is missing, just send an empty array so the app doesn't crash
                     Image = new byte[0];
                 }
             }
 
-            var newGameDto = new GameDTO(
-                id: 0,
-                owner: new User(CurrentUserId),
-                name: Name,
-                price: Price,
-                minimumPlayerNumber: MinPlayers,
-                maximumPlayerNumaber: MaxPlayers,
-                description: Description,
-                image: Image,
-                isActive: IsActive
-            );
+            var newGameDto = new GameDTO
+            {
+                Id = 0,
+                Owner = new UserDTO { Id = CurrentUserId },
+                Name = Name,
+                Price = Price,
+                MinimumPlayerNumber = MinPlayers,
+                MaximumPlayerNumber = MaxPlayers,
+                Description = Description,
+                Image = Image,
+                IsActive = IsActive
+            };
 
             _gameService.AddGame(newGameDto);
             return newGameDto;

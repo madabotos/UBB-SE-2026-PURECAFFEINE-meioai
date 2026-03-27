@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Microsoft.UI.Composition;
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
 using Property_and_Management.src.DTO;
@@ -14,104 +12,82 @@ using Property_and_Management.src.Repository;
 using Property_and_Management.src.Service.Listeners;
 using Property_and_Management.src.Views;
 using ServerCommunication;
-using Windows.UI.Notifications;
 
 namespace Property_and_Management.src.Service
 {
     public class NotificationService : INotificationService, IObserver<MessageBase>, IObservable<NotificationDTO>
     {
         private readonly NotificationRepository _notificationRepository;
+        private readonly IMapper<Notification, NotificationDTO> _notificationMapper;
 
         private IServerClient _serverClient;
         private List<IObserver<NotificationDTO>> _subscribers = [];
 
-        public NotificationService(NotificationRepository notificationRepository)
+        public NotificationService(
+            NotificationRepository notificationRepository,
+            IMapper<Notification, NotificationDTO> notificationMapper)
         {
             _notificationRepository = notificationRepository;
+            _notificationMapper = notificationMapper;
             _serverClient = new NotificationClient();
-
             _serverClient.Subscribe(this);
         }
 
+        public NotificationDTO DeleteNotificationById(int id) =>
+            _notificationMapper.ToDTO(_notificationRepository.Delete(id));
 
-        public NotificationDTO DeleteNotificationById(int id)
-        {
-            return (NotificationDTO)NotificationDTO.FromModel(_notificationRepository.Delete(id));
-        }
+        public NotificationDTO GetNotificationById(int id) =>
+            _notificationMapper.ToDTO(_notificationRepository.Get(id));
 
-        public NotificationDTO GetNotificationById(int id)
-        {
-            return (NotificationDTO)NotificationDTO.FromModel(_notificationRepository.Get(id));
-        }
-
-        public ImmutableList<NotificationDTO> GetNotificationsForUser(int userId)
-        {
-            return _notificationRepository
+        public ImmutableList<NotificationDTO> GetNotificationsForUser(int userId) =>
+            _notificationRepository
                 .GetNotificationsByUser(userId)
-                .Select(entity => (NotificationDTO)NotificationDTO.FromModel(entity))
+                .Select(entity => _notificationMapper.ToDTO(entity))
                 .ToImmutableList();
-        }
 
-        // Keep the existing DTO-based overload but persist before sending
         public void SendNotificationToUser(int userId, NotificationDTO notification)
         {
             if (notification == null) throw new ArgumentNullException(nameof(notification));
 
-            // Ensure timestamp is set
             DateTime timestamp = notification.Timestamp == default ? DateTime.UtcNow : notification.Timestamp;
 
-            // Persist the notification into repository using the model type (qualify to avoid ambiguity)
-            var notificationModel = new Property_and_Management.src.Model.Notification(0, new User(userId), timestamp, notification.Title, notification.Body);
-            _notificationRepository.Add(notificationModel);
+            var notificationModel = new Notification
+            {
+                Id = 0,
+                User = new User { Id = userId },
+                Timestamp = timestamp,
+                Title = notification.Title,
+                Body = notification.Body
+            };
 
-            // Send via server client so remote subscriber (app instance) receives the message
+            _notificationRepository.Add(notificationModel);
             _serverClient.SendNotification(userId, notification.Title, notification.Body);
         }
 
         public void UpdateNotificationById(int id, NotificationDTO notification)
         {
-            _notificationRepository.Update(id, notification.ToModel());
+            _notificationRepository.Update(id, _notificationMapper.ToModel(notification));
         }
 
-        public void StartListening()
-        {
-            _serverClient.ListenAsync();
-        }
-
-        public void StopListening()
-        {
-            _serverClient.StopListening();
-        }
-
-        public void OnCompleted()
-        {
-            // throw new NotImplementedException();
-        }
-
-        public void OnError(Exception error)
-        {
-            // throw new NotImplementedException();
-        }
+        public void StartListening() => _serverClient.ListenAsync();
+        public void StopListening() => _serverClient.StopListening();
+        public void OnCompleted() { }
+        public void OnError(Exception error) { }
 
         public void OnNext(MessageBase value)
         {
-            // Notify all subscribers
-            // only SendNotificationMessage is supported
             if (value is SendNotificationMessage message)
             {
-                NotificationDTO notificationDTO = new NotificationDTO
+                var notificationDTO = new NotificationDTO
                 {
                     Timestamp = message.Timestamp,
                     Title = message.Title,
-                    Body = message.Body,
+                    Body = message.Body
                 };
 
                 foreach (var subscriber in _subscribers)
-                {
                     subscriber.OnNext(notificationDTO);
-                }
 
-                // Display a system notification
                 ShowWindowsNotification(message.Title, message.Body);
             }
         }
@@ -133,22 +109,16 @@ namespace Property_and_Management.src.Service
             AppNotificationManager.Default.Show(notification);
         }
 
-        public void SubscribeToServer(int userId)
-        {
-            _serverClient.SubscribeToServer(userId);
-        }
+        public void SubscribeToServer(int userId) => _serverClient.SubscribeToServer(userId);
 
-        // REQ-NOT-01: Schedule Upcoming Rental Reminder notifications 24 hours before rental start
         public void ScheduleUpcomingRentalReminder(Rental rental)
         {
             if (rental == null) throw new ArgumentNullException(nameof(rental));
 
             DateTime scheduledTime = rental.StartDate.AddDays(-1);
-
             string title = "Upcoming Rental Reminder";
             string body = ComposeUpcomingRentalBody(rental);
 
-            // Do NOT persist here. ScheduleOrSendUserNotification will call SendNotificationToUser which persists when sending.
             ScheduleOrSendUserNotification(rental.Renter?.Id ?? 0, title, body, scheduledTime);
             ScheduleOrSendUserNotification(rental.Owner?.Id ?? 0, title, body, scheduledTime);
         }
@@ -157,46 +127,40 @@ namespace Property_and_Management.src.Service
         {
             var gameName = rental.Game?.Name ?? "your game";
             var start = rental.StartDate.ToString("yyyy-MM-dd HH:mm");
-            var pickupInstructions = GetPickupInstructions(rental);
-
-            return $"{gameName} rental starts on {start}. Pickup/delivery instructions: {pickupInstructions}";
+            return $"{gameName} rental starts on {start}. Pickup/delivery instructions: {GetPickupInstructions(rental)}";
         }
 
-        private string GetPickupInstructions(Rental rental)
-        {
-            // Placeholder instructions — integration with a logistics/communication subsystem could replace this
-            return "Please coordinate pickup or delivery with the other party (check messages for contact details).";
-        }
+        private string GetPickupInstructions(Rental rental) =>
+            "Please coordinate pickup or delivery with the other party (check messages for contact details).";
 
         private void ScheduleOrSendUserNotification(int userId, string title, string body, DateTime scheduledTime)
         {
-            if (userId == 0) return; // invalid user
+            if (userId == 0) return;
 
-            DateTime utcNow = DateTime.UtcNow;
-            // Convert scheduledTime to UTC if it is local; assuming stored dates are UTC or unspecified, we compare as-is
-            TimeSpan delay = scheduledTime.ToUniversalTime() - utcNow;
+            TimeSpan delay = scheduledTime.ToUniversalTime() - DateTime.UtcNow;
+
+            var dto = new NotificationDTO
+            {
+                Timestamp = scheduledTime,
+                Title = title,
+                Body = body,
+                User = new UserDTO { Id = userId }
+            };
 
             if (delay <= TimeSpan.Zero)
             {
-                // send immediately and persist via SendNotificationToUser
-                var dto = new NotificationDTO { Timestamp = scheduledTime, Title = title, Body = body, User = new User(userId) };
                 SendNotificationToUser(userId, dto);
                 return;
             }
 
-            // Schedule in background
             _ = Task.Run(async () =>
             {
                 try
                 {
                     await Task.Delay(delay);
-                    var dto = new NotificationDTO { Timestamp = scheduledTime, Title = title, Body = body, User = new User(userId) };
                     SendNotificationToUser(userId, dto);
                 }
-                catch (Exception)
-                {
-                    // Swallow exceptions to avoid crashing background task. In production, consider logging and retrying.
-                }
+                catch { }
             });
         }
     }

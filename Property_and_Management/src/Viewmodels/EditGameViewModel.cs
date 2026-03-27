@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
 
 namespace Property_and_Management.src.Viewmodels
 {
@@ -31,18 +30,14 @@ namespace Property_and_Management.src.Viewmodels
             _gameService = gameService;
         }
 
-        // Call this method when the page loads to pre-populate the form
         public void LoadGame(int gameId)
         {
             var existingGame = _gameService.GetGameById(gameId);
-
             if (existingGame != null)
             {
-                // Store the read-only IDs
                 GameId = existingGame.Id;
-                OwnerId = OwnerId = existingGame.Owner?.Id ?? 0; ;
+                OwnerId = existingGame.Owner?.Id ?? 0;
 
-                // Pre-populate the form fields with current values 
                 Name = existingGame.Name;
                 Price = existingGame.Price;
                 MinPlayers = existingGame.MinimumPlayerNumber;
@@ -50,31 +45,24 @@ namespace Property_and_Management.src.Viewmodels
                 Description = existingGame.Description;
                 IsActive = existingGame.IsActive;
                 Image = existingGame.Image;
-
             }
         }
 
-        // [UI-EDG-04] The system shall validate all modified inputs against the same constraints 
         public bool ValidateInputs()
         {
             if (string.IsNullOrWhiteSpace(Name) || Name.Length < 5 || Name.Length > 30)
                 return false;
-
             if (Price <= 0)
                 return false;
-
             if (MinPlayers < 1)
                 return false;
             if (MaxPlayers < MinPlayers)
                 return false;
-
             if (string.IsNullOrWhiteSpace(Description) || Description.Length < 10 || Description.Length > 500)
                 return false;
-
             return true;
         }
 
-        // Updates the Game in the database and returns the DTO
         public GameDTO UpdateGame()
         {
             if (!ValidateInputs()) return null;
@@ -83,28 +71,31 @@ namespace Property_and_Management.src.Viewmodels
             {
                 try
                 {
-                    // Reads the default image from your Assets folder and converts it to bytes
-                    string defaultImagePath = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "Assets", "default-game-placeholder.jpg");
+                    string defaultImagePath = System.IO.Path.Combine(
+                        System.AppDomain.CurrentDomain.BaseDirectory,
+                        "Assets",
+                        "default-game-placeholder.jpg");
                     Image = System.IO.File.ReadAllBytes(defaultImagePath);
                 }
                 catch
                 {
-                    // If the default image is missing, just send an empty array so the app doesn't crash
                     Image = new byte[0];
                 }
             }
 
-            var updatedGameDto = new GameDTO(
-                id: GameId,
-                owner: new User(OwnerId),
-                name: Name,
-                price: Price,
-                minimumPlayerNumber: MinPlayers,
-                maximumPlayerNumaber: MaxPlayers,
-                description: Description,
-                image: Image,
-                isActive: IsActive
-            );
+            // ✅ Object initializer — no constructors, no entity references
+            var updatedGameDto = new GameDTO
+            {
+                Id = GameId,
+                Owner = new UserDTO { Id = OwnerId },
+                Name = Name,
+                Price = Price,
+                MinimumPlayerNumber = MinPlayers,
+                MaximumPlayerNumber = MaxPlayers,
+                Description = Description,
+                Image = Image,
+                IsActive = IsActive
+            };
 
             _gameService.UpdateGameById(GameId, updatedGameDto);
             return updatedGameDto;

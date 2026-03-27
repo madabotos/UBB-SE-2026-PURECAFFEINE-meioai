@@ -11,14 +11,18 @@ namespace Property_and_Management.src.Service
     {
         private readonly IRentalRepository _rentalRepository;
         private readonly IGameRepository _gameRepository;
+        private readonly IMapper<Rental, RentalDTO> _rentalMapper;
 
-        public RentalService(IRentalRepository rentalRepository, IGameRepository gameRepository)
+        public RentalService(
+            IRentalRepository rentalRepository,
+            IGameRepository gameRepository,
+            IMapper<Rental, RentalDTO> rentalMapper)
         {
             _rentalRepository = rentalRepository;
             _gameRepository = gameRepository;
+            _rentalMapper = rentalMapper;
         }
 
-        // [ENT-REN-03] Validation for the 48-hour buffer period
         public bool IsSlotAvailable(int gameId, DateTime newStart, DateTime newEnd)
         {
             var existingRentals = _rentalRepository.GetRentalsByGame(gameId);
@@ -26,50 +30,36 @@ namespace Property_and_Management.src.Service
 
             foreach (var rental in existingRentals)
             {
-                // start_date cannot be in the interval (existent_start - 48h, existent_end + 48h)
                 var bufferStart = rental.StartDate.AddHours(-bufferHours);
                 var bufferEnd = rental.EndDate.AddHours(bufferHours);
-
                 if (newStart < bufferEnd && newEnd > bufferStart)
-                {
-                    return false; // Overlap detected with buffer
-                }
+                    return false;
             }
             return true;
         }
 
         public void CreateConfirmedRental(Rental rental)
         {
-            // [ENT-REN-04] Validate that seller_id matches the game's owner
             var game = _gameRepository.Get(rental.Game.Id);
             if (game.Owner.Id != rental.Owner.Id)
-            {
                 throw new InvalidOperationException("Seller ID must match Game Owner ID [ENT-REN-04].");
-            }
 
-            // [ENT-REN-03] Re-verify availability before final commit
             if (!IsSlotAvailable(rental.Game.Id, rental.StartDate, rental.EndDate))
-            {
                 throw new Exception("Selected dates fall within the mandatory 48-hour buffer of another rental.");
-            }
 
             _rentalRepository.Add(rental);
         }
 
-        public ImmutableList<RentalDTO> GetRentalsForRenter(int renterId)
-        =>
+        public ImmutableList<RentalDTO> GetRentalsForRenter(int renterId) =>
             _rentalRepository
-         .GetRentalsByRenter(renterId)
-         .Select(r => new RentalDTO(r))
-         .ToImmutableList();
+                .GetRentalsByRenter(renterId)
+                .Select(r => _rentalMapper.ToDTO(r))
+                .ToImmutableList();
 
-
-        public ImmutableList<RentalDTO> GetRentalsForOwner(int ownerId)
-        =>
+        public ImmutableList<RentalDTO> GetRentalsForOwner(int ownerId) =>
             _rentalRepository
-        .GetRentalsByOwner(ownerId)
-        .Select(r => new RentalDTO(r))
-        .ToImmutableList();
-
+                .GetRentalsByOwner(ownerId)
+                .Select(r => _rentalMapper.ToDTO(r))
+                .ToImmutableList();
     }
 }
