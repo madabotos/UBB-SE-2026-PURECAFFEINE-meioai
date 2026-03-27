@@ -20,7 +20,9 @@ using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
 using Microsoft.Windows.AppLifecycle;
 using Microsoft.Windows.AppNotifications;
+using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
+using Property_and_Management.src.Mapper;
 using Property_and_Management.src.Model;
 using Property_and_Management.src.Repository;
 using Property_and_Management.src.Service;
@@ -86,6 +88,13 @@ namespace Property_and_Management
         {
             var serviceCollection = new ServiceCollection();
 
+            serviceCollection.AddSingleton<IMapper<User, UserDTO>, UserMapper>();
+            serviceCollection.AddSingleton<IMapper<Game, GameDTO>, GameMapper>();
+            serviceCollection.AddSingleton<IMapper<Notification, NotificationDTO>, NotificationMapper>();
+            serviceCollection.AddSingleton<IMapper<Rental, RentalDTO>, RentalMapper>();
+            serviceCollection.AddSingleton<IMapper<Request, RequestDTO>, RequestMapper>();
+
+
             serviceCollection.AddSingleton<IGameRepository, GameRepository>();
             serviceCollection.AddSingleton<IRequestRepository, RequestRepository>();
             serviceCollection.AddSingleton<IRentalRepository, RentalRepository>();
@@ -97,15 +106,7 @@ namespace Property_and_Management
             serviceCollection.AddSingleton<INotificationService, NotificationService>();
             serviceCollection.AddSingleton<NotificationService>(sp => (NotificationService)sp.GetRequiredService<INotificationService>());
 
-            serviceCollection.AddSingleton<IRequestService>(sp =>
-            {
-                var requestService = new RequestService();
-                requestService.SetRequestRepository(sp.GetRequiredService<IRequestRepository>());
-                requestService.SetRentalRepository(sp.GetRequiredService<IRentalRepository>());
-                requestService.SetGameRepository(sp.GetRequiredService<IGameRepository>());
-                requestService.SetNotificationService(sp.GetRequiredService<INotificationService>());
-                return requestService;
-            });
+            serviceCollection.AddSingleton<IRequestService, RequestService>();
 
             serviceCollection.AddSingleton<NotificationsViewModel>();
             serviceCollection.AddSingleton<MenuBarViewModel>();
