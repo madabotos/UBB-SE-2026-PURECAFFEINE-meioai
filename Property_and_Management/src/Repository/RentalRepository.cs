@@ -20,12 +20,17 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name FROM Rentals r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id";
+                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, g.name AS game_name, g.image AS game_image FROM Rentals r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id LEFT JOIN Games g ON g.game_id = r.game_id";
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            var game = new Game { Id = (int)reader["game_id"] };
+                            var game = new Game
+                            {
+                                Id = (int)reader["game_id"],
+                                Name = reader["game_name"] as string ?? string.Empty,
+                                Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
+                            };
                             var renterDisplayName = reader["renter_display_name"] as string ?? string.Empty;
                             var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
                             var renter = new User((int)reader["renter_id"], renterDisplayName);
@@ -66,13 +71,18 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name FROM Rentals r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id WHERE r.owner_id = @owner_id";
+                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, g.name AS game_name, g.image AS game_image FROM Rentals r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id LEFT JOIN Games g ON g.game_id = r.game_id WHERE r.owner_id = @owner_id";
                     command.Parameters.AddWithValue("@owner_id", ownerId);
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            var game = new Game { Id = (int)reader["game_id"] };
+                            var game = new Game
+                            {
+                                Id = (int)reader["game_id"],
+                                Name = reader["game_name"] as string ?? string.Empty,
+                                Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
+                            };
                             var renterDisplayName = reader["renter_display_name"] as string ?? string.Empty;
                             var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
                             var renter = new User((int)reader["renter_id"], renterDisplayName);
@@ -94,13 +104,18 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name FROM Rentals r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id WHERE r.renter_id = @renter_id";
+                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, g.name AS game_name, g.image AS game_image FROM Rentals r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id LEFT JOIN Games g ON g.game_id = r.game_id WHERE r.renter_id = @renter_id";
                     command.Parameters.AddWithValue("@renter_id", renterId);
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            var game = new Game { Id = (int)reader["game_id"] };
+                            var game = new Game
+                            {
+                                Id = (int)reader["game_id"],
+                                Name = reader["game_name"] as string ?? string.Empty,
+                                Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
+                            };
                             var renterDisplayName = reader["renter_display_name"] as string ?? string.Empty;
                             var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
                             var renter = new User((int)reader["renter_id"], renterDisplayName);
@@ -122,13 +137,18 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name FROM Rentals r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id WHERE r.game_id = @game_id";
+                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, g.name AS game_name, g.image AS game_image FROM Rentals r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id LEFT JOIN Games g ON g.game_id = r.game_id WHERE r.game_id = @game_id";
                     command.Parameters.AddWithValue("@game_id", gameId);
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            var game = new Game { Id = (int)reader["game_id"] };
+                            var game = new Game
+                            {
+                                Id = (int)reader["game_id"],
+                                Name = reader["game_name"] as string ?? string.Empty,
+                                Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
+                            };
                             var renterDisplayName = reader["renter_display_name"] as string ?? string.Empty;
                             var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
                             var renter = new User((int)reader["renter_id"], renterDisplayName);
@@ -184,13 +204,18 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name FROM Rentals r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id WHERE r.rental_id = @id";
+                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, g.name AS game_name, g.image AS game_image FROM Rentals r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id LEFT JOIN Games g ON g.game_id = r.game_id WHERE r.rental_id = @id";
                     command.Parameters.AddWithValue("@id", id);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
                         {
-                            var game = new Game { Id = (int)reader["game_id"] };
+                            var game = new Game
+                            {
+                                Id = (int)reader["game_id"],
+                                Name = reader["game_name"] as string ?? string.Empty,
+                                Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
+                            };
                             var renterDisplayName = reader["renter_display_name"] as string ?? string.Empty;
                             var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
                             var renter = new User((int)reader["renter_id"], renterDisplayName);

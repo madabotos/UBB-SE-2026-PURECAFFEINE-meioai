@@ -1,12 +1,11 @@
 using System;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Property_and_Management.src.DTO;
-using Property_and_Management.src.Repository;
-using Property_and_Management.src.Service;
 using Property_and_Management.src.Viewmodels;
 
 namespace Property_and_Management.src.Views
@@ -30,12 +29,7 @@ namespace Property_and_Management.src.Views
 
             if (DataContext is not RequestsToOthersViewModel)
             {
-                var requestService = new RequestService();
-                requestService.SetRequestRepository(new RequestRepository());
-                requestService.SetRentalRepository(new RentalRepository());
-                requestService.SetGameRepository(new GameRepository());
-                requestService.SetNotificationService(new NotificationService(new NotificationRepository()));
-                DataContext = new RequestsToOthersViewModel(requestService);
+                DataContext = App.Services.GetRequiredService<RequestsToOthersViewModel>();
             }
         }
 
@@ -84,6 +78,13 @@ namespace Property_and_Management.src.Views
         {
             if (sender is not Image img) return;
 
+            if (img.Source is BitmapImage current &&
+                current.UriSource != null &&
+                current.UriSource.AbsoluteUri.EndsWith("/Assets/default-game-placeholder.jpg", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
             if (Resources.TryGetValue("DefaultGameImage", out var localResource) && localResource is BitmapImage localImage)
             {
                 img.Source = localImage;
@@ -96,7 +97,7 @@ namespace Property_and_Management.src.Views
                 return;
             }
 
-            img.Source = new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.png"));
+            img.Source = new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.jpg"));
         }
 
         private void NextButton_Click(object sender, RoutedEventArgs e)

@@ -1,7 +1,5 @@
 using System;
 using Property_and_Management.src.Interface;
-using Property_and_Management.src.Repository;
-using Property_and_Management.src.Service;
 
 namespace Property_and_Management.src.Viewmodels
 {
@@ -15,11 +13,6 @@ namespace Property_and_Management.src.Viewmodels
         // MOCK USER: We hardcode a user ID for now to simulate being logged in.
         // Assuming user ID 1 is the owner of this game.
         public int CurrentUserId { get; set; } = (App.Current as App)?.CurrentUserID ?? 1;
-
-        public ChatViewModel()
-            : this(CreateRequestService())
-        {
-        }
 
         public ChatViewModel(IRequestService requestService)
         {
@@ -36,16 +29,6 @@ namespace Property_and_Management.src.Viewmodels
         public int Deny()
         {
             return _requestService.DenyRequest(RequestId, CurrentUserId, "Declined by owner via Chat UI.");
-        }
-
-        private static IRequestService CreateRequestService()
-        {
-            var requestService = new RequestService();
-            requestService.SetRequestRepository(new RequestRepository());
-            requestService.SetRentalRepository(new RentalRepository());
-            requestService.SetGameRepository(new GameRepository());
-            requestService.SetNotificationService(new NotificationService(new NotificationRepository()));
-            return requestService;
         }
     }
 }
