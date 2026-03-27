@@ -21,34 +21,6 @@ namespace Property_and_Management.src.DTO
         public byte[] Image { get; set; }
         public bool IsActive { get; set; }
 
-        public GameDTO(int id, UserDTO owner, string name,
-            double price, int minimumPlayerNumber, int maximumPlayerNumaber,
-            string description, byte[] image, bool isActive)
-        {
-            Id = id;
-            Owner = owner;
-            Name = name;
-            Price = price;
-            MinimumPlayerNumber = minimumPlayerNumber;
-            MaximumPlayerNumber = maximumPlayerNumaber;
-            Description = description;
-            Image = image;
-            IsActive = isActive;
-        }
-
-        public GameDTO(Game game)
-        {
-            if (game == null) throw new ArgumentNullException(nameof(game));
-
-            Id = game.Id;
-            Owner = UserMapper.ToDTO(game.Owner);
-            Name = game.Name;
-            Price = game.Price;
-            MinimumPlayerNumber = game.MinimumPlayerNumber;
-            MaximumPlayerNumber = game.MaximumPlayerNumber;
-            Description = game.Description;
-            Image = game.Image;
-            IsActive = game.IsActive;
-        }
+        public GameDTO() { }
     }
 }
