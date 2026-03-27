@@ -144,7 +144,7 @@ namespace Property_and_Management.src.Service
                 Timestamp = scheduledTime,
                 Title = title,
                 Body = body,
-                User = new UserDTO { Id = userId }   
+                User = new UserDTO { Id = userId }
             };
 
             if (delay <= TimeSpan.Zero)
