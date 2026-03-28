@@ -14,7 +14,7 @@ namespace Property_and_Management.src.DTO
         public int Id { get; set; }
         public UserDTO Owner { get; set; }
         public string Name { get; set; }
-        public double Price { get; set; }
+        public decimal Price { get; set; }
         public int MinimumPlayerNumber { get; set; }
         public int MaximumPlayerNumber { get; set; }
         public string Description { get; set; }

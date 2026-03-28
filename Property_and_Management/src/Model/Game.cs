@@ -8,7 +8,7 @@ namespace Property_and_Management.src.Model
         public int Id { get; set; }
         public User Owner { get; set; }
         public string Name { get; set; }
-        public double Price { get; set; }
+        public decimal Price { get; set; }
         public int MinimumPlayerNumber { get; set; }
         public int MaximumPlayerNumber { get; set; }
         public string Description { get; set; }
@@ -17,7 +17,7 @@ namespace Property_and_Management.src.Model
 
         public Game() { }
 
-        public Game(int id, User owner, string name, double price,
+        public Game(int id, User owner, string name, decimal price,
                     int minimumPlayerNumber, int maximumPlayerNumber,
                     string description, byte[] image, bool isActive)
         {
