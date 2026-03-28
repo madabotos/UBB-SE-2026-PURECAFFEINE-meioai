@@ -27,7 +27,7 @@ namespace Property_and_Management.src.Repository
                         {
                             var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
                             var owner = new User((int)reader["owner_id"], ownerDisplayName);
-                            var game = new Game((int)reader["game_id"], owner, (string)reader["name"], Convert.ToDouble(reader["price"]), (int)reader["minimum_player_number"], (int)reader["maximum_player_number"], (string)reader["description"], reader["image"] as byte[], Convert.ToBoolean(reader["is_active"]));
+                            var game = new Game((int)reader["game_id"], owner, (string)reader["name"], Convert.ToDecimal(reader["price"]), (int)reader["minimum_player_number"], (int)reader["maximum_player_number"], (string)reader["description"], reader["image"] as byte[], Convert.ToBoolean(reader["is_active"]));
                             list.Add(game);
                         }
                     }
@@ -77,7 +77,7 @@ namespace Property_and_Management.src.Repository
                         {
                             var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
                             var owner = new User((int)reader["owner_id"], ownerDisplayName);
-                            var game = new Game((int)reader["game_id"], owner, (string)reader["name"], Convert.ToDouble(reader["price"]), (int)reader["minimum_player_number"], (int)reader["maximum_player_number"], (string)reader["description"], reader["image"] as byte[], Convert.ToBoolean(reader["is_active"]));
+                            var game = new Game((int)reader["game_id"], owner, (string)reader["name"], Convert.ToDecimal(reader["price"]), (int)reader["minimum_player_number"], (int)reader["maximum_player_number"], (string)reader["description"], reader["image"] as byte[], Convert.ToBoolean(reader["is_active"]));
                             list.Add(game);
                         }
                     }
@@ -126,7 +126,7 @@ namespace Property_and_Management.src.Repository
                         {
                             var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
                             var owner = new User((int)reader["owner_id"], ownerDisplayName);
-                            return new Game((int)reader["game_id"], owner, (string)reader["name"], Convert.ToDouble(reader["price"]), (int)reader["minimum_player_number"], (int)reader["maximum_player_number"], (string)reader["description"], reader["image"] as byte[], Convert.ToBoolean(reader["is_active"]));
+                            return new Game((int)reader["game_id"], owner, (string)reader["name"], Convert.ToDecimal(reader["price"]), (int)reader["minimum_player_number"], (int)reader["maximum_player_number"], (string)reader["description"], reader["image"] as byte[], Convert.ToBoolean(reader["is_active"]));
                         }
                     }
                 }

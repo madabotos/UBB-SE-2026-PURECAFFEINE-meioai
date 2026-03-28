@@ -35,7 +35,7 @@ BEGIN
         game_id INT IDENTITY(1,1) NOT NULL,
         owner_id INT NOT NULL,
         name VARCHAR(30) NOT NULL,
-        price FLOAT NOT NULL,
+        price DECIMAL(5,2) NOT NULL,
         minimum_player_number INT NOT NULL,
         maximum_player_number INT NOT NULL,
         description VARCHAR(500) NOT NULL,

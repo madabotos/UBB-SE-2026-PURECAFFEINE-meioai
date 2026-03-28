@@ -18,7 +18,12 @@ namespace Property_and_Management.src.Viewmodels
 
         // UI Binding Properties
         public string Name { get; set; } = string.Empty;
-        public double Price { get; set; }
+        public decimal Price { get; set; }
+        public double PriceDouble
+        {
+            get => (double)Price;
+            set => Price = (decimal)value;
+        }
         public int MinPlayers { get; set; } = 1;
         public int MaxPlayers { get; set; } = 4;
         public string Description { get; set; } = string.Empty;
