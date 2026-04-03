@@ -9,7 +9,7 @@
 *.userosscache
 *.sln.docstates
 *.suo
-App.config
+.config
 # ==========================================
 # Demo builds
 # ==========================================
