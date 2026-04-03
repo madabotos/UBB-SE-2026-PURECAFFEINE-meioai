@@ -56,7 +56,8 @@ namespace Property_and_Management.src.Repository
                     });
                     command.Parameters.AddWithValue("@is_active", newEntity.IsActive);
 
-                    command.ExecuteNonQuery();
+                    var newId = Convert.ToInt32(command.ExecuteScalar());
+                    newEntity.Id = newId;
                 }
             }
         }

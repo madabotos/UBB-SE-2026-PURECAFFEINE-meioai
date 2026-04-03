@@ -122,31 +122,47 @@ namespace Property_and_Management.src.Service
             var bufferedStart = request.StartDate.AddHours(-48);
             var bufferedEnd = request.EndDate.AddHours(48);
 
+            // Read overlapping requests before the transaction (read-only query)
+            var overlappingRequests = _requestRepository
+                .GetRequestsByGame(request.Game?.Id ?? 0)
+                .Where(r => r.Id != requestId &&
+                            r.StartDate < bufferedEnd &&
+                            r.EndDate > bufferedStart)
+                .ToList();
+
+            var rental = new Rental(
+                id: 0,
+                game: request.Game,
+                renter: request.Renter,
+                owner: request.Owner,
+                startDate: request.StartDate,
+                endDate: request.EndDate);
+
             using var connection = new SqlConnection(_connectionString);
             connection.Open();
             using var transaction = connection.BeginTransaction();
             try
             {
-                var rental = new Rental(
-                    id: 0,
-                    game: request.Game,
-                    renter: request.Renter,
-                    owner: request.Owner,
-                    startDate: request.StartDate,
-                    endDate: request.EndDate);
-
-                _rentalRepository.Add(rental);
-
-                var overlappingRequests = _requestRepository
-                    .GetRequestsByGame(request.Game?.Id ?? 0)
-                    .Where(r => r.Id != requestId &&
-                                r.StartDate < bufferedEnd &&
-                                r.EndDate > bufferedStart)
-                    .ToList();
+                // All writes go through the same connection+transaction
+                _rentalRepository.Add(rental, connection, transaction);
 
                 foreach (var overlap in overlappingRequests)
+                    _requestRepository.Delete(overlap.Id, connection, transaction);
+
+                _requestRepository.Delete(requestId, connection, transaction);
+                transaction.Commit();
+            }
+            catch (Exception)
+            {
+                transaction.Rollback();
+                return (int)ApproveRequestError.TRANSACTION_FAILED_ERROR;
+            }
+
+            // Notifications sent AFTER successful commit -- failures must not affect the approval result
+            try
+            {
+                foreach (var overlap in overlappingRequests)
                 {
-                    _requestRepository.Delete(overlap.Id);
                     _notificationService.SendNotificationToUser(
                         overlap.Renter?.Id ?? 0,
                         new NotificationDTO
@@ -161,17 +177,14 @@ namespace Property_and_Management.src.Service
                         });
                 }
 
-                _requestRepository.Delete(requestId);
-                transaction.Commit();
-
                 _notificationService.ScheduleUpcomingRentalReminder(rental);
-                return rental.Id;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                transaction.Rollback();
-                return (int)ApproveRequestError.TRANSACTION_FAILED_ERROR;
+                System.Diagnostics.Debug.WriteLine($"Post-approve notification failed (non-fatal): {ex.Message}");
             }
+
+            return rental.Id;
         }
 
         // ----------------------------------------------------------------
@@ -189,18 +202,25 @@ namespace Property_and_Management.src.Service
 
             _requestRepository.Delete(requestId);
 
-            _notificationService.SendNotificationToUser(
-                request.Renter?.Id ?? 0,
-                new NotificationDTO
-                {
-                    Id = 0,
-                    User = new UserDTO { Id = request.Renter?.Id ?? 0 },
-                    Timestamp = DateTime.Now,
-                    Title = "Rental request declined",
-                    Body = $"Your request for game {request.Game?.Id} " +
-                           $"({request.StartDate:d}–{request.EndDate:d}) was declined. " +
-                           $"Reason: {reason}"
-                });
+            try
+            {
+                _notificationService.SendNotificationToUser(
+                    request.Renter?.Id ?? 0,
+                    new NotificationDTO
+                    {
+                        Id = 0,
+                        User = new UserDTO { Id = request.Renter?.Id ?? 0 },
+                        Timestamp = DateTime.Now,
+                        Title = "Rental request declined",
+                        Body = $"Your request for game {request.Game?.Id} " +
+                               $"({request.StartDate:d}–{request.EndDate:d}) was declined. " +
+                               $"Reason: {reason}"
+                    });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Post-deny notification failed (non-fatal): {ex.Message}");
+            }
 
             return requestId;
         }
@@ -222,18 +242,25 @@ namespace Property_and_Management.src.Service
             {
                 _requestRepository.Delete(request.Id);
 
-                _notificationService.SendNotificationToUser(
-                    request.Renter?.Id ?? 0,
-                    new NotificationDTO
-                    {
-                        Id = 0,
-                        User = new UserDTO { Id = request.Renter?.Id ?? 0 },
-                        Timestamp = DateTime.Now,
-                        Title = "Rental request cancelled",
-                        Body = $"Your request for game {gameId} " +
-                               $"({request.StartDate:d}–{request.EndDate:d}) has been cancelled " +
-                               $"because the game is no longer available."
-                    });
+                try
+                {
+                    _notificationService.SendNotificationToUser(
+                        request.Renter?.Id ?? 0,
+                        new NotificationDTO
+                        {
+                            Id = 0,
+                            User = new UserDTO { Id = request.Renter?.Id ?? 0 },
+                            Timestamp = DateTime.Now,
+                            Title = "Rental request cancelled",
+                            Body = $"Your request for game {gameId} " +
+                                   $"({request.StartDate:d}–{request.EndDate:d}) has been cancelled " +
+                                   $"because the game is no longer available."
+                        });
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Deactivation notification failed (non-fatal): {ex.Message}");
+                }
             }
         }
 

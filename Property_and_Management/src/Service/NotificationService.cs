@@ -21,6 +21,7 @@ namespace Property_and_Management.src.Service
         private readonly IMapper<Notification, NotificationDTO> _notificationMapper;
 
         private IServerClient _serverClient;
+        private readonly object _subscriberLock = new();
         private List<IObserver<NotificationDTO>> _subscribers = [];
 
         public NotificationService(
@@ -85,7 +86,9 @@ namespace Property_and_Management.src.Service
                     Body = message.Body
                 };
 
-                foreach (var subscriber in _subscribers)
+                IObserver<NotificationDTO>[] snapshot;
+                lock (_subscriberLock) { snapshot = _subscribers.ToArray(); }
+                foreach (var subscriber in snapshot)
                     subscriber.OnNext(notificationDTO);
 
                 ShowWindowsNotification(message.Title, message.Body);
@@ -94,8 +97,24 @@ namespace Property_and_Management.src.Service
 
         public IDisposable Subscribe(IObserver<NotificationDTO> observer)
         {
-            _subscribers.Add(observer);
-            return null;
+            lock (_subscriberLock) { _subscribers.Add(observer); }
+            return new Unsubscriber(_subscriberLock, _subscribers, observer);
+        }
+
+        private sealed class Unsubscriber : IDisposable
+        {
+            private readonly object _lock;
+            private readonly List<IObserver<NotificationDTO>> _observers;
+            private readonly IObserver<NotificationDTO> _observer;
+
+            public Unsubscriber(object @lock, List<IObserver<NotificationDTO>> observers, IObserver<NotificationDTO> observer)
+            {
+                _lock = @lock;
+                _observers = observers;
+                _observer = observer;
+            }
+
+            public void Dispose() { lock (_lock) { _observers.Remove(_observer); } }
         }
 
         private void ShowWindowsNotification(string title, string body)
@@ -160,7 +179,10 @@ namespace Property_and_Management.src.Service
                     await Task.Delay(delay);
                     SendNotificationToUser(userId, dto);
                 }
-                catch { }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Scheduled notification failed for user {userId}: {ex.Message}");
+                }
             });
         }
     }

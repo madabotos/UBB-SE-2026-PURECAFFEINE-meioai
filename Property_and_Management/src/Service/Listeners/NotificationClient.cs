@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -13,7 +14,7 @@ namespace Property_and_Management.src.Service.Listeners
 {
     public class NotificationClient : IServerClient
     {
-
+        private readonly object _subscriberLock = new();
         private readonly List<IObserver<MessageBase>> _subscribers = new();
         private readonly UdpClient _udpClient;
 
@@ -24,7 +25,7 @@ namespace Property_and_Management.src.Service.Listeners
 
         public NotificationClient()
         {
-            _udpClient = new UdpClient(0); // OS will autoasign
+            _udpClient = new UdpClient(0); // OS will auto-assign a port
         }
 
         private void HandleMessagePacket(MessageWrapper wrappedMessage)
@@ -37,28 +38,29 @@ namespace Property_and_Management.src.Service.Listeners
                         HandleSendNotificationMessage(wrappedMessage);
                         break;
                     default:
-                        Console.WriteLine($"Message type cannot be handled: {wrappedMessage.Type}");
+                        Debug.WriteLine($"Message type cannot be handled: {wrappedMessage.Type}");
                         break;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Exception when handling message packet: {ex.Message}");
+                Debug.WriteLine($"Exception when handling message packet: {ex.Message}");
             }
         }
 
         private void HandleSendNotificationMessage(MessageWrapper wrappedMessage)
         {
-            // Deserialize the message
             SendNotificationMessage? message = wrappedMessage.Deserialize<SendNotificationMessage>();
 
             if (message == null)
             {
-                throw new ArgumentNullException(nameof(message));
+                Debug.WriteLine("Failed to deserialize SendNotificationMessage");
+                return;
             }
 
-            // Send the message to the subscribers
-            foreach (var subscriber in _subscribers)
+            IObserver<MessageBase>[] snapshot;
+            lock (_subscriberLock) { snapshot = _subscribers.ToArray(); }
+            foreach (var subscriber in snapshot)
             {
                 subscriber.OnNext(message);
             }
@@ -72,60 +74,98 @@ namespace Property_and_Management.src.Service.Listeners
             {
                 while (!CancellationToken.IsCancellationRequested)
                 {
-                    var result = await _udpClient.ReceiveAsync(CancellationToken);
-                    MessageWrapper? wrappedMessage = CommunicationHelper.GetMessageWrapper(result.Buffer);
-
-                    if (wrappedMessage == null)
+                    try
                     {
-                        Console.WriteLine($"Recived bad json: {Encoding.UTF8.GetString(result.Buffer)}");
-                    }
+                        var result = await _udpClient.ReceiveAsync(CancellationToken);
+                        MessageWrapper? wrappedMessage = CommunicationHelper.GetMessageWrapper(result.Buffer);
 
-                    HandleMessagePacket(wrappedMessage);
+                        if (wrappedMessage == null)
+                        {
+                            Debug.WriteLine($"Received bad json: {Encoding.UTF8.GetString(result.Buffer)}");
+                            continue;
+                        }
+
+                        HandleMessagePacket(wrappedMessage);
+                    }
+                    catch (SocketException ex)
+                    {
+                        // Windows sends ICMP Port Unreachable when the server isn't listening,
+                        // which surfaces as SocketException on the next ReceiveAsync. Safe to retry.
+                        Debug.WriteLine($"UDP socket error (retrying): {ex.SocketErrorCode}");
+                        await Task.Delay(500, CancellationToken);
+                    }
                 }
             }
             catch (OperationCanceledException)
             {
-                Console.WriteLine("UDP client cancelled");
+                Debug.WriteLine("UDP client listening cancelled");
             }
             catch (ObjectDisposedException)
             {
-                Console.WriteLine("UDP client socket closed");
+                Debug.WriteLine("UDP client socket closed");
             }
-            finally
-            {
-                _udpClient?.Close();
-            }
+            // NOTE: Do NOT close _udpClient here -- it's still needed for SendNotification/SubscribeToServer
         }
 
         public IDisposable Subscribe(IObserver<MessageBase> observer)
         {
-            _subscribers.Add(observer);
-            return null;
+            lock (_subscriberLock) { _subscribers.Add(observer); }
+            return new Unsubscriber(_subscriberLock, _subscribers, observer);
+        }
+
+        private sealed class Unsubscriber : IDisposable
+        {
+            private readonly object _lock;
+            private readonly List<IObserver<MessageBase>> _observers;
+            private readonly IObserver<MessageBase> _observer;
+
+            public Unsubscriber(object @lock, List<IObserver<MessageBase>> observers, IObserver<MessageBase> observer)
+            {
+                _lock = @lock;
+                _observers = observers;
+                _observer = observer;
+            }
+
+            public void Dispose() { lock (_lock) { _observers.Remove(_observer); } }
         }
 
         public void SendNotification(int userId, string title, string body)
         {
-            var sendNotificationMessage = new SendNotificationMessage
+            try
             {
-                UserId = userId,
-                Timestamp = DateTime.UtcNow,
-                Title = title,
-                Body = body
-            };
+                var sendNotificationMessage = new SendNotificationMessage
+                {
+                    UserId = userId,
+                    Timestamp = DateTime.UtcNow,
+                    Title = title,
+                    Body = body
+                };
 
-            byte[] data = CommunicationHelper.SerializeMessage(sendNotificationMessage);
-            _udpClient.Send(data, data.Length, ServerEndpoint);
+                byte[] data = CommunicationHelper.SerializeMessage(sendNotificationMessage);
+                _udpClient.Send(data, data.Length, ServerEndpoint);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to send notification via UDP: {ex.Message}");
+            }
         }
 
         public void SubscribeToServer(int userId)
         {
-            var subscribeToServerMessage = new SubscribeToServerMessage
+            try
             {
-                UserId = userId,
-            };
+                var subscribeToServerMessage = new SubscribeToServerMessage
+                {
+                    UserId = userId,
+                };
 
-            byte[] data = CommunicationHelper.SerializeMessage(subscribeToServerMessage);
-            _udpClient.Send(data, data.Length, ServerEndpoint);
+                byte[] data = CommunicationHelper.SerializeMessage(subscribeToServerMessage);
+                _udpClient.Send(data, data.Length, ServerEndpoint);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to subscribe to server via UDP: {ex.Message}");
+            }
         }
     }
 }

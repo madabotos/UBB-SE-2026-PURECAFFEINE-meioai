@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -53,6 +54,8 @@ namespace Property_and_Management
         // Tray icon
         private TaskbarIcon _trayIcon;
 
+        // Notification server child process
+        private Process? _notificationServerProcess;
 
         // Private dependencies and state
         private Window? _mainWindow;
@@ -77,6 +80,9 @@ namespace Property_and_Management
             SetupNotificationManager();
 
             EnsureSingleInstance(AppUserModelId);
+
+            InitializeDatabase();
+            StartNotificationServer();
 
             ConfigureServices();
             InitializeServices(CurrentUserID);
@@ -134,12 +140,110 @@ namespace Property_and_Management
             return defaultUserId;
         }
 
+        private void InitializeDatabase()
+        {
+            string connectionString = ConfigurationManager.ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                Debug.WriteLine("WARNING: No 'BoardRent' connection string found in App.config.");
+                return;
+            }
+
+            try
+            {
+                DatabaseInitializer.EnsureDatabaseAndTables(connectionString);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Database initialization failed: {ex.Message}");
+            }
+        }
+
+        private void StartNotificationServer()
+        {
+            try
+            {
+                string? serverExe = FindNotificationServerExe();
+
+                if (serverExe == null)
+                {
+                    Debug.WriteLine("NotificationServer.exe not found -- notifications will not work. Build the NotificationServer project first.");
+                    return;
+                }
+
+                _notificationServerProcess = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = serverExe,
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                    }
+                };
+                _notificationServerProcess.Start();
+                Debug.WriteLine($"NotificationServer started (PID {_notificationServerProcess.Id})");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to start NotificationServer: {ex.Message}");
+            }
+        }
+
+        private static string? FindNotificationServerExe()
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+
+            // Check right next to the main app first
+            string candidate = System.IO.Path.Combine(baseDir, "NotificationServer.exe");
+            if (System.IO.File.Exists(candidate))
+                return candidate;
+
+            // Walk up from the output directory until we find the repo root
+            // (identified by the NotificationServer project folder being a sibling)
+            string? dir = baseDir;
+            while (dir != null)
+            {
+                dir = System.IO.Path.GetDirectoryName(dir);
+                if (dir == null) break;
+
+                string serverProjectDir = System.IO.Path.Combine(dir, "NotificationServer");
+                if (!System.IO.Directory.Exists(serverProjectDir))
+                    continue;
+
+                // Found the repo root -- check all common output paths
+                string[] candidates = new[]
+                {
+#if DEBUG
+                    System.IO.Path.Combine(serverProjectDir, "bin", "Debug", "net8.0", "NotificationServer.exe"),
+                    System.IO.Path.Combine(serverProjectDir, "bin", "x64", "Debug", "net8.0", "NotificationServer.exe"),
+                    System.IO.Path.Combine(serverProjectDir, "bin", "x86", "Debug", "net8.0", "NotificationServer.exe"),
+#else
+                    System.IO.Path.Combine(serverProjectDir, "bin", "Release", "net8.0", "NotificationServer.exe"),
+                    System.IO.Path.Combine(serverProjectDir, "bin", "x64", "Release", "net8.0", "NotificationServer.exe"),
+                    System.IO.Path.Combine(serverProjectDir, "bin", "x86", "Release", "net8.0", "NotificationServer.exe"),
+#endif
+                };
+
+                foreach (string path in candidates)
+                {
+                    if (System.IO.File.Exists(path))
+                        return path;
+                }
+
+                break; // Found the right directory level, but no exe -- stop searching
+            }
+
+            return null;
+        }
+
         private void SetupNotificationManager()
         {
-            // Ensure the manager is unregistered when the process exits
+            // Ensure cleanup when the process exits
             AppDomain.CurrentDomain.ProcessExit += (sender, eventArgs) =>
             {
                 _notificationManager.Unregister();
+                try { if (_notificationServerProcess is { HasExited: false }) _notificationServerProcess.Kill(); }
+                catch { /* best effort cleanup */ }
             };
 
             // When a notification is clicked, bring the window to foreground and optionally navigate
@@ -210,9 +314,15 @@ namespace Property_and_Management
             _gameService = (GameService)Services.GetRequiredService<IGameService>();
             NotificationsViewModel = Services.GetRequiredService<NotificationsViewModel>();
 
-            // Start listening and subscribe for the configured user
+            // Start listening for incoming notifications
             _notification_service.StartListening();
-            _notification_service.SubscribeToServer(userId);
+
+            // Subscribe after a short delay to give the NotificationServer time to start its socket
+            _ = System.Threading.Tasks.Task.Run(async () =>
+            {
+                await System.Threading.Tasks.Task.Delay(1000);
+                _notification_service.SubscribeToServer(userId);
+            });
         }
 
         /// <summary>
@@ -284,6 +394,8 @@ namespace Property_and_Management
             exitCommand.ExecuteRequested += (s, e) =>
             {
                 _trayIcon.Dispose();
+                try { if (_notificationServerProcess is { HasExited: false }) _notificationServerProcess.Kill(); }
+                catch { /* best effort cleanup */ }
                 Environment.Exit(0);
             };
 
