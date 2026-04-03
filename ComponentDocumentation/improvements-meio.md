@@ -14,6 +14,59 @@
 
 ## Critical Bugs (P0 — Must Fix)
 
+### 0. ChatView Approve/Deny Always Fails With "Not Authorized" When Navigating From Renter Page
+
+**Files:**
+
+- `Property_and_Management/src/Views/ChatView.xaml.cs:54-104`
+- `Property_and_Management/src/Viewmodels/ChatViewModel.cs:23-31`
+- `Property_and_Management/src/Views/RequestsToOthersPage.xaml.cs:42-45`
+
+**Symptom:** Clicking Approve or Deny on the ChatView shows: *"Operation failed: you are not authorized for this request."*
+
+**Root Cause:** `ChatView` is reachable from **two different pages** that have opposite user roles:
+
+| Source Page | Current User Role | Approve/Deny Result |
+|---|---|---|
+| `RequestsFromOthersPage` | **Owner** (correct) | Should work |
+| `RequestsToOthersPage` | **Renter** (wrong) | Always fails with UNAUTHORIZED |
+
+Both pages navigate to `ChatView` with only `request.Id` as the parameter. `ChatViewModel` then calls `ApproveRequest(RequestId, CurrentUserId)` — passing the current user's ID as the `ownerId`. When the current user is the **renter** (navigated from `RequestsToOthersPage`), the authorization check in `RequestService.ApproveRequest` (line 119) fails:
+
+```csharp
+if (request.Owner?.Id != ownerId)   // renter's ID != owner's ID → UNAUTHORIZED
+    return (int)ApproveRequestError.UNAUTHORIZED_ERROR;
+```
+
+**Fix (choose one):**
+
+**Option A — Hide buttons based on role (recommended):** Pass the user's role (owner/renter) as a navigation parameter alongside the request ID. In `ChatView`, hide the Approve/Deny buttons when the user is the renter. For example, navigate with a tuple or a small DTO:
+
+```csharp
+// In RequestsFromOthersPage (owner):
+Frame?.Navigate(typeof(ChatView), (request.Id, true));   // true = isOwner
+
+// In RequestsToOthersPage (renter):
+Frame?.Navigate(typeof(ChatView), (request.Id, false));   // false = isOwner
+```
+
+Then in `ChatView.OnNavigatedTo`:
+
+```csharp
+if (e.Parameter is (int requestId, bool isOwner))
+{
+    ViewModel.RequestId = requestId;
+    ApproveButton.Visibility = isOwner ? Visibility.Visible : Visibility.Collapsed;
+    DenyButton.Visibility = isOwner ? Visibility.Visible : Visibility.Collapsed;
+}
+```
+
+**Option B — Check ownership in ChatViewModel:** After setting `RequestId`, fetch the request and compare `request.Owner.Id` against `CurrentUserId`. Disable buttons if they don't match.
+
+**Option C — Remove ChatView navigation from `RequestsToOthersPage`:** If renters should not see the chat/approve UI at all, remove the `RequestItem_Tapped` handlers from `RequestsToOthersPage.xaml.cs` (lines 36-46).
+
+---
+
 ### 1. `NotificationsViewModel.OnProperyChanged` — Typo in Method Name
 
 **File:** `Property_and_Management/src/Viewmodels/NotificationsViewModel.cs:215`
@@ -316,11 +369,12 @@ Contains "F Microslop" comment.
 
 > Goal: Eliminate crashes and data corruption risks
 
-1. Fix `OnProperyChanged` typo (#1)
-2. Fix null-coalescing on `App.Current` in all ViewModels (#7)
-3. Fix `UdpNotificationServer` dictionary crash (#6)
-4. Standardize buffer period calculation (#4)
-5. Standardize `DateTime.UtcNow` usage (#8)
+1. Fix ChatView authorize error — hide Approve/Deny for renters (#0)
+2. Fix `OnProperyChanged` typo (#1)
+3. Fix null-coalescing on `App.Current` in all ViewModels (#7)
+4. Fix `UdpNotificationServer` dictionary crash (#6)
+5. Standardize buffer period calculation (#4)
+6. Standardize `DateTime.UtcNow` usage (#8)
 
 ### Phase 2 — Resource & Concurrency (Reliability)
 
