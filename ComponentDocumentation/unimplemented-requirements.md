@@ -98,3 +98,76 @@ The requirement states the body must include the **game name**. Additionally the
 - `Property_and_Management/src/Service/RequestService.cs` — method `DenyRequest()` (around line 207)  
   → Replace `request.Game?.Id` with `request.Game?.Name`.  
   → Fix the `Title` string from `"Rental request declined"` to `"Rental Request Declined"`.
+
+---
+
+## Complete Requirements Compliance Report
+
+### 2.1 Games
+
+| Requirement | Title | Status |
+|-------------|-------|--------|
+| REQ-GAM-01 | Owner sees all listed games | ✅ Implemented |
+| REQ-GAM-02 | Create a new board game listing | ✅ Implemented |
+| REQ-GAM-03 | Optional picture upload with default fallback | ✅ Implemented |
+| REQ-GAM-04 | Update game fields | ✅ Implemented |
+| REQ-GAM-05 | Toggle Active / Inactive | ✅ Implemented |
+| REQ-GAM-06 | Field-specific validation error messages | ❌ Partial — generic error message only |
+
+---
+
+### 2.2 Rentals
+
+| Requirement | Title | Status |
+|-------------|-------|--------|
+| REQ-REN-01 | Confirmed rental cannot be altered or deleted | ✅ Implemented |
+| REQ-REN-02 | Rentals shown in descending order by start date | ✅ Implemented |
+| REQ-REN-03 | All active rentals visible in the list | ✅ Implemented |
+| REQ-REN-04 | Past rentals visually greyed out | ✅ Implemented |
+| REQ-REN-05 | Mandatory 48-hour buffer period enforced | ✅ Implemented |
+
+---
+
+### 2.3 Requests
+
+| Requirement | Title | Status |
+|-------------|-------|--------|
+| REQ-REQ-01 | Owner sees and acts on requests with full details | ❌ Partial — ChatView is a mock placeholder |
+| REQ-REQ-02 | Overlapping requests auto-declined on approval | ✅ Implemented |
+| REQ-REQ-03 | Owner can decline requests | ❌ Partial — button mislabeled "Delete" |
+| REQ-REQ-04 | Owner sees requests in descending order by start date | ✅ Implemented |
+| REQ-REQ-05 | Renter sees their requests with game name, picture, owner, dates | ✅ Implemented |
+| REQ-REQ-06 | Renter can cancel pending request | ✅ Implemented |
+| REQ-REQ-07 | Renter sees requests in descending order by start date | ✅ Implemented |
+
+---
+
+### 2.4 Notifications
+
+| Requirement | Event | Status |
+|-------------|-------|--------|
+| REQ-NOT-01 | New chat message notification | ❌ Not implemented — no chat system exists |
+| REQ-NOT-01 | Overlapping request cancelled notification | ❌ Partial — uses game ID not name; no booking link in body |
+| REQ-NOT-01 | Request declined notification | ❌ Partial — uses game ID not name; title casing wrong |
+| REQ-NOT-01 | Upcoming rental reminder notification | ✅ Implemented |
+
+---
+
+### 3.1 Global Navigation
+
+| Requirement | Title | Status |
+|-------------|-------|--------|
+| UI-NAV-01 | Persistent menu bar on every page | ✅ Implemented |
+| UI-NAV-02 | Active menu item visually highlighted | ✅ Implemented |
+| UI-NAV-03 | Clicking menu item navigates to corresponding page | ✅ Implemented |
+
+---
+
+### 4. Cross-Team Capabilities (System Integrations)
+
+| Requirement | Title | Status |
+|-------------|-------|--------|
+| SYS-INT-01 | Availability Calendar with 48-hour buffer | ✅ Implemented |
+| SYS-INT-02 | Real-Time Booking Check | ✅ Implemented |
+| SYS-INT-03 | Creating a Request with owner/availability validation | ✅ Implemented |
+| SYS-INT-04 | Processing Approvals — atomic conversion + auto-cancel + notify | ✅ Implemented |
