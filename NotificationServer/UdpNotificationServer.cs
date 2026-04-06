@@ -58,7 +58,8 @@ namespace NotificationServer
                 throw new InvalidCastException("Expected message was not " + nameof(SendNotificationMessage));
             }
 
-            Console.WriteLine($"Sending notification to user: {unwrappedMessage.UserId}({_userIpMap[unwrappedMessage.UserId]}) [{unwrappedMessage.Title} - {unwrappedMessage.Body}]");
+            var endpoint = _userIpMap.TryGetValue(unwrappedMessage.UserId, out var ep) ? ep.ToString() : "not subscribed";
+            Console.WriteLine($"Sending notification to user: {unwrappedMessage.UserId}({endpoint}) [{unwrappedMessage.Title} - {unwrappedMessage.Body}]");
 
             // Resend the UDP packet to the user id
             await SendMessage(unwrappedMessage.UserId, unwrappedMessage);

@@ -15,8 +15,9 @@ using ServerCommunication;
 
 namespace Property_and_Management.src.Service
 {
-    public class NotificationService : INotificationService, IObserver<MessageBase>, IObservable<NotificationDTO>
+    public class NotificationService : INotificationService, IObserver<MessageBase>, IObservable<NotificationDTO>, IDisposable
     {
+        private bool _disposed;
         private readonly NotificationRepository _notificationRepository;
         private readonly IMapper<Notification, NotificationDTO> _notificationMapper;
 
@@ -110,6 +111,15 @@ namespace Property_and_Management.src.Service
         }
 
         public void SubscribeToServer(int userId) => _serverClient.SubscribeToServer(userId);
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+
+            StopListening();
+            (_serverClient as IDisposable)?.Dispose();
+        }
 
         public void ScheduleUpcomingRentalReminder(Rental rental)
         {

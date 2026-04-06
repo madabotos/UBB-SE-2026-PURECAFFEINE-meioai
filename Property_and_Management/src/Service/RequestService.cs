@@ -40,7 +40,7 @@ namespace Property_and_Management.src.Service
         private readonly IGameRepository _gameRepository;
         private readonly IMapper<Request, RequestDTO> _requestMapper;
 
-        private const int s_bufferPeriodInDays = 2;
+        private const int BufferHours = 48;
 
         private readonly string _connectionString =
             System.Configuration.ConfigurationManager
@@ -119,12 +119,12 @@ namespace Property_and_Management.src.Service
             if (request.Owner?.Id != ownerId)
                 return (int)ApproveRequestError.UNAUTHORIZED_ERROR;
 
-            var bufferedStart = request.StartDate.AddHours(-48);
-            var bufferedEnd = request.EndDate.AddHours(48);
+            var bufferedStart = request.StartDate.AddHours(-BufferHours);
+            var bufferedEnd = request.EndDate.AddHours(BufferHours);
 
             using var connection = new SqlConnection(_connectionString);
             connection.Open();
-            using var transaction = connection.BeginTransaction();
+            using var transaction = connection.BeginTransaction(System.Data.IsolationLevel.Serializable);
             try
             {
                 var rental = new Rental(
@@ -135,18 +135,15 @@ namespace Property_and_Management.src.Service
                     startDate: request.StartDate,
                     endDate: request.EndDate);
 
-                _rentalRepository.Add(rental);
+                _rentalRepository.Add(rental, connection, transaction);
 
-                var overlappingRequests = _requestRepository
-                    .GetRequestsByGame(request.Game?.Id ?? 0)
-                    .Where(r => r.Id != requestId &&
-                                r.StartDate < bufferedEnd &&
-                                r.EndDate > bufferedStart)
-                    .ToList();
+                var overlappingRequests = GetOverlappingRequests(
+                    request.Game?.Id ?? 0, requestId, bufferedStart, bufferedEnd,
+                    connection, transaction);
 
                 foreach (var overlap in overlappingRequests)
                 {
-                    _requestRepository.Delete(overlap.Id);
+                    _requestRepository.Delete(overlap.Id, connection, transaction);
                     _notificationService.SendNotificationToUser(
                         overlap.Renter?.Id ?? 0,
                         new NotificationDTO
@@ -161,7 +158,7 @@ namespace Property_and_Management.src.Service
                         });
                 }
 
-                _requestRepository.Delete(requestId);
+                _requestRepository.Delete(requestId, connection, transaction);
                 transaction.Commit();
 
                 _notificationService.ScheduleUpcomingRentalReminder(rental);
@@ -172,6 +169,45 @@ namespace Property_and_Management.src.Service
                 transaction.Rollback();
                 return (int)ApproveRequestError.TRANSACTION_FAILED_ERROR;
             }
+        }
+
+        private static List<Request> GetOverlappingRequests(
+            int gameId, int excludeRequestId,
+            DateTime bufferedStart, DateTime bufferedEnd,
+            SqlConnection connection, SqlTransaction transaction)
+        {
+            var list = new List<Request>();
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText =
+                "SELECT r.request_id, r.game_id, r.renter_id, r.owner_id, r.start_date, r.end_date, " +
+                "ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, " +
+                "g.name AS game_name, g.image AS game_image " +
+                "FROM Requests r " +
+                "LEFT JOIN Users ru ON ru.id = r.renter_id " +
+                "LEFT JOIN Users ou ON ou.id = r.owner_id " +
+                "LEFT JOIN Games g ON g.game_id = r.game_id " +
+                "WHERE r.game_id = @game_id AND r.request_id != @exclude_id " +
+                "AND r.start_date < @buffered_end AND r.end_date > @buffered_start";
+            command.Parameters.AddWithValue("@game_id", gameId);
+            command.Parameters.AddWithValue("@exclude_id", excludeRequestId);
+            command.Parameters.AddWithValue("@buffered_end", bufferedEnd);
+            command.Parameters.AddWithValue("@buffered_start", bufferedStart);
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var game = new Game
+                {
+                    Id = (int)reader["game_id"],
+                    Name = reader["game_name"] as string ?? string.Empty,
+                    Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
+                };
+                var renter = new User((int)reader["renter_id"], reader["renter_display_name"] as string ?? string.Empty);
+                var owner = new User((int)reader["owner_id"], reader["owner_display_name"] as string ?? string.Empty);
+                list.Add(new Request((int)reader["request_id"], game, renter, owner,
+                    (DateTime)reader["start_date"], (DateTime)reader["end_date"]));
+            }
+            return list;
         }
 
         // ----------------------------------------------------------------
@@ -251,7 +287,7 @@ namespace Property_and_Management.src.Service
                 .GetRequestsByGame(gameId)
                 .Where(r => r.StartDate.Month == month && r.StartDate.Year == year)
                 .OrderBy(r => r.StartDate)
-                .Select(r => (r.StartDate, r.EndDate.AddHours(48)))
+                .Select(r => (r.StartDate, r.EndDate.AddHours(BufferHours)))
                 .ToImmutableList();
         }
 
@@ -272,15 +308,15 @@ namespace Property_and_Management.src.Service
 
             bool rentalConflict = _rentalRepository
                 .GetRentalsByGame(gameId)
-                .Any(r => startDate < r.EndDate.AddHours(48) &&
+                .Any(r => startDate < r.EndDate.AddHours(BufferHours) &&
                           endDate > r.StartDate);
 
             if (rentalConflict) return false;
 
             bool requestConflict = _requestRepository
                 .GetRequestsByGame(gameId)
-                .Any(r => r.StartDate < endDate.AddDays(s_bufferPeriodInDays) &&
-                          r.EndDate.AddDays(s_bufferPeriodInDays) > startDate);
+                .Any(r => r.StartDate < endDate.AddHours(BufferHours) &&
+                          r.EndDate.AddHours(BufferHours) > startDate);
 
             return !requestConflict;
         }

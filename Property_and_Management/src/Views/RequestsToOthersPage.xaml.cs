@@ -36,13 +36,13 @@ namespace Property_and_Management.src.Views
         private void RequestItem_Tapped(object sender, DoubleTappedRoutedEventArgs e)
         {
             if (sender is FrameworkElement element && element.DataContext is RequestDTO request && request.Id > 0)
-                Frame?.Navigate(typeof(ChatView), request.Id);
+                Frame?.Navigate(typeof(ChatView), (request.Id, false));
         }
 
         private void RequestItem_Tapped(object sender, TappedRoutedEventArgs e)
         {
             if (sender is FrameworkElement element && element.DataContext is RequestDTO request && request.Id > 0)
-                Frame?.Navigate(typeof(ChatView), request.Id);
+                Frame?.Navigate(typeof(ChatView), (request.Id, false));
         }
 
         private void CancelButton_Tapped(object sender, TappedRoutedEventArgs e)

@@ -1,10 +1,15 @@
 using System.Collections.Immutable;
+using Microsoft.Data.SqlClient;
 using Property_and_Management.src.Model;
 
 namespace Property_and_Management.src.Interface
 {
     public interface IRentalRepository : IRepository<Rental>
     {
+        /// <summary>
+        /// Inserts the rental using an existing connection and transaction.
+        /// </summary>
+        void Add(Rental entity, SqlConnection connection, SqlTransaction transaction);
         /// <summary>
         /// Gets rentals for which the specified user is the owner.
         /// </summary>

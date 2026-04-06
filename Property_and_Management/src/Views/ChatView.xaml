@@ -17,9 +17,9 @@
                            TextWrapping="Wrap" MaxWidth="400" FontSize="16"/>
             </Border>
 
-            <TextBlock Text="Choose an action for this request:" HorizontalAlignment="Center" FontSize="16"/>
+            <TextBlock x:Name="ActionPromptText" Text="Choose an action for this request:" HorizontalAlignment="Center" FontSize="16"/>
 
-            <StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center">
+            <StackPanel x:Name="ActionButtonsPanel" Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center">
                 <Button Content="Approve" 
                         Click="ApproveButton_Click" 
                         Background="DarkGreen" 

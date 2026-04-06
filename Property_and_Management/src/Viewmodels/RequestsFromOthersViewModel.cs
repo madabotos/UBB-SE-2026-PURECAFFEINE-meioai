@@ -19,7 +19,7 @@ namespace Property_and_Management.src.Viewmodels
         private ObservableCollection<RequestDTO> _pagedRequests = new();
         private ImmutableList<RequestDTO> _allRequests = ImmutableList<RequestDTO>.Empty;
 
-        public int OwnerId { get; private set; } = (App.Current as App).CurrentUserID;
+        public int OwnerId { get; private set; } = (App.Current as App)?.CurrentUserID ?? 1;
 
         private const int s_pageSizeConst = 3;
         public static int PageSize => s_pageSizeConst;
@@ -85,7 +85,7 @@ namespace Property_and_Management.src.Viewmodels
         //[REQ-REQ-04] As an Owner, I should see the requests in descending order by the start date of the request.
         public void LoadRequests(int page, int pageSize)
         {
-            OwnerId = (App.Current as App).CurrentUserID;
+            OwnerId = (App.Current as App)?.CurrentUserID ?? 1;
             var allRequests = _requestService.GetRequestsForOwner(OwnerId)
                 .OrderByDescending(r => r.StartDate)
                 .ToImmutableList();

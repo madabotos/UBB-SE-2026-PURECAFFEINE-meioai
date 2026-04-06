@@ -27,7 +27,7 @@ namespace Property_and_Management.src.Viewmodels
         public bool IsActive { get; set; } = true;
         public byte[] Image { get; set; } = null;
 
-        public int CurrentUserId { get; set; } = (App.Current as App).CurrentUserID;
+        public int CurrentUserId { get; set; } = (App.Current as App)?.CurrentUserID ?? 1;
 
         public CreateGameViewModel(IGameService gameService)
         {

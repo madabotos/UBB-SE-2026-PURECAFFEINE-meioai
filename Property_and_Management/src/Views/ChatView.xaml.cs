@@ -44,8 +44,13 @@ namespace Property_and_Management.src.Views
         {
             base.OnNavigatedTo(e);
 
-            // Catch the RequestId that was passed from the previous page
-            if (e.Parameter is int incomingRequestId)
+            if (e.Parameter is (int requestId, bool isOwner))
+            {
+                ViewModel.RequestId = requestId;
+                ActionPromptText.Visibility = isOwner ? Visibility.Visible : Visibility.Collapsed;
+                ActionButtonsPanel.Visibility = isOwner ? Visibility.Visible : Visibility.Collapsed;
+            }
+            else if (e.Parameter is int incomingRequestId)
             {
                 ViewModel.RequestId = incomingRequestId;
             }

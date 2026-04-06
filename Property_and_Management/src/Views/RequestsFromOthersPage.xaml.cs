@@ -37,7 +37,7 @@ namespace Property_and_Management.src.Views
         {
             if (sender is FrameworkElement element && element.DataContext is RequestDTO request && request.Id > 0)
             {
-                Frame?.Navigate(typeof(ChatView), request.Id);
+                Frame?.Navigate(typeof(ChatView), (request.Id, true));
             }
         }
 
@@ -45,7 +45,7 @@ namespace Property_and_Management.src.Views
         {
             if (sender is FrameworkElement element && element.DataContext is RequestDTO request && request.Id > 0)
             {
-                Frame?.Navigate(typeof(ChatView), request.Id);
+                Frame?.Navigate(typeof(ChatView), (request.Id, true));
             }
         }
 

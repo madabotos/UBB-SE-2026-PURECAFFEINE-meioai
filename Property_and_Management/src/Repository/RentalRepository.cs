@@ -49,17 +49,27 @@ namespace Property_and_Management.src.Repository
             using (var connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
-                using (var command = connection.CreateCommand())
+                using (var transaction = connection.BeginTransaction())
                 {
-                    command.CommandText = "INSERT INTO Rentals(game_id, renter_id, owner_id, start_date, end_date) VALUES(@game_id, @renter_id, @owner_id, @start_date, @end_date); SELECT SCOPE_IDENTITY();";
-                    command.Parameters.AddWithValue("@game_id", entity.Game?.Id ?? 0);
-                    command.Parameters.AddWithValue("@renter_id", entity.Renter?.Id ?? 0);
-                    command.Parameters.AddWithValue("@owner_id", entity.Owner?.Id ?? 0);
-                    command.Parameters.AddWithValue("@start_date", entity.StartDate);
-                    command.Parameters.AddWithValue("@end_date", entity.EndDate);
-                    var newId = Convert.ToInt32(command.ExecuteScalar());
-                    entity.Id = newId;
+                    Add(entity, connection, transaction);
+                    transaction.Commit();
                 }
+            }
+        }
+
+        public void Add(Rental entity, SqlConnection connection, SqlTransaction transaction)
+        {
+            using (var command = connection.CreateCommand())
+            {
+                command.Transaction = transaction;
+                command.CommandText = "INSERT INTO Rentals(game_id, renter_id, owner_id, start_date, end_date) VALUES(@game_id, @renter_id, @owner_id, @start_date, @end_date); SELECT SCOPE_IDENTITY();";
+                command.Parameters.AddWithValue("@game_id", entity.Game?.Id ?? 0);
+                command.Parameters.AddWithValue("@renter_id", entity.Renter?.Id ?? 0);
+                command.Parameters.AddWithValue("@owner_id", entity.Owner?.Id ?? 0);
+                command.Parameters.AddWithValue("@start_date", entity.StartDate);
+                command.Parameters.AddWithValue("@end_date", entity.EndDate);
+                var newId = Convert.ToInt32(command.ExecuteScalar());
+                entity.Id = newId;
             }
         }
 

@@ -11,8 +11,9 @@ using ServerCommunication;
 
 namespace Property_and_Management.src.Service.Listeners
 {
-    public class NotificationClient : IServerClient
+    public class NotificationClient : IServerClient, IDisposable
     {
+        private bool _disposed;
 
         private readonly List<IObserver<MessageBase>> _subscribers = new();
         private readonly UdpClient _udpClient;
@@ -126,6 +127,16 @@ namespace Property_and_Management.src.Service.Listeners
 
             byte[] data = CommunicationHelper.SerializeMessage(subscribeToServerMessage);
             _udpClient.Send(data, data.Length, ServerEndpoint);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+
+            _cancellationTokenSource.Cancel();
+            _udpClient.Close();
+            _cancellationTokenSource.Dispose();
         }
     }
 }

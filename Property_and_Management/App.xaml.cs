@@ -231,6 +231,7 @@ namespace Property_and_Management
             AppDomain.CurrentDomain.ProcessExit += (sender, eventArgs) =>
             {
                 _notificationManager.Unregister();
+                _notification_service?.Dispose();
             };
 
             // When a notification is clicked, bring the window to foreground and optionally navigate

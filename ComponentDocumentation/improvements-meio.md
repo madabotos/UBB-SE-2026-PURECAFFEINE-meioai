@@ -14,7 +14,7 @@
 
 ## Critical Bugs (P0 — Must Fix)
 
-### 0. ChatView Approve/Deny Always Fails With "Not Authorized" When Navigating From Renter Page
+### 0. ~~ChatView Approve/Deny Always Fails With "Not Authorized" When Navigating From Renter Page~~ [FIXED]
 
 **Files:**
 
@@ -77,7 +77,7 @@ The method is named `OnProperyChanged` (missing 't' in "Property"). While it wor
 
 ---
 
-### 2. Race Condition in `RequestService.ApproveRequest` (TOCTOU)
+### 2. ~~Race Condition in `RequestService.ApproveRequest` (TOCTOU)~~ [FIXED]
 
 **File:** `Property_and_Management/src/Service/RequestService.cs:125-131`
 
@@ -87,7 +87,7 @@ Overlapping requests are queried **outside** the transaction (lines 126-131), th
 
 ---
 
-### 3. Race Condition in `RentalService.CreateConfirmedRental` (TOCTOU)
+### 3. ~~Race Condition in `RentalService.CreateConfirmedRental` (TOCTOU)~~ [FIXED]
 
 **File:** `Property_and_Management/src/Service/RentalService.cs:47-50`
 
@@ -97,7 +97,7 @@ Overlapping requests are queried **outside** the transaction (lines 126-131), th
 
 ---
 
-### 4. Buffer Period Inconsistency — 48 Hours vs 2 Days
+### 4. ~~Buffer Period Inconsistency — 48 Hours vs 2 Days~~ [FIXED]
 
 **Files:**
 
@@ -114,7 +114,7 @@ Due to Daylight Saving Time, 2 days is not always equal to 48 hours. This incons
 
 ---
 
-### 5. `NotificationService` / `NotificationClient` — Resource Leaks (No `IDisposable`)
+### 5. ~~`NotificationService` / `NotificationClient` — Resource Leaks (No `IDisposable`)~~ [FIXED]
 
 **Files:**
 
@@ -125,7 +125,7 @@ Due to Daylight Saving Time, 2 days is not always equal to 48 hours. This incons
 
 ---
 
-### 6. `UdpNotificationServer.HandleSendNotificationMessage` — `KeyNotFoundException` Crash
+### 6. ~~`UdpNotificationServer.HandleSendNotificationMessage` — `KeyNotFoundException` Crash~~ [FIXED]
 
 **File:** `NotificationServer/UdpNotificationServer.cs:61`
 
@@ -139,7 +139,7 @@ Direct dictionary access without checking if key exists. If the target user is n
 
 ---
 
-### 7. Null Reference in Multiple ViewModels — Missing `?.` on `App.Current`
+### 7. ~~Null Reference in Multiple ViewModels — Missing `?.` on `App.Current`~~ [FIXED]
 
 **Files:**
 
@@ -369,20 +369,20 @@ Contains "F Microslop" comment.
 
 > Goal: Eliminate crashes and data corruption risks
 
-1. Fix ChatView authorize error — hide Approve/Deny for renters (#0)
+1. ~~Fix ChatView authorize error — hide Approve/Deny for renters (#0)~~ [FIXED]
 2. Fix `OnProperyChanged` typo (#1)
-3. Fix null-coalescing on `App.Current` in all ViewModels (#7)
-4. Fix `UdpNotificationServer` dictionary crash (#6)
-5. Standardize buffer period calculation (#4)
+3. ~~Fix null-coalescing on `App.Current` in all ViewModels (#7)~~ [FIXED]
+4. ~~Fix `UdpNotificationServer` dictionary crash (#6)~~ [FIXED]
+5. ~~Standardize buffer period calculation (#4)~~ [FIXED]
 6. Standardize `DateTime.UtcNow` usage (#8)
 
 ### Phase 2 — Resource & Concurrency (Reliability)
 
 > Goal: Fix resource leaks and race conditions
 
-6. Implement `IDisposable` on `NotificationClient` / `NotificationService` (#5)
-7. Fix TOCTOU in `ApproveRequest` (#2)
-8. Fix TOCTOU in `CreateConfirmedRental` (#3)
+6. ~~Implement `IDisposable` on `NotificationClient` / `NotificationService` (#5)~~ [FIXED]
+7. ~~Fix TOCTOU in `ApproveRequest` (#2)~~ [FIXED]
+8. ~~Fix TOCTOU in `CreateConfirmedRental` (#3)~~ [FIXED]
 9. Fix non-atomic Delete in repositories (#9)
 10. Fix observer subscription leak (#14)
 11. Fix event subscription leak (#15)
