@@ -7,6 +7,11 @@ namespace Property_and_Management.src.Interface
     public interface IRequestRepository : IRepository<Request>
     {
         /// <summary>
+        /// Updates only the status and offering user on a request.
+        /// </summary>
+        void UpdateStatus(int requestId, RequestStatus status, int? offeringUserId);
+
+        /// <summary>
         /// Gets requests for which the specified user is the game owner.
         /// </summary>
         /// <param name="ownerId">Owner user id.</param>

@@ -57,5 +57,10 @@ namespace Property_and_Management.src.Interface
         /// </summary>
         /// <param name="rental">The rental for which to schedule the reminder.</param>
         void ScheduleUpcomingRentalReminder(Rental rental);
+
+        /// <summary>
+        /// Deletes all notifications linked to a specific request (cleanup after offer approve/deny).
+        /// </summary>
+        void DeleteNotificationsByRequestId(int requestId);
     }
 }

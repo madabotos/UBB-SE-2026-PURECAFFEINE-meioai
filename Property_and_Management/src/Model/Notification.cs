@@ -10,15 +10,20 @@ namespace Property_and_Management.src.Model
         public DateTime Timestamp { get; set; }
         public string Title { get; set; }
         public string Body { get; set; }
+        public NotificationType Type { get; set; } = NotificationType.Informational;
+        public int? RelatedRequestId { get; set; }
 
         public Notification() { }
-        public Notification(int id, User user, DateTime timestamp, string title, string body)
+        public Notification(int id, User user, DateTime timestamp, string title, string body,
+                            NotificationType type = NotificationType.Informational, int? relatedRequestId = null)
         {
             Id = id;
             User = user;
             Timestamp = timestamp;
             Title = title;
             Body = body;
+            Type = type;
+            RelatedRequestId = relatedRequestId;
         }
     }
 }

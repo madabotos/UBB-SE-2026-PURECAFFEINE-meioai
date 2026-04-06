@@ -17,7 +17,7 @@ namespace Property_and_Management.src.Viewmodels
         private ObservableCollection<RentalDTO> _pagedRentals = new();
         private ImmutableList<RentalDTO> _allRentals = ImmutableList<RentalDTO>.Empty;
 
-        public int OwnerId { get; private set; } = (App.Current as App)?.CurrentUserID ?? 1;
+        public int RenterId { get; private set; } = (App.Current as App)?.CurrentUserID ?? 1;
 
         private const int s_pageSizeConst = 3;
         public static int PageSize => s_pageSizeConst;
@@ -82,8 +82,8 @@ namespace Property_and_Management.src.Viewmodels
         // [REQ-REN-02] As a User, I must be able to see the rentals in decreasing order of the start date of the rental.
         public void LoadRentals(int page, int pageSize)
         {
-            OwnerId = (App.Current as App)?.CurrentUserID ?? 1;
-            var allRentals = _rentalService.GetRentalsForOwner(OwnerId)
+            RenterId = (App.Current as App)?.CurrentUserID ?? 1;
+            var allRentals = _rentalService.GetRentalsForRenter(RenterId)
                 .OrderByDescending(r => r.StartDate)
                 .ToImmutableList();
 

@@ -2,10 +2,8 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
-using Property_and_Management.src.DTO;
 using Property_and_Management.src.Viewmodels;
 
 namespace Property_and_Management.src.Views
@@ -33,16 +31,9 @@ namespace Property_and_Management.src.Views
             }
         }
 
-        private void RentalItem_Tapped(object sender, DoubleTappedRoutedEventArgs e)
+        private void CreateRentalButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is FrameworkElement element && element.DataContext is RentalDTO rental && rental.Id > 0)
-                Frame?.Navigate(typeof(ChatView), rental.Id);
-        }
-
-        private void RentalItem_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            if (sender is FrameworkElement element && element.DataContext is RentalDTO rental && rental.Id > 0)
-                Frame?.Navigate(typeof(ChatView), rental.Id);
+            Frame?.Navigate(typeof(CreateRentalView));
         }
 
         private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)

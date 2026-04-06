@@ -33,5 +33,8 @@ namespace Property_and_Management.src.Interface
         /// <param name="ownerId">The identifier of the owner.</param>
         /// <returns>A list of <see cref="GameDTO"/> objects for the specified owner.</returns>
         public ImmutableList<GameDTO> GetGamesForOwner(int ownerId);
+
+        /// <summary>Return all games in the system.</summary>
+        ImmutableList<GameDTO> GetAllGames();
     }
 }

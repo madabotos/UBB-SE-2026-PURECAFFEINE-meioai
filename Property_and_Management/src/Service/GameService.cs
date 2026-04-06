@@ -47,5 +47,13 @@ namespace Property_and_Management.src.Service
                 .Select(game => _gameMapper.ToDTO(game))
                 .ToImmutableList();
         }
+
+        public ImmutableList<GameDTO> GetAllGames()
+        {
+            return _gameRepository
+                .GetAll()
+                .Select(game => _gameMapper.ToDTO(game))
+                .ToImmutableList();
+        }
     }
 }

@@ -60,11 +60,18 @@ namespace Property_and_Management.src.Service
                 User = new User { Id = userId },
                 Timestamp = timestamp,
                 Title = notification.Title,
-                Body = notification.Body
+                Body = notification.Body,
+                Type = notification.Type,
+                RelatedRequestId = notification.RelatedRequestId
             };
 
             _notificationRepository.Add(notificationModel);
             _serverClient.SendNotification(userId, notification.Title, notification.Body);
+        }
+
+        public void DeleteNotificationsByRequestId(int requestId)
+        {
+            _notificationRepository.DeleteByRequestId(requestId);
         }
 
         public void UpdateNotificationById(int id, NotificationDTO notification)

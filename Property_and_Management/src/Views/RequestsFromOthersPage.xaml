@@ -33,14 +33,13 @@
         <TextBlock Grid.Row="0" Text="Others' Requests" Style="{StaticResource SubtitleTextBlockStyle}" Margin="12"/>
 
         <!-- ListView for requests [REQ-REQ-01]-->
-        <ListView x:Name="ItemsListView" Grid.Row="1" 
+        <ListView x:Name="ItemsListView" Grid.Row="1"
                   ItemsSource="{Binding PagedRequests}"
                   SelectionMode="None"
-                  IsItemClickEnabled="True"
-                  DoubleTapped="RequestItem_Tapped">
+                  IsItemClickEnabled="False">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:RequestDTO">
-                    <Grid Tapped="RequestItem_Tapped" Background="#2D2D2D" Margin="0,0,0,10" Padding="15" CornerRadius="8">
+                    <Grid Background="#2D2D2D" Margin="0,0,0,10" Padding="15" CornerRadius="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="80"/>
                             <ColumnDefinition Width="*"/>
@@ -65,14 +64,14 @@
                             <TextBlock Text="{Binding EndDateDisplayLong}" Style="{StaticResource CaptionTextBlockStyle}"/>
                         </StackPanel>
 
-                        <!-- [REQ-REQ-03] As an Owner, I should be able to decline requests.-->
                         <Button Grid.Column="2"
-                            Content="Delete"
+                            Content="Offer"
                             Tag="{Binding Id}"
-                            Click="DenyButton_Click"
-                            Tapped="DenyButton_Tapped"
+                            Click="OfferButton_Click"
+                            Tapped="OfferButton_Tapped"
+                            IsEnabled="{Binding CanOffer}"
                             Margin="8,0,0,0"
-                            Background="#C50F1F"
+                            Background="#107C10"
                             Foreground="White"
                             VerticalAlignment="Center"/>
                     </Grid>

@@ -62,11 +62,14 @@ BEGIN
         owner_id INT NOT NULL,
         start_date DATETIME NOT NULL,
         end_date DATETIME NOT NULL,
-        
+        status INT NOT NULL DEFAULT 0,
+        offering_user_id INT NULL,
+
         CONSTRAINT PK_Request PRIMARY KEY (request_id),
         CONSTRAINT FK_Request_Game FOREIGN KEY (game_id) REFERENCES Games(game_id),
         CONSTRAINT FK_Request_Renter FOREIGN KEY (renter_id) REFERENCES [Users](id),
         CONSTRAINT FK_Request_Owner FOREIGN KEY (owner_id) REFERENCES [Users](id),
+        CONSTRAINT FK_Request_OfferingUser FOREIGN KEY (offering_user_id) REFERENCES [Users](id),
         CONSTRAINT CHK_Request_DateRange CHECK (end_date >= start_date)
     );
 END;
@@ -99,8 +102,11 @@ BEGIN
         timestamp DATETIME NOT NULL,
         title VARCHAR(30) NOT NULL,
         body VARCHAR(500) NOT NULL,
-        
+        type INT NOT NULL DEFAULT 0,
+        related_request_id INT NULL,
+
         CONSTRAINT PK_Notifications PRIMARY KEY (notification_id),
-        CONSTRAINT FK_Notifications_User FOREIGN KEY (user_id) REFERENCES [Users](id)
+        CONSTRAINT FK_Notifications_User FOREIGN KEY (user_id) REFERENCES [Users](id),
+        CONSTRAINT FK_Notification_Request FOREIGN KEY (related_request_id) REFERENCES Requests(request_id)
     );
 END;

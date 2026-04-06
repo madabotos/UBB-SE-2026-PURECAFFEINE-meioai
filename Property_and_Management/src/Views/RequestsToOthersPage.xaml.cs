@@ -33,18 +33,6 @@ namespace Property_and_Management.src.Views
             }
         }
 
-        private void RequestItem_Tapped(object sender, DoubleTappedRoutedEventArgs e)
-        {
-            if (sender is FrameworkElement element && element.DataContext is RequestDTO request && request.Id > 0)
-                Frame?.Navigate(typeof(ChatView), (request.Id, false));
-        }
-
-        private void RequestItem_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            if (sender is FrameworkElement element && element.DataContext is RequestDTO request && request.Id > 0)
-                Frame?.Navigate(typeof(ChatView), (request.Id, false));
-        }
-
         private void CancelButton_Tapped(object sender, TappedRoutedEventArgs e)
         {
             e.Handled = true;
@@ -72,6 +60,11 @@ namespace Property_and_Management.src.Views
                 var vm = DataContext as RequestsToOthersViewModel;
                 vm?.CancelRequest(requestId);
             }
+        }
+
+        private void CreateRequestButton_Click(object sender, RoutedEventArgs e)
+        {
+            Frame?.Navigate(typeof(CreateRequestView));
         }
 
         private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)

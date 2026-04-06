@@ -29,6 +29,28 @@ namespace Property_and_Management.src.Service
         NOT_FOUND_ERROR = -2
     }
 
+    public enum OfferError
+    {
+        NOT_FOUND = -1,
+        NOT_OWNER = -2,
+        REQUEST_NOT_OPEN = -3
+    }
+
+    public enum ApproveOfferError
+    {
+        NOT_FOUND = -1,
+        NOT_RENTER = -2,
+        NO_PENDING_OFFER = -3,
+        TRANSACTION_FAILED = -4
+    }
+
+    public enum DenyOfferError
+    {
+        NOT_FOUND = -1,
+        NOT_RENTER = -2,
+        NO_PENDING_OFFER = -3
+    }
+
     public class RequestService : IRequestService
     {
         // ----------------------------------------------------------------
@@ -122,12 +144,15 @@ namespace Property_and_Management.src.Service
             var bufferedStart = request.StartDate.AddHours(-BufferHours);
             var bufferedEnd = request.EndDate.AddHours(BufferHours);
 
+            Rental rental;
+            List<Request> overlappingRequests;
+
             using var connection = new SqlConnection(_connectionString);
             connection.Open();
             using var transaction = connection.BeginTransaction(System.Data.IsolationLevel.Serializable);
             try
             {
-                var rental = new Rental(
+                rental = new Rental(
                     id: 0,
                     game: request.Game,
                     renter: request.Renter,
@@ -137,38 +162,46 @@ namespace Property_and_Management.src.Service
 
                 _rentalRepository.Add(rental, connection, transaction);
 
-                var overlappingRequests = GetOverlappingRequests(
+                overlappingRequests = GetOverlappingRequests(
                     request.Game?.Id ?? 0, requestId, bufferedStart, bufferedEnd,
                     connection, transaction);
 
+                // Delete notifications BEFORE their referenced requests (FK constraint)
                 foreach (var overlap in overlappingRequests)
                 {
+                    _notificationService.DeleteNotificationsByRequestId(overlap.Id);
                     _requestRepository.Delete(overlap.Id, connection, transaction);
-                    _notificationService.SendNotificationToUser(
-                        overlap.Renter?.Id ?? 0,
-                        new NotificationDTO
-                        {
-                            Id = 0,
-                            User = new UserDTO { Id = overlap.Renter?.Id ?? 0 },
-                            Timestamp = DateTime.UtcNow,
-                            Title = "Booking Unavailable",
-                            Body = $"Your request for game {request.Game?.Id} " +
-                                   $"({overlap.StartDate:d}–{overlap.EndDate:d}) was declined " +
-                                   $"because the game is no longer available in that period."
-                        });
                 }
 
+                _notificationService.DeleteNotificationsByRequestId(requestId);
                 _requestRepository.Delete(requestId, connection, transaction);
                 transaction.Commit();
-
-                _notificationService.ScheduleUpcomingRentalReminder(rental);
-                return rental.Id;
             }
             catch (Exception)
             {
                 transaction.Rollback();
                 return (int)ApproveRequestError.TRANSACTION_FAILED_ERROR;
             }
+
+            // Post-commit notifications
+            foreach (var overlap in overlappingRequests)
+            {
+                _notificationService.SendNotificationToUser(
+                    overlap.Renter?.Id ?? 0,
+                    new NotificationDTO
+                    {
+                        Id = 0,
+                        User = new UserDTO { Id = overlap.Renter?.Id ?? 0 },
+                        Timestamp = DateTime.UtcNow,
+                        Title = "Booking Unavailable",
+                        Body = $"Your request for game {request.Game?.Id} " +
+                               $"({overlap.StartDate:d}–{overlap.EndDate:d}) was declined " +
+                               $"because the game is no longer available in that period."
+                    });
+            }
+
+            _notificationService.ScheduleUpcomingRentalReminder(rental);
+            return rental.Id;
         }
 
         private static List<Request> GetOverlappingRequests(
@@ -244,8 +277,18 @@ namespace Property_and_Management.src.Service
         // ----------------------------------------------------------------
         //  [BL-LFC-04] Renter cancels their own pending request
         // ----------------------------------------------------------------
-        public void CancelRequest(int requestId) =>
-            _requestRepository.Delete(requestId);
+        public void CancelRequest(int requestId)
+        {
+            try
+            {
+                _requestRepository.Delete(requestId);
+            }
+            catch (KeyNotFoundException)
+            {
+                // Request was already deleted (e.g. by concurrent approval/offer).
+                // The desired end-state — request gone — is satisfied.
+            }
+        }
 
         // ----------------------------------------------------------------
         //  [BL-LFC-05] Game deactivated — decline all pending requests
@@ -319,6 +362,205 @@ namespace Property_and_Management.src.Service
                           r.EndDate.AddHours(BufferHours) > startDate);
 
             return !requestConflict;
+        }
+
+        // ----------------------------------------------------------------
+        //  Owner offers their game to fulfill a request
+        // ----------------------------------------------------------------
+        public int OfferGame(int requestId, int offeringUserId)
+        {
+            Request request;
+            try { request = _requestRepository.Get(requestId); }
+            catch (KeyNotFoundException)
+            { return (int)OfferError.NOT_FOUND; }
+
+            if (request.Owner?.Id != offeringUserId)
+                return (int)OfferError.NOT_OWNER;
+
+            if (request.Status != RequestStatus.Open)
+                return (int)OfferError.REQUEST_NOT_OPEN;
+
+            _requestRepository.UpdateStatus(requestId, RequestStatus.OfferPending, offeringUserId);
+
+            var ownerName = request.Owner?.DisplayName ?? "Someone";
+            var gameName = request.Game?.Name ?? "a game";
+
+            _notificationService.SendNotificationToUser(
+                request.Renter?.Id ?? 0,
+                new NotificationDTO
+                {
+                    Id = 0,
+                    User = new UserDTO { Id = request.Renter?.Id ?? 0 },
+                    Timestamp = DateTime.UtcNow,
+                    Title = "Game Offer Received",
+                    Body = $"{ownerName} is offering you {gameName} for {request.StartDate:dd/MM/yyyy} - {request.EndDate:dd/MM/yyyy}",
+                    Type = NotificationType.OfferReceived,
+                    RelatedRequestId = requestId
+                });
+
+            return requestId;
+        }
+
+        // ----------------------------------------------------------------
+        //  Requester approves a pending offer — creates rental
+        // ----------------------------------------------------------------
+        public int ApproveOffer(int requestId, int renterId)
+        {
+            Request request;
+            try { request = _requestRepository.Get(requestId); }
+            catch (KeyNotFoundException)
+            { return (int)ApproveOfferError.NOT_FOUND; }
+
+            if (request.Renter?.Id != renterId)
+                return (int)ApproveOfferError.NOT_RENTER;
+
+            if (request.Status != RequestStatus.OfferPending)
+                return (int)ApproveOfferError.NO_PENDING_OFFER;
+
+            var bufferedStart = request.StartDate.AddHours(-BufferHours);
+            var bufferedEnd = request.EndDate.AddHours(BufferHours);
+
+            Rental rental;
+            List<Request> overlappingRequests;
+
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+            using var transaction = connection.BeginTransaction(System.Data.IsolationLevel.Serializable);
+            try
+            {
+                rental = new Rental(
+                    id: 0,
+                    game: request.Game,
+                    renter: request.Renter,
+                    owner: request.Owner,
+                    startDate: request.StartDate,
+                    endDate: request.EndDate);
+
+                _rentalRepository.Add(rental, connection, transaction);
+
+                overlappingRequests = GetOverlappingRequests(
+                    request.Game?.Id ?? 0, requestId, bufferedStart, bufferedEnd,
+                    connection, transaction);
+
+                // Delete notifications BEFORE their referenced requests (FK constraint)
+                foreach (var overlap in overlappingRequests)
+                {
+                    _notificationService.DeleteNotificationsByRequestId(overlap.Id);
+                    _requestRepository.Delete(overlap.Id, connection, transaction);
+                }
+
+                _notificationService.DeleteNotificationsByRequestId(requestId);
+                _requestRepository.Delete(requestId, connection, transaction);
+                transaction.Commit();
+            }
+            catch (Exception)
+            {
+                transaction.Rollback();
+                return (int)ApproveOfferError.TRANSACTION_FAILED;
+            }
+
+            // Post-commit: send notifications (outside transaction so failures don't mask success)
+            var ownerName = request.Owner?.DisplayName ?? "The owner";
+            var renterName = request.Renter?.DisplayName ?? "The requester";
+            var gameName = request.Game?.Name ?? "a game";
+
+            foreach (var overlap in overlappingRequests)
+            {
+                _notificationService.SendNotificationToUser(
+                    overlap.Renter?.Id ?? 0,
+                    new NotificationDTO
+                    {
+                        Id = 0,
+                        User = new UserDTO { Id = overlap.Renter?.Id ?? 0 },
+                        Timestamp = DateTime.UtcNow,
+                        Title = "Booking Unavailable",
+                        Body = $"Your request for {gameName} " +
+                               $"({overlap.StartDate:d}-{overlap.EndDate:d}) was declined " +
+                               $"because the game is no longer available in that period."
+                    });
+            }
+
+            _notificationService.SendNotificationToUser(
+                request.OfferingUser?.Id ?? request.Owner?.Id ?? 0,
+                new NotificationDTO
+                {
+                    Id = 0,
+                    User = new UserDTO { Id = request.OfferingUser?.Id ?? request.Owner?.Id ?? 0 },
+                    Timestamp = DateTime.UtcNow,
+                    Title = "Offer Accepted",
+                    Body = $"{renterName} accepted your offer for {gameName}",
+                    Type = NotificationType.OfferResult
+                });
+
+            _notificationService.SendNotificationToUser(
+                renterId,
+                new NotificationDTO
+                {
+                    Id = 0,
+                    User = new UserDTO { Id = renterId },
+                    Timestamp = DateTime.UtcNow,
+                    Title = "Rental Confirmed",
+                    Body = $"You accepted the offer for {gameName} from {ownerName}",
+                    Type = NotificationType.OfferResult
+                });
+
+            _notificationService.ScheduleUpcomingRentalReminder(rental);
+            return rental.Id;
+        }
+
+        // ----------------------------------------------------------------
+        //  Requester denies a pending offer — resets request to Open
+        // ----------------------------------------------------------------
+        public int DenyOffer(int requestId, int renterId)
+        {
+            Request request;
+            try { request = _requestRepository.Get(requestId); }
+            catch (KeyNotFoundException)
+            { return (int)DenyOfferError.NOT_FOUND; }
+
+            if (request.Renter?.Id != renterId)
+                return (int)DenyOfferError.NOT_RENTER;
+
+            if (request.Status != RequestStatus.OfferPending)
+                return (int)DenyOfferError.NO_PENDING_OFFER;
+
+            // Reset request to Open so new offers can be made
+            _requestRepository.UpdateStatus(requestId, RequestStatus.Open, null);
+
+            // Clean up actionable notifications for this request
+            _notificationService.DeleteNotificationsByRequestId(requestId);
+
+            var renterName = request.Renter?.DisplayName ?? "The requester";
+            var ownerName = request.Owner?.DisplayName ?? "The owner";
+            var gameName = request.Game?.Name ?? "a game";
+
+            // Notify owner: offer was denied
+            _notificationService.SendNotificationToUser(
+                request.OfferingUser?.Id ?? request.Owner?.Id ?? 0,
+                new NotificationDTO
+                {
+                    Id = 0,
+                    User = new UserDTO { Id = request.OfferingUser?.Id ?? request.Owner?.Id ?? 0 },
+                    Timestamp = DateTime.UtcNow,
+                    Title = "Offer Denied",
+                    Body = $"{renterName} denied your offer for {gameName}",
+                    Type = NotificationType.OfferResult
+                });
+
+            // Notify renter: confirmation of denial
+            _notificationService.SendNotificationToUser(
+                renterId,
+                new NotificationDTO
+                {
+                    Id = 0,
+                    User = new UserDTO { Id = renterId },
+                    Timestamp = DateTime.UtcNow,
+                    Title = "Offer Declined",
+                    Body = $"You declined the offer for {gameName} from {ownerName}",
+                    Type = NotificationType.OfferResult
+                });
+
+            return requestId;
         }
     }
 }

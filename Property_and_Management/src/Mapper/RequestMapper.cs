@@ -31,7 +31,9 @@ namespace Property_and_Management.src.Mapper
                 Renter = _userMapper.ToDTO(entity.Renter),
                 Owner = _userMapper.ToDTO(entity.Owner),
                 StartDate = entity.StartDate,
-                EndDate = entity.EndDate
+                EndDate = entity.EndDate,
+                Status = entity.Status,
+                OfferingUser = entity.OfferingUser != null ? _userMapper.ToDTO(entity.OfferingUser) : null
             };
         }
 
@@ -46,7 +48,9 @@ namespace Property_and_Management.src.Mapper
                 Renter = _userMapper.ToModel(dto.Renter),
                 Owner = _userMapper.ToModel(dto.Owner),
                 StartDate = dto.StartDate,
-                EndDate = dto.EndDate
+                EndDate = dto.EndDate,
+                Status = dto.Status,
+                OfferingUser = dto.OfferingUser != null ? _userMapper.ToModel(dto.OfferingUser) : null
             };
         }
     }

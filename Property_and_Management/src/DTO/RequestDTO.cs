@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
+using Property_and_Management.src.DTO;
 
 namespace Property_and_Management.src.DTO
 {
@@ -17,10 +18,14 @@ namespace Property_and_Management.src.DTO
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
 
+        public RequestStatus Status { get; set; } = RequestStatus.Open;
+        public UserDTO? OfferingUser { get; set; }
+
         public string StartDateDisplay => StartDate.ToString("dd/MM");
         public string EndDateDisplay => EndDate.ToString("dd/MM");
         public string StartDateDisplayLong => $"Start: {StartDate:dd/MM/yyyy}";
         public string EndDateDisplayLong => $"End: {EndDate:dd/MM/yyyy}";
+        public bool CanOffer => Status == RequestStatus.Open;
 
         public RequestDTO() { }
     }

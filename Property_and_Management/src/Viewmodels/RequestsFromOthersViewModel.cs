@@ -120,6 +120,13 @@ namespace Property_and_Management.src.Viewmodels
             if (result > 0) LoadRequests(CurrentPage, PageSize);
         }
 
+        public int OfferGame(int requestId)
+        {
+            var result = _requestService.OfferGame(requestId, OwnerId);
+            if (result > 0) LoadRequests(CurrentPage, PageSize);
+            return result;
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {

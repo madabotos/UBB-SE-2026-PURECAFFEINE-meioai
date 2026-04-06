@@ -81,6 +81,83 @@ namespace Property_and_Management.src.Views
             }
         }
 
+        private async void ApproveOffer_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var btn = sender as Button;
+                var note = btn?.DataContext as NotificationDTO;
+                if (note?.RelatedRequestId == null) return;
+
+                var root = this.Content as FrameworkElement;
+                var vm = root?.DataContext as NotificationsViewModel;
+                if (vm == null) return;
+
+                var result = vm.ApproveOffer(note.RelatedRequestId.Value);
+                if (result < 0)
+                {
+                    string message = result switch
+                    {
+                        -1 => "Request not found.",
+                        -2 => "You are not authorized for this action.",
+                        -3 => "No pending offer to approve.",
+                        -4 => "Transaction failed. Please try again.",
+                        _ => "An unexpected error occurred."
+                    };
+                    var dialog = new ContentDialog
+                    {
+                        Title = "Approve Failed",
+                        Content = message,
+                        CloseButtonText = "OK",
+                        XamlRoot = this.XamlRoot
+                    };
+                    await dialog.ShowAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"ApproveOffer_Click error: {ex}");
+            }
+        }
+
+        private async void DenyOffer_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var btn = sender as Button;
+                var note = btn?.DataContext as NotificationDTO;
+                if (note?.RelatedRequestId == null) return;
+
+                var root = this.Content as FrameworkElement;
+                var vm = root?.DataContext as NotificationsViewModel;
+                if (vm == null) return;
+
+                var result = vm.DenyOffer(note.RelatedRequestId.Value);
+                if (result < 0)
+                {
+                    string message = result switch
+                    {
+                        -1 => "Request not found.",
+                        -2 => "You are not authorized for this action.",
+                        -3 => "No pending offer to deny.",
+                        _ => "An unexpected error occurred."
+                    };
+                    var dialog = new ContentDialog
+                    {
+                        Title = "Deny Failed",
+                        Content = message,
+                        CloseButtonText = "OK",
+                        XamlRoot = this.XamlRoot
+                    };
+                    await dialog.ShowAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"DenyOffer_Click error: {ex}");
+            }
+        }
+
         private void NextButton_Click(object sender, RoutedEventArgs e)
         {
             var root = this.Content as FrameworkElement;

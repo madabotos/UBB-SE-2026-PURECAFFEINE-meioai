@@ -35,12 +35,10 @@
         <ListView x:Name="ItemsListView" Grid.Row="1"
                   ItemsSource="{Binding PagedRentals}"
                   SelectionMode="None"
-                  IsItemClickEnabled="True"
-                  DoubleTapped="RentalItem_Tapped">
+                  IsItemClickEnabled="False">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:RentalDTO">
-                    <Grid Tapped="RentalItem_Tapped"
-                          Background="#2D2D2D"
+                    <Grid Background="#2D2D2D"
                           Margin="0,0,0,10"
                           Padding="15"
                           CornerRadius="8"
@@ -48,6 +46,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="80"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <Image Grid.Column="0" Source="{Binding Game.Image, Converter={StaticResource ImageConverter}}"
@@ -62,10 +61,20 @@
 
                         <StackPanel Grid.Column="1" Margin="12,0,0,0">
                             <TextBlock Text="{Binding Game.Name}" Style="{StaticResource BaseTextBlockStyle}" FontWeight="SemiBold"/>
-                            <TextBlock Text="{Binding Renter.DisplayName}" Style="{StaticResource BodyTextBlockStyle}" Opacity="0.8"/>
+                            <TextBlock Text="{Binding Owner.DisplayName}" Style="{StaticResource BodyTextBlockStyle}" Opacity="0.8"/>
                             <TextBlock Text="{Binding StartDateDisplayLong}" Style="{StaticResource CaptionTextBlockStyle}"/>
                             <TextBlock Text="{Binding EndDateDisplayLong}" Style="{StaticResource CaptionTextBlockStyle}"/>
                         </StackPanel>
+
+                        <Button Grid.Column="2"
+                            Content="Request"
+                            Tag="{Binding Game.Id}"
+                            Click="RequestButton_Click"
+                            Tapped="RequestButton_Tapped"
+                            Margin="8,0,0,0"
+                            Background="#0078D7"
+                            Foreground="White"
+                            VerticalAlignment="Center"/>
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>

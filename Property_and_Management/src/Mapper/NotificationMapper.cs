@@ -28,7 +28,9 @@ namespace Property_and_Management.src.Mapper
                 User = _userMapper.ToDTO(entity.User),
                 Timestamp = entity.Timestamp,
                 Title = entity.Title,
-                Body = entity.Body
+                Body = entity.Body,
+                Type = entity.Type,
+                RelatedRequestId = entity.RelatedRequestId
             };
         }
 
@@ -42,7 +44,9 @@ namespace Property_and_Management.src.Mapper
                 User = _userMapper.ToModel(dto.User),
                 Timestamp = dto.Timestamp,
                 Title = dto.Title,
-                Body = dto.Body
+                Body = dto.Body,
+                Type = dto.Type,
+                RelatedRequestId = dto.RelatedRequestId
             };
         }
     }

@@ -76,10 +76,21 @@ namespace Property_and_Management.src.Interface
         /// <summary>
         /// Returns ImmutableList<(DateTime, DateTime)> of booked date ranges for calendar/month view.
         /// </summary>
-        /// <param name="gameId"></param>
-        /// <param name="month"></param>
-        /// <param name="year"></param>
-        /// <returns></returns>
         ImmutableList<(DateTime, DateTime)> GetBookedDates(int gameId, int month, int year);
+
+        /// <summary>
+        /// Owner offers their game to fulfill a request. Sets status to OfferPending and notifies the requester.
+        /// </summary>
+        int OfferGame(int requestId, int offeringUserId);
+
+        /// <summary>
+        /// Requester approves a pending offer. Creates a rental, cleans up the request, and notifies both parties.
+        /// </summary>
+        int ApproveOffer(int requestId, int renterId);
+
+        /// <summary>
+        /// Requester denies a pending offer. Resets request to Open and notifies the owner.
+        /// </summary>
+        int DenyOffer(int requestId, int renterId);
     }
 }

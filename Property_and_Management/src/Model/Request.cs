@@ -11,11 +11,14 @@ namespace Property_and_Management.src.Model
         public User Owner { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
+        public RequestStatus Status { get; set; } = RequestStatus.Open;
+        public User? OfferingUser { get; set; }
 
 
         public Request() { }
 
-        public Request(int id, Game game, User renter, User owner, DateTime startDate, DateTime endDate)
+        public Request(int id, Game game, User renter, User owner, DateTime startDate, DateTime endDate,
+                       RequestStatus status = RequestStatus.Open, User? offeringUser = null)
         {
             Id = id;
             Game = game;
@@ -23,6 +26,8 @@ namespace Property_and_Management.src.Model
             Owner = owner;
             StartDate = startDate;
             EndDate = endDate;
+            Status = status;
+            OfferingUser = offeringUser;
         }
     }
 }

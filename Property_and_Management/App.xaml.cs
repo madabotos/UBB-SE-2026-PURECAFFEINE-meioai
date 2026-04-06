@@ -103,6 +103,7 @@ namespace Property_and_Management
             serviceCollection.AddSingleton<IMapper<Request, RequestDTO>, RequestMapper>();
 
 
+            serviceCollection.AddSingleton<IUserRepository, UserRepository>();
             serviceCollection.AddSingleton<IGameRepository, GameRepository>();
             serviceCollection.AddSingleton<IRequestRepository, RequestRepository>();
             serviceCollection.AddSingleton<IRentalRepository, RentalRepository>();
@@ -121,7 +122,8 @@ namespace Property_and_Management
             serviceCollection.AddTransient(sp => new ListingsViewModel(sp.GetRequiredService<IGameService>(), CurrentUserID));
             serviceCollection.AddTransient<CreateGameViewModel>();
             serviceCollection.AddTransient<EditGameViewModel>();
-            serviceCollection.AddTransient<ChatViewModel>();
+            serviceCollection.AddTransient<CreateRequestViewModel>();
+            serviceCollection.AddTransient<CreateRentalViewModel>();
             serviceCollection.AddTransient<RequestsFromOthersViewModel>();
             serviceCollection.AddTransient<RequestsToOthersViewModel>();
             serviceCollection.AddTransient<RentalsFromOthersViewModel>();

@@ -33,49 +33,58 @@ namespace Property_and_Management.src.Views
             }
         }
 
-        private void RequestItem_Tapped(object sender, DoubleTappedRoutedEventArgs e)
-        {
-            if (sender is FrameworkElement element && element.DataContext is RequestDTO request && request.Id > 0)
-            {
-                Frame?.Navigate(typeof(ChatView), (request.Id, true));
-            }
-        }
-
-        private void RequestItem_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            if (sender is FrameworkElement element && element.DataContext is RequestDTO request && request.Id > 0)
-            {
-                Frame?.Navigate(typeof(ChatView), (request.Id, true));
-            }
-        }
-
-        private void DenyButton_Tapped(object sender, TappedRoutedEventArgs e)
+        private void OfferButton_Tapped(object sender, TappedRoutedEventArgs e)
         {
             e.Handled = true;
         }
-        private async void DenyButton_Click(object sender, RoutedEventArgs e)
+
+        private async void OfferButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button btn || btn.Tag is not int requestId)
                 return;
 
-            ContentDialog deleteDialog = new ContentDialog
+            var request = btn.DataContext as RequestDTO;
+            var gameName = request?.Game?.Name ?? "this game";
+            var renterName = request?.Renter?.DisplayName ?? "the requester";
+
+            ContentDialog offerDialog = new ContentDialog
             {
-                Title = "Delete Request?",
-                Content = $"Are you sure you want to permanently delete this request and all associated active requests? Existing rentals will not be deleted.",
-                PrimaryButtonText = "Delete",
+                Title = "Offer Game?",
+                Content = $"Offer {gameName} to {renterName} for {request?.StartDateDisplayLong} - {request?.EndDateDisplayLong}?",
+                PrimaryButtonText = "Offer",
                 CloseButtonText = "Cancel",
-                DefaultButton = ContentDialogButton.Close,
+                DefaultButton = ContentDialogButton.Primary,
                 XamlRoot = this.XamlRoot
             };
 
-            var result = await deleteDialog.ShowAsync();
+            var result = await offerDialog.ShowAsync();
 
             if (result == ContentDialogResult.Primary)
             {
                 var vm = DataContext as RequestsFromOthersViewModel;
-                vm?.DenyRequest(requestId, "The owner declined your request");
+                var offerResult = vm?.OfferGame(requestId) ?? -1;
+
+                if (offerResult < 0)
+                {
+                    string message = offerResult switch
+                    {
+                        -1 => "Request not found.",
+                        -2 => "You are not the owner of this game.",
+                        -3 => "This request already has a pending offer.",
+                        _ => "An unexpected error occurred."
+                    };
+                    var errorDialog = new ContentDialog
+                    {
+                        Title = "Offer Failed",
+                        Content = message,
+                        CloseButtonText = "OK",
+                        XamlRoot = this.XamlRoot
+                    };
+                    await errorDialog.ShowAsync();
+                }
             }
         }
+
         private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
         {
             if (sender is not Image img)
