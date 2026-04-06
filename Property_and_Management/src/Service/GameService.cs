@@ -11,7 +11,7 @@ namespace Property_and_Management.src.Service
 {
     public class GameService : IGameService
     {
-        private IGameRepository _gameRepository;
+        private readonly IGameRepository _gameRepository;
         private readonly IMapper<Game, GameDTO> _gameMapper;
 
         public GameService(IGameRepository gameRepository, IMapper<Game, GameDTO> gameMapper)
@@ -19,9 +19,6 @@ namespace Property_and_Management.src.Service
             _gameRepository = gameRepository;
             _gameMapper = gameMapper;
         }
-
-        public void SetGameRepository(IGameRepository gameRepository) =>
-            _gameRepository = gameRepository;
 
         public void AddGame(GameDTO game)
         {

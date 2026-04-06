@@ -157,7 +157,7 @@ Contrast with `ChatViewModel.cs:15` which correctly uses `(App.Current as App)?.
 
 ## High Severity (P1 — Should Fix)
 
-### 8. `DateTime.Now` vs `DateTime.UtcNow` Mixed Usage
+### 8. ~~`DateTime.Now` vs `DateTime.UtcNow` Mixed Usage~~ [FIXED]
 
 **Files:**
 
@@ -174,7 +174,7 @@ Contrast with `ChatViewModel.cs:15` which correctly uses `(App.Current as App)?.
 
 ---
 
-### 9. Repository Delete Methods — Non-Atomic Get-Then-Delete
+### 9. ~~Repository Delete Methods — Non-Atomic Get-Then-Delete~~ [FIXED]
 
 **Files:** All repositories:
 
@@ -190,7 +190,7 @@ Every `Delete()` method calls `Get()` first (separate connection), then deletes.
 
 ---
 
-### 10. `NotificationService.OnNext` — Missing `User` Property on NotificationDTO
+### 10. ~~`NotificationService.OnNext` — Missing `User` Property on NotificationDTO~~ [FIXED]
 
 **File:** `NotificationService.cs:82-87`
 
@@ -200,7 +200,7 @@ When receiving a `SendNotificationMessage` from UDP, the created `NotificationDT
 
 ---
 
-### 11. Fire-and-Forget Scheduled Notifications — Lost on App Exit
+### 11. ~~Fire-and-Forget Scheduled Notifications — Lost on App Exit~~ [FIXED]
 
 **File:** `NotificationService.cs:175-186`
 
@@ -210,7 +210,7 @@ When receiving a `SendNotificationMessage` from UDP, the created `NotificationDT
 
 ---
 
-### 12. `NotificationClient` — Infinite Retry Loop Without Backoff or Limit
+### 12. ~~`NotificationClient` — Infinite Retry Loop Without Backoff or Limit~~ [FIXED]
 
 **File:** `Property_and_Management/src/Service/Listeners/NotificationClient.cs`
 
@@ -220,7 +220,7 @@ On `SocketException`, the client retries with a fixed delay and no maximum retry
 
 ---
 
-### 13. `GameService.SetGameRepository` — Mutable Dependency Anti-Pattern
+### 13. ~~`GameService.SetGameRepository` — Mutable Dependency Anti-Pattern~~ [FIXED]
 
 **File:** `Property_and_Management/src/Service/GameService.cs`
 
@@ -230,7 +230,7 @@ On `SocketException`, the client retries with a fixed delay and no maximum retry
 
 ---
 
-### 14. Observer Subscription Leak in `NotificationsViewModel`
+### 14. ~~Observer Subscription Leak in `NotificationsViewModel`~~ [FIXED]
 
 **File:** `Property_and_Management/src/Viewmodels/NotificationsViewModel.cs:94`
 
@@ -240,7 +240,7 @@ On `SocketException`, the client retries with a fixed delay and no maximum retry
 
 ---
 
-### 15. Event Subscription Leak in `MenuBarPage`
+### 15. ~~Event Subscription Leak in `MenuBarPage`~~ [FIXED]
 
 **File:** `Property_and_Management/src/Views/MenuBarPage.xaml.cs:24`
 
@@ -374,7 +374,7 @@ Contains "F Microslop" comment.
 3. ~~Fix null-coalescing on `App.Current` in all ViewModels (#7)~~ [FIXED]
 4. ~~Fix `UdpNotificationServer` dictionary crash (#6)~~ [FIXED]
 5. ~~Standardize buffer period calculation (#4)~~ [FIXED]
-6. Standardize `DateTime.UtcNow` usage (#8)
+6. ~~Standardize `DateTime.UtcNow` usage (#8)~~ [FIXED]
 
 ### Phase 2 — Resource & Concurrency (Reliability)
 
@@ -383,19 +383,19 @@ Contains "F Microslop" comment.
 6. ~~Implement `IDisposable` on `NotificationClient` / `NotificationService` (#5)~~ [FIXED]
 7. ~~Fix TOCTOU in `ApproveRequest` (#2)~~ [FIXED]
 8. ~~Fix TOCTOU in `CreateConfirmedRental` (#3)~~ [FIXED]
-9. Fix non-atomic Delete in repositories (#9)
-10. Fix observer subscription leak (#14)
-11. Fix event subscription leak (#15)
+9. ~~Fix non-atomic Delete in repositories (#9)~~ [FIXED]
+10. ~~Fix observer subscription leak (#14)~~ [FIXED]
+11. ~~Fix event subscription leak (#15)~~ [FIXED]
 
 ### Phase 3 — Business Logic Hardening
 
 > Goal: Improve correctness and robustness
 
-12. Set `User` property in `NotificationService.OnNext` (#10)
+12. ~~Set `User` property in `NotificationService.OnNext` (#10)~~ [FIXED]
 13. Add input validation to `CreateRequest` (#17)
-14. Add retry limits to `NotificationClient` (#12)
-15. Make `GameService._gameRepository` readonly (#13)
-16. Replace fire-and-forget scheduled notifications (#11)
+14. ~~Add retry limits to `NotificationClient` (#12)~~ [FIXED]
+15. ~~Make `GameService._gameRepository` readonly (#13)~~ [FIXED]
+16. ~~Replace fire-and-forget scheduled notifications (#11)~~ [FIXED]
 
 ### Phase 4 — Code Quality
 

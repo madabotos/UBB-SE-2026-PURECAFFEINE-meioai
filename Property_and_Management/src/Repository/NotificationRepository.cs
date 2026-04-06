@@ -56,18 +56,29 @@ namespace Property_and_Management.src.Repository
 
         public Notification Delete(int removedEntityId)
         {
-            var entity = Get(removedEntityId);
             using (var connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "DELETE FROM Notifications WHERE notification_id = @id";
+                    command.CommandText =
+                        "DELETE n OUTPUT deleted.notification_id, deleted.user_id, deleted.timestamp, " +
+                        "deleted.title, deleted.body, u.display_name AS user_display_name " +
+                        "FROM Notifications n LEFT JOIN Users u ON u.id = n.user_id " +
+                        "WHERE n.notification_id = @id";
                     command.Parameters.AddWithValue("@id", removedEntityId);
-                    command.ExecuteNonQuery();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            var user = new User((int)reader["user_id"], reader["user_display_name"] as string ?? string.Empty);
+                            return new Notification((int)reader["notification_id"], user,
+                                (DateTime)reader["timestamp"], (string)reader["title"], (string)reader["body"]);
+                        }
+                    }
                 }
             }
-            return entity;
+            throw new KeyNotFoundException();
         }
 
         public void Update(int updatedEntityId, Notification newEntity)

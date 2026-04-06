@@ -231,7 +231,7 @@ namespace Property_and_Management.src.Service
                 {
                     Id = 0,
                     User = new UserDTO { Id = request.Renter?.Id ?? 0 },
-                    Timestamp = DateTime.Now,
+                    Timestamp = DateTime.UtcNow,
                     Title = "Rental request declined",
                     Body = $"Your request for game {request.Game?.Id} " +
                            $"({request.StartDate:d}–{request.EndDate:d}) was declined. " +
@@ -264,7 +264,7 @@ namespace Property_and_Management.src.Service
                     {
                         Id = 0,
                         User = new UserDTO { Id = request.Renter?.Id ?? 0 },
-                        Timestamp = DateTime.Now,
+                        Timestamp = DateTime.UtcNow,
                         Title = "Rental request cancelled",
                         Body = $"Your request for game {gameId} " +
                                $"({request.StartDate:d}–{request.EndDate:d}) has been cancelled " +
@@ -280,8 +280,8 @@ namespace Property_and_Management.src.Service
                                                                    int month = 0,
                                                                    int year = 0)
         {
-            if (month == 0) month = DateTime.Now.Month;
-            if (year == 0) year = DateTime.Now.Year;
+            if (month == 0) month = DateTime.UtcNow.Month;
+            if (year == 0) year = DateTime.UtcNow.Year;
 
             return _requestRepository
                 .GetRequestsByGame(gameId)
@@ -296,7 +296,7 @@ namespace Property_and_Management.src.Service
         // ----------------------------------------------------------------
         public bool CheckAvailability(int gameId, DateTime startDate, DateTime endDate)
         {
-            var oneMonthFromNow = DateTime.Now.AddMonths(1);
+            var oneMonthFromNow = DateTime.UtcNow.AddMonths(1);
             if (startDate > oneMonthFromNow || endDate > oneMonthFromNow)
                 return false;
 

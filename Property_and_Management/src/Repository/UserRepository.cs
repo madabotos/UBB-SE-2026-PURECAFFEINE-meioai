@@ -54,18 +54,21 @@ namespace Property_and_Management.src.Repository
 
         public User Delete(int removedEntityId)
         {
-            var entity = Get(removedEntityId);
             using (var connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "DELETE FROM Users WHERE id = @id";
+                    command.CommandText = "DELETE FROM Users OUTPUT deleted.id, deleted.display_name WHERE id = @id";
                     command.Parameters.AddWithValue("@id", removedEntityId);
-                    command.ExecuteNonQuery();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                            return new User((int)reader["id"], reader["display_name"] as string ?? string.Empty);
+                    }
                 }
             }
-            return entity;
+            throw new KeyNotFoundException();
         }
 
         public void Update(int updatedEntityId, User newEntity)

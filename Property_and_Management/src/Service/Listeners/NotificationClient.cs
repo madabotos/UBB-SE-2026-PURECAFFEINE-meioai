@@ -21,6 +21,10 @@ namespace Property_and_Management.src.Service.Listeners
         private readonly CancellationTokenSource _cancellationTokenSource = new();
         private CancellationToken CancellationToken => _cancellationTokenSource.Token;
 
+        private const int MaxRetries = 5;
+        private static readonly TimeSpan InitialRetryDelay = TimeSpan.FromSeconds(1);
+        private static readonly TimeSpan MaxRetryDelay = TimeSpan.FromSeconds(30);
+
         public IPEndPoint ServerEndpoint => new IPEndPoint(IPAddress.Loopback, 4544);
 
         public NotificationClient()
@@ -69,32 +73,48 @@ namespace Property_and_Management.src.Service.Listeners
 
         public async Task ListenAsync()
         {
-            try
+            int retryCount = 0;
+            var retryDelay = InitialRetryDelay;
+
+            while (!CancellationToken.IsCancellationRequested)
             {
-                while (!CancellationToken.IsCancellationRequested)
+                try
                 {
                     var result = await _udpClient.ReceiveAsync(CancellationToken);
+                    retryCount = 0;
+                    retryDelay = InitialRetryDelay;
+
                     MessageWrapper? wrappedMessage = CommunicationHelper.GetMessageWrapper(result.Buffer);
 
                     if (wrappedMessage == null)
                     {
                         Console.WriteLine($"Recived bad json: {Encoding.UTF8.GetString(result.Buffer)}");
+                        continue;
                     }
 
                     HandleMessagePacket(wrappedMessage);
                 }
-            }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine("UDP client cancelled");
-            }
-            catch (ObjectDisposedException)
-            {
-                Console.WriteLine("UDP client socket closed");
-            }
-            finally
-            {
-                _udpClient?.Close();
+                catch (SocketException ex)
+                {
+                    retryCount++;
+                    if (retryCount > MaxRetries)
+                    {
+                        Console.WriteLine($"UDP client: max retries ({MaxRetries}) reached, stopping. Last error: {ex.Message}");
+                        break;
+                    }
+                    Console.WriteLine($"UDP client: SocketException ({ex.Message}), retry {retryCount}/{MaxRetries} in {retryDelay.TotalSeconds}s");
+                    try { await Task.Delay(retryDelay, CancellationToken); }
+                    catch (OperationCanceledException) { break; }
+                    retryDelay = TimeSpan.FromTicks(Math.Min(retryDelay.Ticks * 2, MaxRetryDelay.Ticks));
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (ObjectDisposedException)
+                {
+                    break;
+                }
             }
         }
 

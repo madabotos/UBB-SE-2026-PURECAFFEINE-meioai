@@ -174,18 +174,41 @@ namespace Property_and_Management.src.Repository
 
         public Rental Delete(int removedEntityId)
         {
-            var entity = Get(removedEntityId);
             using (var connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "DELETE FROM Rentals WHERE rental_id = @id";
+                    command.CommandText =
+                        "DELETE r OUTPUT deleted.rental_id, deleted.game_id, deleted.renter_id, deleted.owner_id, " +
+                        "deleted.start_date, deleted.end_date, " +
+                        "ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, " +
+                        "g.name AS game_name, g.image AS game_image " +
+                        "FROM Rentals r " +
+                        "LEFT JOIN Users ru ON ru.id = r.renter_id " +
+                        "LEFT JOIN Users ou ON ou.id = r.owner_id " +
+                        "LEFT JOIN Games g ON g.game_id = r.game_id " +
+                        "WHERE r.rental_id = @id";
                     command.Parameters.AddWithValue("@id", removedEntityId);
-                    command.ExecuteNonQuery();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            var game = new Game
+                            {
+                                Id = (int)reader["game_id"],
+                                Name = reader["game_name"] as string ?? string.Empty,
+                                Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
+                            };
+                            var renter = new User((int)reader["renter_id"], reader["renter_display_name"] as string ?? string.Empty);
+                            var owner = new User((int)reader["owner_id"], reader["owner_display_name"] as string ?? string.Empty);
+                            return new Rental((int)reader["rental_id"], game, renter, owner,
+                                (DateTime)reader["start_date"], (DateTime)reader["end_date"]);
+                        }
+                    }
                 }
             }
-            return entity;
+            throw new KeyNotFoundException();
         }
 
         public void Update(int updatedEntityId, Rental newEntity)

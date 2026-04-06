@@ -73,32 +73,64 @@ namespace Property_and_Management.src.Repository
             }
         }
 
+        private static readonly string DeleteWithOutputSql =
+            "DELETE r OUTPUT deleted.request_id, deleted.game_id, deleted.renter_id, deleted.owner_id, " +
+            "deleted.start_date, deleted.end_date, " +
+            "ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, " +
+            "g.name AS game_name, g.image AS game_image " +
+            "FROM Requests r " +
+            "LEFT JOIN Users ru ON ru.id = r.renter_id " +
+            "LEFT JOIN Users ou ON ou.id = r.owner_id " +
+            "LEFT JOIN Games g ON g.game_id = r.game_id " +
+            "WHERE r.request_id = @id";
+
         public Request Delete(int removedEntityId)
         {
             using (var connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
-                using (var transaction = connection.BeginTransaction())
+                using (var command = connection.CreateCommand())
                 {
-                    var entity = Get(removedEntityId);
-                    Delete(removedEntityId, connection, transaction);
-                    transaction.Commit();
-                    return entity;
+                    command.CommandText = DeleteWithOutputSql;
+                    command.Parameters.AddWithValue("@id", removedEntityId);
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                            return ReadRequestFromReader(reader);
+                    }
                 }
             }
+            throw new KeyNotFoundException();
         }
 
         public Request Delete(int id, SqlConnection connection, SqlTransaction transaction)
         {
-            var entity = Get(id);
             using (var command = connection.CreateCommand())
             {
                 command.Transaction = transaction;
-                command.CommandText = "DELETE FROM Requests WHERE request_id = @id";
+                command.CommandText = DeleteWithOutputSql;
                 command.Parameters.AddWithValue("@id", id);
-                command.ExecuteNonQuery();
+                using (var reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                        return ReadRequestFromReader(reader);
+                }
             }
-            return entity;
+            throw new KeyNotFoundException();
+        }
+
+        private static Request ReadRequestFromReader(SqlDataReader reader)
+        {
+            var game = new Game
+            {
+                Id = (int)reader["game_id"],
+                Name = reader["game_name"] as string ?? string.Empty,
+                Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
+            };
+            var renter = new User((int)reader["renter_id"], reader["renter_display_name"] as string ?? string.Empty);
+            var owner = new User((int)reader["owner_id"], reader["owner_display_name"] as string ?? string.Empty);
+            return new Request((int)reader["request_id"], game, renter, owner,
+                (DateTime)reader["start_date"], (DateTime)reader["end_date"]);
         }
 
         public void Update(int updatedEntityId, Request newEntity)

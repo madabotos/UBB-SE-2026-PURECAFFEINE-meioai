@@ -16,11 +16,12 @@ using Windows.ApplicationModel.VoiceCommands;
 
 namespace Property_and_Management.src.Viewmodels
 {
-    public class NotificationsViewModel : INotifyPropertyChanged, IObserver<NotificationDTO>
+    public class NotificationsViewModel : INotifyPropertyChanged, IObserver<NotificationDTO>, IDisposable
     {
         private ObservableCollection<NotificationDTO> _notifications = new ObservableCollection<NotificationDTO>();
         private ObservableCollection<NotificationDTO> _pagedNotifications = new ObservableCollection<NotificationDTO>();
         private readonly NotificationService _notificationService;
+        private readonly IDisposable _subscription;
         private HashSet<int> _dismissedNotificationIds = new HashSet<int>();
 
         private ImmutableList<NotificationDTO> _allNotifications = ImmutableList<NotificationDTO>.Empty;
@@ -91,7 +92,7 @@ namespace Property_and_Management.src.Viewmodels
             // Default user
             LoadNotificationsForUser((App.Current as App)?.CurrentUserID ?? 1);
 
-            notificationService.Subscribe(this);
+            _subscription = notificationService.Subscribe(this);
         }
 
         public void LoadNotificationsForUser(int userId)
@@ -232,5 +233,7 @@ namespace Property_and_Management.src.Viewmodels
             // Trigger an update from the service
             LoadNotificationsForUser(CurrentUserId == 0 ? 1 : CurrentUserId);
         }
+
+        public void Dispose() => _subscription?.Dispose();
     }
 }

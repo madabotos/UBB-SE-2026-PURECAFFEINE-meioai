@@ -136,18 +136,31 @@ namespace Property_and_Management.src.Repository
 
         public Game Delete(int removedEntityId)
         {
-            var entity = Get(removedEntityId);
             using (var connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "DELETE FROM Games WHERE game_id = @id";
+                    command.CommandText =
+                        "DELETE g OUTPUT deleted.game_id, deleted.owner_id, deleted.name, deleted.price, " +
+                        "deleted.minimum_player_number, deleted.maximum_player_number, deleted.description, " +
+                        "deleted.image, deleted.is_active, u.display_name AS owner_display_name " +
+                        "FROM Games g LEFT JOIN Users u ON u.id = g.owner_id WHERE g.game_id = @id";
                     command.Parameters.AddWithValue("@id", removedEntityId);
-                    command.ExecuteNonQuery();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            var owner = new User((int)reader["owner_id"], reader["owner_display_name"] as string ?? string.Empty);
+                            return new Game((int)reader["game_id"], owner, (string)reader["name"],
+                                Convert.ToDecimal(reader["price"]), (int)reader["minimum_player_number"],
+                                (int)reader["maximum_player_number"], (string)reader["description"],
+                                reader["image"] as byte[], Convert.ToBoolean(reader["is_active"]));
+                        }
+                    }
                 }
             }
-            return entity;
+            throw new KeyNotFoundException();
         }
     }
 }

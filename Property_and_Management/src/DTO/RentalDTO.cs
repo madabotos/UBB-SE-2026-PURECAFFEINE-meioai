@@ -17,7 +17,7 @@ namespace Property_and_Management.src.DTO
         public string EndDateDisplay => EndDate.ToString("dd/MM");
         public string StartDateDisplayLong => $"Start: {StartDate:dd/MM/yyyy}";
         public string EndDateDisplayLong => $"End: {EndDate:dd/MM/yyyy}";
-        public bool IsExpired => EndDate < DateTime.Now;
+        public bool IsExpired => EndDate < DateTime.UtcNow;
 
         public RentalDTO() { }
     }

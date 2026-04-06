@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
@@ -18,6 +19,7 @@ namespace Property_and_Management.src.Service
     public class NotificationService : INotificationService, IObserver<MessageBase>, IObservable<NotificationDTO>, IDisposable
     {
         private bool _disposed;
+        private readonly CancellationTokenSource _scheduleCts = new();
         private readonly NotificationRepository _notificationRepository;
         private readonly IMapper<Notification, NotificationDTO> _notificationMapper;
 
@@ -81,6 +83,7 @@ namespace Property_and_Management.src.Service
             {
                 var notificationDTO = new NotificationDTO
                 {
+                    User = new UserDTO { Id = message.UserId },
                     Timestamp = message.Timestamp,
                     Title = message.Title,
                     Body = message.Body
@@ -96,7 +99,21 @@ namespace Property_and_Management.src.Service
         public IDisposable Subscribe(IObserver<NotificationDTO> observer)
         {
             _subscribers.Add(observer);
-            return null;
+            return new Unsubscriber(_subscribers, observer);
+        }
+
+        private sealed class Unsubscriber : IDisposable
+        {
+            private readonly List<IObserver<NotificationDTO>> _subscribers;
+            private readonly IObserver<NotificationDTO> _observer;
+
+            public Unsubscriber(List<IObserver<NotificationDTO>> subscribers, IObserver<NotificationDTO> observer)
+            {
+                _subscribers = subscribers;
+                _observer = observer;
+            }
+
+            public void Dispose() => _subscribers.Remove(_observer);
         }
 
         private void ShowWindowsNotification(string title, string body)
@@ -117,6 +134,8 @@ namespace Property_and_Management.src.Service
             if (_disposed) return;
             _disposed = true;
 
+            _scheduleCts.Cancel();
+            _scheduleCts.Dispose();
             StopListening();
             (_serverClient as IDisposable)?.Dispose();
         }
@@ -163,13 +182,26 @@ namespace Property_and_Management.src.Service
                 return;
             }
 
+            // Persist to DB now so the reminder survives an app restart
+            _notificationRepository.Add(new Notification
+            {
+                Id = 0,
+                User = new User { Id = userId },
+                Timestamp = scheduledTime,
+                Title = title,
+                Body = body
+            });
+
+            // Best-effort: deliver the live push + toast at the scheduled time
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    await Task.Delay(delay);
-                    SendNotificationToUser(userId, dto);
+                    await Task.Delay(delay, _scheduleCts.Token);
+                    _serverClient.SendNotification(userId, title, body);
+                    ShowWindowsNotification(title, body);
                 }
+                catch (OperationCanceledException) { }
                 catch { }
             });
         }
