@@ -16,6 +16,11 @@
 demo-builds/
 
 # ==========================================
+# Environment config (per-developer)
+# ==========================================
+.env
+
+# ==========================================
 # WinUI 3 / Windows App SDK Specific
 # ==========================================
 # App package directories generated during MSIX builds

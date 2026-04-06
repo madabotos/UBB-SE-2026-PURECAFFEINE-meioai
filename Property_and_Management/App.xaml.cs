@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -69,6 +70,13 @@ namespace Property_and_Management
         {
             CurrentUserID = GetUserIdFromArgs();
 
+            // Two-window dev mode: user 1 spawns the notification server + a second client
+            if (CurrentUserID == 1 && IsTwoWindowsEnabled())
+            {
+                StartNotificationServer();
+                LaunchSecondClient();
+            }
+
             AppUserModelId = $"BoardRent -- user-{CurrentUserID}";
 
             // Create manager and wire its generic handlers (handlers may reference fields initialized later)
@@ -133,6 +141,89 @@ namespace Property_and_Management
 
             return defaultUserId;
         }
+
+        #region Two-window dev mode
+
+        private static string? FindRepoRoot()
+        {
+            var dir = new DirectoryInfo(AppContext.BaseDirectory);
+            while (dir != null)
+            {
+                if (Directory.Exists(System.IO.Path.Combine(dir.FullName, ".git")))
+                    return dir.FullName;
+                dir = dir.Parent;
+            }
+            return null;
+        }
+
+        private static bool IsTwoWindowsEnabled()
+        {
+            try
+            {
+                var repoRoot = FindRepoRoot();
+                if (repoRoot == null) return false;
+
+                var envPath = System.IO.Path.Combine(repoRoot, ".env");
+                if (!File.Exists(envPath)) return false;
+
+                foreach (var line in File.ReadAllLines(envPath))
+                {
+                    var trimmed = line.Trim();
+                    if (trimmed.StartsWith('#') || !trimmed.Contains('=')) continue;
+                    var parts = trimmed.Split('=', 2);
+                    if (parts[0].Trim() == "TWO_WINDOWS")
+                        return parts[1].Trim().Equals("true", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        private static void StartNotificationServer()
+        {
+            try
+            {
+                if (Process.GetProcessesByName("NotificationServer").Length > 0) return;
+
+                var repoRoot = FindRepoRoot();
+                if (repoRoot == null) return;
+
+                var serverBinDir = System.IO.Path.Combine(repoRoot, "NotificationServer", "bin");
+                if (!Directory.Exists(serverBinDir)) return;
+
+                var serverExe = Directory.GetFiles(serverBinDir, "NotificationServer.exe", SearchOption.AllDirectories)
+                    .FirstOrDefault();
+                if (serverExe == null) return;
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = serverExe,
+                    UseShellExecute = true,
+                    WindowStyle = ProcessWindowStyle.Minimized
+                });
+            }
+            catch { }
+        }
+
+        private static void LaunchSecondClient()
+        {
+            try
+            {
+                var currentExe = Environment.ProcessPath;
+                if (currentExe == null) return;
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = currentExe,
+                    Arguments = "2",
+                    UseShellExecute = true,
+                    WorkingDirectory = System.IO.Path.GetDirectoryName(currentExe)
+                });
+            }
+            catch { }
+        }
+
+        #endregion
 
         private void SetupNotificationManager()
         {
