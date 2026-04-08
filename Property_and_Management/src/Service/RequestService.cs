@@ -152,100 +152,100 @@ namespace Property_and_Management.src.Service
             using var transaction = connection.BeginTransaction(System.Data.IsolationLevel.Serializable);
             try
             {
-                rental = new Rental(
-                    id: 0,
-                    game: request.Game,
-                    renter: request.Renter,
-                    owner: request.Owner,
-                    startDate: request.StartDate,
-                    endDate: request.EndDate);
+                    rental = new Rental(
+                        id: 0,
+                        game: request.Game,
+                        renter: request.Renter,
+                        owner: request.Owner,
+                        startDate: request.StartDate,
+                        endDate: request.EndDate);
 
-                _rentalRepository.Add(rental, connection, transaction);
+                    _rentalRepository.Add(rental, connection, transaction);
 
-                overlappingRequests = GetOverlappingRequests(
-                    request.Game?.Id ?? 0, requestId, bufferedStart, bufferedEnd,
-                    connection, transaction);
+                    overlappingRequests = GetOverlappingRequests(
+                        request.Game?.Id ?? 0, requestId, bufferedStart, bufferedEnd,
+                        connection, transaction);
 
-                // Delete notifications BEFORE their referenced requests (FK constraint)
-                foreach (var overlap in overlappingRequests)
+                    // Delete notifications BEFORE their referenced requests (FK constraint)
+                    foreach (var overlap in overlappingRequests)
+                    {
+                        _notificationService.DeleteNotificationsByRequestId(overlap.Id);
+                        _requestRepository.Delete(overlap.Id, connection, transaction);
+                    }
+
+                    _notificationService.DeleteNotificationsByRequestId(requestId);
+                    _requestRepository.Delete(requestId, connection, transaction);
+                    transaction.Commit();
+                }
+                catch (Exception)
                 {
-                    _notificationService.DeleteNotificationsByRequestId(overlap.Id);
-                    _requestRepository.Delete(overlap.Id, connection, transaction);
+                    transaction.Rollback();
+                    return (int)ApproveRequestError.TRANSACTION_FAILED_ERROR;
                 }
 
-                _notificationService.DeleteNotificationsByRequestId(requestId);
-                _requestRepository.Delete(requestId, connection, transaction);
-                transaction.Commit();
-            }
-            catch (Exception)
-            {
-                transaction.Rollback();
-                return (int)ApproveRequestError.TRANSACTION_FAILED_ERROR;
-            }
-
-            // Post-commit notifications
-            foreach (var overlap in overlappingRequests)
-            {
-                _notificationService.SendNotificationToUser(
-                    overlap.Renter?.Id ?? 0,
-                    new NotificationDTO
-                    {
-                        Id = 0,
-                        User = new UserDTO { Id = overlap.Renter?.Id ?? 0 },
-                        Timestamp = DateTime.UtcNow,
-                        Title = "Booking Unavailable",
-                        Body = $"Your request for game {request.Game?.Id} " +
-                               $"({overlap.StartDate:d}–{overlap.EndDate:d}) was declined " +
-                               $"because the game is no longer available in that period."
-                    });
-            }
-
-            _notificationService.ScheduleUpcomingRentalReminder(rental);
-            return rental.Id;
-        }
-
-        private static List<Request> GetOverlappingRequests(
-            int gameId, int excludeRequestId,
-            DateTime bufferedStart, DateTime bufferedEnd,
-            SqlConnection connection, SqlTransaction transaction)
-        {
-            var list = new List<Request>();
-            using var command = connection.CreateCommand();
-            command.Transaction = transaction;
-            command.CommandText =
-                "SELECT r.request_id, r.game_id, r.renter_id, r.owner_id, r.start_date, r.end_date, " +
-                "ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, " +
-                "g.name AS game_name, g.image AS game_image " +
-                "FROM Requests r " +
-                "LEFT JOIN Users ru ON ru.id = r.renter_id " +
-                "LEFT JOIN Users ou ON ou.id = r.owner_id " +
-                "LEFT JOIN Games g ON g.game_id = r.game_id " +
-                "WHERE r.game_id = @game_id AND r.request_id != @exclude_id " +
-                "AND r.start_date < @buffered_end AND r.end_date > @buffered_start";
-            command.Parameters.AddWithValue("@game_id", gameId);
-            command.Parameters.AddWithValue("@exclude_id", excludeRequestId);
-            command.Parameters.AddWithValue("@buffered_end", bufferedEnd);
-            command.Parameters.AddWithValue("@buffered_start", bufferedStart);
-            using var reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                var game = new Game
+                // Post-commit notifications
+                foreach (var overlap in overlappingRequests)
                 {
-                    Id = (int)reader["game_id"],
-                    Name = reader["game_name"] as string ?? string.Empty,
-                    Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
-                };
-                var renter = new User((int)reader["renter_id"], reader["renter_display_name"] as string ?? string.Empty);
-                var owner = new User((int)reader["owner_id"], reader["owner_display_name"] as string ?? string.Empty);
-                list.Add(new Request((int)reader["request_id"], game, renter, owner,
-                    (DateTime)reader["start_date"], (DateTime)reader["end_date"]));
-            }
-            return list;
-        }
+                    _notificationService.SendNotificationToUser(
+                        overlap.Renter?.Id ?? 0,
+                        new NotificationDTO
+                        {
+                            Id = 0,
+                            User = new UserDTO { Id = overlap.Renter?.Id ?? 0 },
+                            Timestamp = DateTime.UtcNow,
+                            Title = "Booking Unavailable",
+                            Body = $"Your request for game {request.Game?.Id} " +
+                                   $"({overlap.StartDate:d}–{overlap.EndDate:d}) was declined " +
+                                   $"because the game is no longer available in that period."
+                        });
+                }
 
-        // ----------------------------------------------------------------
-        //  [BL-LFC-03] Owner declines a request
-        // ----------------------------------------------------------------
+                _notificationService.ScheduleUpcomingRentalReminder(rental);
+                return rental.Id;
+            }
+
+            private static List<Request> GetOverlappingRequests(
+                int gameId, int excludeRequestId,
+                DateTime bufferedStart, DateTime bufferedEnd,
+                SqlConnection connection, SqlTransaction transaction)
+            {
+                var list = new List<Request>();
+                using var command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText =
+                    "SELECT r.request_id, r.game_id, r.renter_id, r.owner_id, r.start_date, r.end_date, " +
+                    "ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, " +
+                    "g.name AS game_name, g.image AS game_image " +
+                    "FROM Requests r " +
+                    "LEFT JOIN Users ru ON ru.id = r.renter_id " +
+                    "LEFT JOIN Users ou ON ou.id = r.owner_id " +
+                    "LEFT JOIN Games g ON g.game_id = r.game_id " +
+                    "WHERE r.game_id = @game_id AND r.request_id != @exclude_id " +
+                    "AND r.start_date < @buffered_end AND r.end_date > @buffered_start";
+                command.Parameters.AddWithValue("@game_id", gameId);
+                command.Parameters.AddWithValue("@exclude_id", excludeRequestId);
+                command.Parameters.AddWithValue("@buffered_end", bufferedEnd);
+                command.Parameters.AddWithValue("@buffered_start", bufferedStart);
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    var game = new Game
+                    {
+                        Id = (int)reader["game_id"],
+                        Name = reader["game_name"] as string ?? string.Empty,
+                        Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
+                    };
+                    var renter = new User((int)reader["renter_id"], reader["renter_display_name"] as string ?? string.Empty);
+                    var owner = new User((int)reader["owner_id"], reader["owner_display_name"] as string ?? string.Empty);
+                    list.Add(new Request((int)reader["request_id"], game, renter, owner,
+                        (DateTime)reader["start_date"], (DateTime)reader["end_date"]));
+                }
+                return list;
+            }
+
+            // ----------------------------------------------------------------
+            //  [BL-LFC-03] Owner declines a request
+            // ----------------------------------------------------------------
         public int DenyRequest(int requestId, int ownerId, string reason)
         {
             Request request;

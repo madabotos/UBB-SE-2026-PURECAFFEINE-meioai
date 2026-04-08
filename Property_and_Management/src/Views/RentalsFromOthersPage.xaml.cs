@@ -32,16 +32,11 @@ namespace Property_and_Management.src.Views
             }
         }
 
-        private void RequestButton_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            e.Handled = true;
-        }
-
-        private void RequestButton_Click(object sender, RoutedEventArgs e)
-        {
-            Frame?.Navigate(typeof(CreateRequestView));
-        }
-
+        
+    
+        
+    
+            
         private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
         {
             if (sender is not Image img)

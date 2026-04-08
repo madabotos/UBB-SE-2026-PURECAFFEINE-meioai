@@ -21,9 +21,9 @@ namespace Property_and_Management.src.Viewmodels
             {
                 { "My Games", () => RequestNavigation?.Invoke(typeof(ListingsPage)) },
                 { "Others' Requests", () => RequestNavigation?.Invoke(typeof(RequestsFromOthersPage)) },
-                { "Others' Rentals", () => RequestNavigation?.Invoke(typeof(RentalsFromOthersPage)) },
+                { "Others' Rentals", () => RequestNavigation?.Invoke(typeof(RentalsToOthersPage))},
                 { "My Requests", () => RequestNavigation?.Invoke(typeof(RequestsToOthersPage)) },
-                { "My Rentals", () => RequestNavigation?.Invoke(typeof(RentalsToOthersPage)) },
+                { "My Rentals", () => RequestNavigation?.Invoke(typeof(RentalsFromOthersPage))},
                 { "Notifications", () => RequestNavigation?.Invoke(typeof(Views.NotificationsPage)) }
             };
         }
