@@ -183,9 +183,21 @@ namespace Property_and_Management.src.Service
                 return (int)ApproveRequestError.TRANSACTION_FAILED_ERROR;
             }
 
+            const string bookingDeepLink = "app://bookings";
+
             // Post-commit notifications
             foreach (var overlap in overlappingRequests)
             {
+                var overlapGameName = overlap.Game?.Name;
+                if (string.IsNullOrWhiteSpace(overlapGameName))
+                {
+                    overlapGameName = request.Game?.Name;
+                }
+                if (string.IsNullOrWhiteSpace(overlapGameName))
+                {
+                    overlapGameName = "the selected game";
+                }
+
                 _notificationService.SendNotificationToUser(
                     overlap.Renter?.Id ?? 0,
                     new NotificationDTO
@@ -194,9 +206,10 @@ namespace Property_and_Management.src.Service
                         User = new UserDTO { Id = overlap.Renter?.Id ?? 0 },
                         Timestamp = DateTime.UtcNow,
                         Title = "Booking Unavailable",
-                        Body = $"Your request for game {request.Game?.Id} " +
-                               $"({overlap.StartDate:d}–{overlap.EndDate:d}) was declined " +
-                               $"because the game is no longer available in that period."
+                        Body = $"Your request for {overlapGameName} " +
+                               $"({overlap.StartDate:d}-{overlap.EndDate:d}) was declined " +
+                               $"because the game is no longer available in that period. " +
+                               $"Open the booking interface: {bookingDeepLink}"
                     });
             }
 

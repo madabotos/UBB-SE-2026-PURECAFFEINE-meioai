@@ -15,3 +15,10 @@ Track every file touched while implementing tasks from `ComponentDocumentation/u
 - `Property_and_Management/src/Viewmodels/EditGameViewModel.cs`
 - `Property_and_Management/src/Views/EditGameView.xaml`
 - `Property_and_Management/src/Views/EditGameView.xaml.cs`
+
+## Task 5 - REQ-NOT-01: Overlapping Request Cancelled Notification Uses Game Name + Booking Link
+
+- Updated behavior: overlapping-request cancellation notification body now uses the game name instead of game ID.
+- Updated behavior: notification body now includes a booking interface deep-link string (`app://bookings`).
+- All files changed for Task 5:
+- `Property_and_Management/src/Service/RequestService.cs`
