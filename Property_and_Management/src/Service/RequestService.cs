@@ -256,6 +256,7 @@ namespace Property_and_Management.src.Service
             if (request.Owner?.Id != ownerId)
                 return (int)DenyRequestError.UNAUTHORIZED_ERROR;
 
+            _notificationService.DeleteNotificationsByRequestId(requestId);
             _requestRepository.Delete(requestId);
 
             _notificationService.SendNotificationToUser(
@@ -281,6 +282,7 @@ namespace Property_and_Management.src.Service
         {
             try
             {
+                _notificationService.DeleteNotificationsByRequestId(requestId);
                 _requestRepository.Delete(requestId);
             }
             catch (KeyNotFoundException)
@@ -299,6 +301,7 @@ namespace Property_and_Management.src.Service
 
             foreach (var request in pending)
             {
+                _notificationService.DeleteNotificationsByRequestId(request.Id);
                 _requestRepository.Delete(request.Id);
 
                 _notificationService.SendNotificationToUser(
