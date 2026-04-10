@@ -195,7 +195,7 @@ namespace Property_and_Management.src.Service
                             Timestamp = DateTime.UtcNow,
                             Title = "Booking Unavailable",
                             Body = $"Your request for {request.Game?.Name ?? "the selected game"} " +
-                                   $"({overlap.StartDate:d}–{overlap.EndDate:d}) was declined " +
+                                   $"({overlap.StartDate:d}-{overlap.EndDate:d}) was declined " +
                                    $"because the game is no longer available in that period."
                         });
                 }
@@ -268,7 +268,7 @@ namespace Property_and_Management.src.Service
                     Timestamp = DateTime.UtcNow,
                     Title = "Rental request declined",
                     Body = $"Your request for {request.Game?.Name ?? "the selected game"} " +
-                           $"({request.StartDate:d}–{request.EndDate:d}) was declined. " +
+                           $"({request.StartDate:d}-{request.EndDate:d}) was declined. " +
                            $"Reason: {reason}"
                 });
 
@@ -297,7 +297,10 @@ namespace Property_and_Management.src.Service
         // ----------------------------------------------------------------
         public void OnGameDeactivated(int gameId)
         {
-            var pending = _requestRepository.GetRequestsByGame(gameId);
+            var pending = _requestRepository
+                .GetRequestsByGame(gameId)
+                .Where(request => request.Status == RequestStatus.Open || request.Status == RequestStatus.OfferPending)
+                .ToImmutableList();
 
             foreach (var request in pending)
             {
@@ -313,7 +316,7 @@ namespace Property_and_Management.src.Service
                         Timestamp = DateTime.UtcNow,
                         Title = "Rental request cancelled",
                         Body = $"Your request for {request.Game?.Name ?? "the selected game"} " +
-                               $"({request.StartDate:d}–{request.EndDate:d}) has been cancelled " +
+                               $"({request.StartDate:d}-{request.EndDate:d}) has been cancelled " +
                                $"because the game is no longer available."
                     });
             }
@@ -383,10 +386,9 @@ namespace Property_and_Management.src.Service
             if (request.Status != RequestStatus.Open)
                 return (int)OfferError.REQUEST_NOT_OPEN;
 
-            _requestRepository.UpdateStatus(requestId, RequestStatus.OfferPending, offeringUserId);
-
-            var ownerName = request.Owner?.DisplayName ?? "Someone";
-            var gameName = request.Game?.Name ?? "a game";
+            var rentalId = ApproveRequest(requestId, offeringUserId);
+            if (rentalId <= 0)
+                return rentalId;
 
             _notificationService.SendNotificationToUser(
                 request.Renter?.Id ?? 0,
@@ -395,13 +397,12 @@ namespace Property_and_Management.src.Service
                     Id = 0,
                     User = new UserDTO { Id = request.Renter?.Id ?? 0 },
                     Timestamp = DateTime.UtcNow,
-                    Title = "Game Offer Received",
-                    Body = $"{ownerName} is offering you {gameName} for {request.StartDate:dd/MM/yyyy} - {request.EndDate:dd/MM/yyyy}",
-                    Type = NotificationType.OfferReceived,
-                    RelatedRequestId = requestId
+                    Title = "Rental request approved",
+                    Body = $"Your request for {request.Game?.Name ?? "the selected game"} " +
+                           $"({request.StartDate:d}-{request.EndDate:d}) was approved."
                 });
 
-            return requestId;
+            return rentalId;
         }
 
         // ----------------------------------------------------------------

@@ -183,12 +183,12 @@ namespace Property_and_Management.src.Service
         private string ComposeUpcomingRentalBody(Rental rental)
         {
             var gameName = rental.Game?.Name ?? "your game";
-            var start = rental.StartDate.ToString("yyyy-MM-dd HH:mm");
-            return $"{gameName} rental starts on {start}. Pickup/delivery instructions: {GetPickupInstructions(rental)}";
+            var start = rental.StartDate.ToString("dd/MM/yyyy HH:mm");
+            return $"Game: {gameName}\nStart: {start}\nDelivery/Pick-up: {GetPickupInstructions(rental)}";
         }
 
         private string GetPickupInstructions(Rental rental) =>
-            "Please coordinate pickup or delivery with the other party (check messages for contact details).";
+            "Coordinate delivery/pick-up directly with the other party.";
 
         private void ScheduleOrSendUserNotification(int userId, string title, string body, DateTime scheduledTime)
         {

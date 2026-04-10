@@ -34,24 +34,27 @@ namespace Property_and_Management.src.Viewmodels
             _gameService = gameService;
         }
 
-        public bool ValidateInputs()
+        public List<string> ValidateInputs()
         {
+            var errors = new List<string>();
+
             if (string.IsNullOrWhiteSpace(Name) || Name.Length < 5 || Name.Length > 30)
-                return false;
-            if (Price <= 0)
-                return false;
+                errors.Add("Name must be between 5 and 30 characters.");
+            if (Price < 1)
+                errors.Add("Price must be greater than or equal to 1.");
             if (MinPlayers < 1)
-                return false;
+                errors.Add("Minimum player count must be at least 1.");
             if (MaxPlayers < MinPlayers)
-                return false;
+                errors.Add("Maximum player count must be greater than or equal to minimum player count.");
             if (string.IsNullOrWhiteSpace(Description) || Description.Length < 10 || Description.Length > 500)
-                return false;
-            return true;
+                errors.Add("Description must be between 10 and 500 characters.");
+
+            return errors;
         }
 
         public GameDTO SaveGame()
         {
-            if (!ValidateInputs()) return null;
+            if (ValidateInputs().Count > 0) return null;
 
             if (Image == null || Image.Length == 0)
             {

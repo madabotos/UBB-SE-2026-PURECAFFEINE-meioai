@@ -15,52 +15,37 @@ Current branch notification coverage and manual verification status.
 - Recipient: renter
 - Type: `Informational`
 - Source: `Property_and_Management/src/Service/RequestService.cs` (DenyRequest, around line 262)
-- Status: **Reviewed, not verified yet**
-- Notes: cannot be verified from current UI because deny action is missing in `Others' Requests` page (owner should be able to deny there).
+- Status: **Completed and verified**
 
 ## 3) Rental request cancelled
 - Trigger: game deleted and message to the existing requests on that game(`OnGameDeactivated`)
 - Recipient: renter(s) with pending request
 - Type: `Informational`
 - Source: `Property_and_Management/src/Service/RequestService.cs` (OnGameDeactivated, around line 298)
-- Status: **Not yet verified**
+- Status: **Completed and verified**
 
-## 4) Game Offer Received
-- Trigger: owner offers game (`OfferGame`)
-- Recipient: renter
-- Type: `OfferReceived` (actionable, includes `RelatedRequestId`)
-- Source: `Property_and_Management/src/Service/RequestService.cs` (OfferGame, around line 391)
-- Status: **Not yet verified**
+## 4) Rental Confirmed
+- Trigger: N/A in current UI flow
+- Recipient: N/A
+- Type: N/A
+- Source: `Property_and_Management/src/Service/RequestService.cs` (`ApproveOffer` legacy path)
+- Status: **Not used in active flow**
 
-## 5) Offer Accepted
-- Trigger: renter approves offer (`ApproveOffer`)
-- Recipient: owner/offering user
-- Type: `OfferResult`
-- Source: `Property_and_Management/src/Service/RequestService.cs` (ApproveOffer, around line 486)
-- Status: **Not yet verified**
+## 5) Offer Denied
+- Trigger: N/A in current UI flow
+- Recipient: N/A
+- Type: N/A
+- Source: `Property_and_Management/src/Service/RequestService.cs` (`DenyOffer` legacy path)
+- Status: **Not used in active flow**
 
-## 6) Rental Confirmed
-- Trigger: renter approves offer (`ApproveOffer`)
-- Recipient: renter
-- Type: `OfferResult`
-- Source: `Property_and_Management/src/Service/RequestService.cs` (ApproveOffer, around line 498)
-- Status: **Not yet verified**
+## 6) Offer Declined
+- Trigger: N/A in current UI flow
+- Recipient: N/A
+- Type: N/A
+- Source: `Property_and_Management/src/Service/RequestService.cs` (`DenyOffer` legacy path)
+- Status: **Not used in active flow**
 
-## 7) Offer Denied
-- Trigger: renter denies offer (`DenyOffer`)
-- Recipient: owner/offering user
-- Type: `OfferResult`
-- Source: `Property_and_Management/src/Service/RequestService.cs` (DenyOffer, around line 541)
-- Status: **Not yet verified**
-
-## 8) Offer Declined
-- Trigger: renter denies offer (`DenyOffer`)
-- Recipient: renter (confirmation)
-- Type: `OfferResult`
-- Source: `Property_and_Management/src/Service/RequestService.cs` (DenyOffer, around line 554)
-- Status: **Not yet verified**
-
-## 9) Upcoming Rental Reminder
+## 7) Upcoming Rental Reminder
 - Trigger: scheduled 24h before rental start
 - Recipient: renter and owner
 - Type: `Informational` (default)

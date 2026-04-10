@@ -26,6 +26,8 @@ namespace Property_and_Management.src.Views
     /// </summary>
     public sealed partial class NotificationsPage : Page
     {
+        private readonly DispatcherTimer _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+
         public NotificationsPage()
         {
             InitializeComponent();
@@ -33,15 +35,26 @@ namespace Property_and_Management.src.Views
             // Grab the ViewModel straight from the App!
             var app = (Property_and_Management.App)Application.Current;
             this.DataContext = app.NotificationsViewModel;
+
+            _refreshTimer.Tick += (_, _) =>
+            {
+                if (DataContext is NotificationsViewModel vm)
+                {
+                    vm.LoadNotificationsForUser(app.CurrentUserID);
+                }
+            };
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
 
+            var app = (Property_and_Management.App)Application.Current;
+
             if (e.Parameter is NotificationsViewModel vm)
             {
                 DataContext = vm;
+                vm.LoadNotificationsForUser(app.CurrentUserID);
 
                 // If the XAML contains a named ItemsControl / ListView called "ItemsListView" from older implementation,
                 // bind its ItemsSource to the VM's Notifications collection to preserve behavior.
@@ -50,6 +63,18 @@ namespace Property_and_Management.src.Views
                     items.ItemsSource = vm.Notifications;
                 }
             }
+            else if (DataContext is NotificationsViewModel defaultVm)
+            {
+                defaultVm.LoadNotificationsForUser(app.CurrentUserID);
+            }
+
+            _refreshTimer.Start();
+        }
+
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            base.OnNavigatedFrom(e);
+            _refreshTimer.Stop();
         }
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
@@ -78,83 +103,6 @@ namespace Property_and_Management.src.Views
             catch (Exception ex)
             {
                 Debug.WriteLine($"DeleteButton_Click error: {ex}");
-            }
-        }
-
-        private async void ApproveOffer_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var btn = sender as Button;
-                var note = btn?.DataContext as NotificationDTO;
-                if (note?.RelatedRequestId == null) return;
-
-                var root = this.Content as FrameworkElement;
-                var vm = root?.DataContext as NotificationsViewModel;
-                if (vm == null) return;
-
-                var result = vm.ApproveOffer(note.RelatedRequestId.Value);
-                if (result < 0)
-                {
-                    string message = result switch
-                    {
-                        -1 => "Request not found.",
-                        -2 => "You are not authorized for this action.",
-                        -3 => "No pending offer to approve.",
-                        -4 => "Transaction failed. Please try again.",
-                        _ => "An unexpected error occurred."
-                    };
-                    var dialog = new ContentDialog
-                    {
-                        Title = "Approve Failed",
-                        Content = message,
-                        CloseButtonText = "OK",
-                        XamlRoot = this.XamlRoot
-                    };
-                    await dialog.ShowAsync();
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"ApproveOffer_Click error: {ex}");
-            }
-        }
-
-        private async void DenyOffer_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var btn = sender as Button;
-                var note = btn?.DataContext as NotificationDTO;
-                if (note?.RelatedRequestId == null) return;
-
-                var root = this.Content as FrameworkElement;
-                var vm = root?.DataContext as NotificationsViewModel;
-                if (vm == null) return;
-
-                var result = vm.DenyOffer(note.RelatedRequestId.Value);
-                if (result < 0)
-                {
-                    string message = result switch
-                    {
-                        -1 => "Request not found.",
-                        -2 => "You are not authorized for this action.",
-                        -3 => "No pending offer to deny.",
-                        _ => "An unexpected error occurred."
-                    };
-                    var dialog = new ContentDialog
-                    {
-                        Title = "Deny Failed",
-                        Content = message,
-                        CloseButtonText = "OK",
-                        XamlRoot = this.XamlRoot
-                    };
-                    await dialog.ShowAsync();
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"DenyOffer_Click error: {ex}");
             }
         }
 

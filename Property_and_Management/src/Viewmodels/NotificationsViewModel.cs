@@ -106,7 +106,7 @@ namespace Property_and_Management.src.Viewmodels
             _allNotifications = _notificationService
                 .GetNotificationsForUser(userId)
                 .Where(notification => !_dismissedNotificationIds.Contains(notification.Id))
-                .OrderByDescending(notification => notification.Timestamp)
+                .OrderByDescending(notification => notification.Id)
                 .ToImmutableList();
 
             Notifications = new ObservableCollection<NotificationDTO>(_allNotifications);
@@ -165,7 +165,7 @@ namespace Property_and_Management.src.Viewmodels
 
             _allNotifications = GetNotificationsForCurrentUser()
                 .Where(notification => !_dismissedNotificationIds.Contains(notification.Id))
-                .OrderByDescending(notification => notification.Timestamp)
+                .OrderByDescending(notification => notification.Id)
                 .ToImmutableList();
             Notifications = new ObservableCollection<NotificationDTO>(_allNotifications);
 
