@@ -14,7 +14,7 @@
 
             <TextBox Header="Game Name (5-30 chars)*" Text="{x:Bind ViewModel.Name, Mode=TwoWay}" MaxLength="30"/>
 
-            <NumberBox Header="Price*" Value="{x:Bind ViewModel.PriceDouble, Mode=TwoWay}" Minimum="1" HorizontalAlignment="Stretch"/>
+            <NumberBox x:Name="PriceNumberBox" Header="Price*" Value="{x:Bind ViewModel.PriceDouble, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Stretch"/>
 
             <StackPanel Orientation="Horizontal" Spacing="10">
                 <NumberBox Header="Min Players*" Value="{x:Bind ViewModel.MinPlayers, Mode=TwoWay}" Minimum="1" Width="190"/>

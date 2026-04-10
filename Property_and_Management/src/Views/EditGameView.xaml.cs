@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Microsoft.Extensions.DependencyInjection;
@@ -57,8 +58,11 @@ namespace Property_and_Management.src.Views
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
+            SyncPriceFromInput();
+            var validationErrors = ViewModel.ValidateInputs();
+
             // Validate modified inputs [cite: 132]
-            if (ViewModel.ValidateInputs())
+            if (!validationErrors.Any())
             {
                 ViewModel.UpdateGame();
 
@@ -74,12 +78,32 @@ namespace Property_and_Management.src.Views
                 var dialog = new ContentDialog
                 {
                     Title = "Validation Error",
-                    Content = "Please ensure all fields are filled out correctly according to the rules.",
+                    Content = string.Join(Environment.NewLine, validationErrors),
                     CloseButtonText = "OK",
                     XamlRoot = this.XamlRoot
                 };
                 await dialog.ShowAsync();
             }
+        }
+
+        private void SyncPriceFromInput()
+        {
+            var priceText = PriceNumberBox.Text?.Trim();
+
+            if (string.IsNullOrWhiteSpace(priceText))
+            {
+                ViewModel.Price = 0;
+                return;
+            }
+
+            if (double.TryParse(priceText, NumberStyles.Float, CultureInfo.CurrentCulture, out var parsedPrice) ||
+                double.TryParse(priceText, NumberStyles.Float, CultureInfo.InvariantCulture, out parsedPrice))
+            {
+                ViewModel.PriceDouble = parsedPrice;
+                return;
+            }
+
+            ViewModel.Price = 0;
         }
 
         private async void UploadImageButton_Click(object sender, RoutedEventArgs e)

@@ -114,10 +114,11 @@ namespace Property_and_Management.src.Viewmodels
             if (result > 0) LoadRequests(CurrentPage, PageSize);
         }
 
-        public void DenyRequest(int requestId, string reason)
+        public int DenyRequest(int requestId, string reason)
         {
             var result = _requestService.DenyRequest(requestId, OwnerId, reason);
             if (result > 0) LoadRequests(CurrentPage, PageSize);
+            return result;
         }
 
         public int OfferGame(int requestId)

@@ -66,15 +66,6 @@
                             <TextBlock Text="{Binding EndDateDisplayLong}" Style="{StaticResource CaptionTextBlockStyle}"/>
                         </StackPanel>
 
-                        <Button Grid.Column="2"
-                            Content="Request"
-                            Tag="{Binding Game.Id}"
-                            Click="RequestButton_Click"
-                            Tapped="RequestButton_Tapped"
-                            Margin="8,0,0,0"
-                            Background="#0078D7"
-                            Foreground="White"
-                            VerticalAlignment="Center"/>
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
