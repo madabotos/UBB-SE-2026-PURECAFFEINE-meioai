@@ -12,12 +12,20 @@ namespace Property_and_Management.src.Service
     public class GameService : IGameService
     {
         private readonly IGameRepository _gameRepository;
+        private readonly IRentalRepository _rentalRepository;
         private readonly IMapper<Game, GameDTO> _gameMapper;
+        private readonly IRequestService _requestService;
 
-        public GameService(IGameRepository gameRepository, IMapper<Game, GameDTO> gameMapper)
+        public GameService(
+            IGameRepository gameRepository,
+            IRentalRepository rentalRepository,
+            IMapper<Game, GameDTO> gameMapper,
+            IRequestService requestService)
         {
             _gameRepository = gameRepository;
+            _rentalRepository = rentalRepository;
             _gameMapper = gameMapper;
+            _requestService = requestService;
         }
 
         public void AddGame(GameDTO game)
@@ -32,6 +40,24 @@ namespace Property_and_Management.src.Service
 
         public GameDTO DeleteGameById(int id)
         {
+            var rentals = _rentalRepository.GetRentalsByGame(id);
+            var now = DateTime.Now;
+            var activeOrUpcomingRentalsCount = rentals.Count(r => r.EndDate >= now);
+            if (activeOrUpcomingRentalsCount > 0)
+            {
+                var rentalWord = activeOrUpcomingRentalsCount == 1 ? "rental" : "rentals";
+                throw new InvalidOperationException(
+                    $"There are {activeOrUpcomingRentalsCount} active {rentalWord} for this game and it cannot be removed now.");
+            }
+
+            foreach (var rental in rentals)
+            {
+                _rentalRepository.Delete(rental.Id);
+            }
+
+            // Deleting a game invalidates pending requests for that game.
+            // Reuse the existing deactivation flow to notify renters and clean requests first.
+            _requestService.OnGameDeactivated(id);
             return _gameMapper.ToDTO(_gameRepository.Delete(id));
         }
 

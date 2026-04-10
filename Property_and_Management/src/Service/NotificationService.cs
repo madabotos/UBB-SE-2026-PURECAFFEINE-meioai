@@ -66,6 +66,22 @@ namespace Property_and_Management.src.Service
             };
 
             _notificationRepository.Add(notificationModel);
+
+            var currentUserId = (Property_and_Management.App.Current as Property_and_Management.App)?.CurrentUserID ?? 0;
+            if (currentUserId == userId)
+            {
+                NotifySubscribers(new NotificationDTO
+                {
+                    Id = notificationModel.Id,
+                    User = new UserDTO { Id = userId },
+                    Timestamp = timestamp,
+                    Title = notification.Title,
+                    Body = notification.Body,
+                    Type = notification.Type,
+                    RelatedRequestId = notification.RelatedRequestId
+                });
+            }
+
             _serverClient.SendNotification(userId, notification.Title, notification.Body);
         }
 
@@ -96,11 +112,16 @@ namespace Property_and_Management.src.Service
                     Body = message.Body
                 };
 
-                foreach (var subscriber in _subscribers)
-                    subscriber.OnNext(notificationDTO);
+                NotifySubscribers(notificationDTO);
 
                 ShowWindowsNotification(message.Title, message.Body);
             }
+        }
+
+        private void NotifySubscribers(NotificationDTO notificationDTO)
+        {
+            foreach (var subscriber in _subscribers.ToArray())
+                subscriber.OnNext(notificationDTO);
         }
 
         public IDisposable Subscribe(IObserver<NotificationDTO> observer)

@@ -194,7 +194,7 @@ namespace Property_and_Management.src.Service
                             User = new UserDTO { Id = overlap.Renter?.Id ?? 0 },
                             Timestamp = DateTime.UtcNow,
                             Title = "Booking Unavailable",
-                            Body = $"Your request for game {request.Game?.Id} " +
+                            Body = $"Your request for {request.Game?.Name ?? "the selected game"} " +
                                    $"({overlap.StartDate:d}–{overlap.EndDate:d}) was declined " +
                                    $"because the game is no longer available in that period."
                         });
@@ -267,7 +267,7 @@ namespace Property_and_Management.src.Service
                     User = new UserDTO { Id = request.Renter?.Id ?? 0 },
                     Timestamp = DateTime.UtcNow,
                     Title = "Rental request declined",
-                    Body = $"Your request for game {request.Game?.Id} " +
+                    Body = $"Your request for {request.Game?.Name ?? "the selected game"} " +
                            $"({request.StartDate:d}–{request.EndDate:d}) was declined. " +
                            $"Reason: {reason}"
                 });
@@ -312,7 +312,7 @@ namespace Property_and_Management.src.Service
                         User = new UserDTO { Id = request.Renter?.Id ?? 0 },
                         Timestamp = DateTime.UtcNow,
                         Title = "Rental request cancelled",
-                        Body = $"Your request for game {gameId} " +
+                        Body = $"Your request for {request.Game?.Name ?? "the selected game"} " +
                                $"({request.StartDate:d}–{request.EndDate:d}) has been cancelled " +
                                $"because the game is no longer available."
                     });

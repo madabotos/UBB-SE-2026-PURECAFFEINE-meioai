@@ -122,7 +122,7 @@ namespace Property_and_Management.src.Viewmodels
 
         public int OfferGame(int requestId)
         {
-            var result = _requestService.ApproveRequest(requestId, OwnerId);
+            var result = _requestService.OfferGame(requestId, OwnerId);
             if (result > 0) LoadRequests(CurrentPage, PageSize);
             return result;
         }

@@ -48,7 +48,7 @@ namespace Property_and_Management.src.Views
             ContentDialog deleteDialog = new ContentDialog
             {
                 Title = "Delete Game?",
-                Content = $"Are you sure you want to permanently delete '{gameToDelete.Name}' and all associated active requests? Existing rentals will not be deleted.",
+                Content = $"Are you sure you want to permanently delete '{gameToDelete.Name}'? Pending requests will be cancelled and notified. Deletion is blocked if active or upcoming rentals exist.",
                 PrimaryButtonText = "Delete",
                 CloseButtonText = "Cancel",
                 DefaultButton = ContentDialogButton.Close,
@@ -59,8 +59,31 @@ namespace Property_and_Management.src.Views
 
             if (result == ContentDialogResult.Primary)
             {
-                // Execute deletion in the ViewModel
-                ViewModel.DeleteGame(gameToDelete);
+                try
+                {
+                    // Execute deletion in the ViewModel
+                    ViewModel.DeleteGame(gameToDelete);
+
+                    var successDialog = new ContentDialog
+                    {
+                        Title = "Game Removed",
+                        Content = "There are 0 active rentals for this game. It was removed successfully.",
+                        CloseButtonText = "OK",
+                        XamlRoot = this.XamlRoot
+                    };
+                    await successDialog.ShowAsync();
+                }
+                catch (InvalidOperationException ex)
+                {
+                    var blockedDialog = new ContentDialog
+                    {
+                        Title = "Cannot Delete Game",
+                        Content = ex.Message,
+                        CloseButtonText = "OK",
+                        XamlRoot = this.XamlRoot
+                    };
+                    await blockedDialog.ShowAsync();
+                }
             }
         }
 
