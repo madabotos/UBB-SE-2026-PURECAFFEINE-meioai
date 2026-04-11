@@ -1,15 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Property_and_Management.src.DTO;
-using Property_and_Management.src.Model;
 
 namespace Property_and_Management.src.Interface
 {
-    public interface INotificationService
+    public interface INotificationService : IObservable<NotificationDTO>
     {
         /// <summary>Get a notification by its identifier.</summary>
         /// <param name="id">The identifier of the notification.</param>
@@ -55,8 +50,7 @@ namespace Property_and_Management.src.Interface
         /// <summary>
         /// Schedule an upcoming rental reminder 24 hours before the rental start for both renter and owner.
         /// </summary>
-        /// <param name="rental">The rental for which to schedule the reminder.</param>
-        void ScheduleUpcomingRentalReminder(Rental rental);
+        void ScheduleUpcomingRentalReminder(int renterId, int ownerId, string gameName, DateTime startDate);
 
         /// <summary>
         /// Deletes all notifications linked to a specific request (cleanup after offer approve/deny).

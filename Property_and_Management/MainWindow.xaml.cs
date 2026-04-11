@@ -27,7 +27,7 @@ namespace Property_and_Management
     public sealed partial class MainWindow : Window
     {
 
-        public AppWindow AppWindow { get; }
+        public new AppWindow AppWindow { get; }
 
         public MainWindow()
         {

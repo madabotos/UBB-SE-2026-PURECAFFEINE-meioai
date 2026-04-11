@@ -91,8 +91,8 @@ namespace Property_and_Management.src.Viewmodels
         }
 
         // INotifyPropertyChanged implementation for updating text in real-time
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string name = null)
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }

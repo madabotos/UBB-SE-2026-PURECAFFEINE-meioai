@@ -1,11 +1,9 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
 
 namespace Property_and_Management.src.Viewmodels
 {
@@ -13,10 +11,10 @@ namespace Property_and_Management.src.Viewmodels
     {
         private readonly IGameService _gameService;
         private readonly IRentalService _rentalService;
-        private readonly IMapper<User, UserDTO> _userMapper;
-        private readonly IUserRepository _userRepository;
+        private readonly IUserService _userService;
+        private readonly ICurrentUserContext _currentUserContext;
 
-        public int CurrentUserId => (App.Current as App)?.CurrentUserID ?? 1;
+        public int CurrentUserId => _currentUserContext.CurrentUserId;
 
         public ObservableCollection<GameDTO> MyGames { get; set; } = new();
         public ObservableCollection<UserDTO> AvailableRenters { get; set; } = new();
@@ -50,24 +48,27 @@ namespace Property_and_Management.src.Viewmodels
         }
 
         public CreateRentalViewModel(IGameService gameService, IRentalService rentalService,
-                                     IUserRepository userRepository, IMapper<User, UserDTO> userMapper)
+                                     IUserService userService, ICurrentUserContext currentUserContext)
         {
             _gameService = gameService;
             _rentalService = rentalService;
-            _userRepository = userRepository;
-            _userMapper = userMapper;
+            _userService = userService;
+            _currentUserContext = currentUserContext;
             LoadData();
         }
 
         public void LoadData()
         {
             MyGames.Clear();
-            foreach (var game in _gameService.GetGamesForOwner(CurrentUserId).Where(g => g.IsActive))
-                MyGames.Add(game);
+            foreach (var game in _gameService.GetGamesForOwner(CurrentUserId))
+            {
+                if (game.IsActive)
+                    MyGames.Add(game);
+            }
 
             AvailableRenters.Clear();
-            foreach (var user in _userRepository.GetAll().Where(u => u.Id != CurrentUserId))
-                AvailableRenters.Add(_userMapper.ToDTO(user));
+            foreach (var user in _userService.GetUsersExcept(CurrentUserId))
+                AvailableRenters.Add(user);
         }
 
         public bool ValidateInputs()
@@ -86,16 +87,13 @@ namespace Property_and_Management.src.Viewmodels
 
             try
             {
-                var rental = new Rental(
-                    id: 0,
-                    game: new Game { Id = SelectedGame.Id },
-                    renter: new User { Id = SelectedRenter.Id },
-                    owner: new User { Id = CurrentUserId },
-                    startDate: StartDate.Value.DateTime,
-                    endDate: EndDate.Value.DateTime);
-
-                _rentalService.CreateConfirmedRental(rental);
-                return null; // success
+                _rentalService.CreateConfirmedRental(
+                    SelectedGame.Id,
+                    SelectedRenter.Id,
+                    CurrentUserId,
+                    StartDate.Value.DateTime,
+                    EndDate.Value.DateTime);
+                return null;
             }
             catch (Exception ex)
             {
@@ -103,7 +101,7 @@ namespace Property_and_Management.src.Viewmodels
             }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

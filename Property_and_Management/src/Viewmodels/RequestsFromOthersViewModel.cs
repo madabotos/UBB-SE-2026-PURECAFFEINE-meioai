@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -7,19 +6,18 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
-using Property_and_Management.src.Service;
-using ServerCommunication;
 
 namespace Property_and_Management.src.Viewmodels
 {
     public class RequestsFromOthersViewModel : INotifyPropertyChanged, IObserver<RequestDTO>
     {
         private readonly IRequestService _requestService;
+        private readonly ICurrentUserContext _currentUserContext;
         private ObservableCollection<RequestDTO> _requests = new();
         private ObservableCollection<RequestDTO> _pagedRequests = new();
         private ImmutableList<RequestDTO> _allRequests = ImmutableList<RequestDTO>.Empty;
 
-        public int OwnerId { get; private set; } = (App.Current as App)?.CurrentUserID ?? 1;
+        public int OwnerId { get; private set; }
 
         private const int s_pageSizeConst = 3;
         public static int PageSize => s_pageSizeConst;
@@ -75,17 +73,17 @@ namespace Property_and_Management.src.Viewmodels
 
         public string ShowingText => $"Showing {DisplayedCount} of {TotalCount} requests";
 
-        //[REQ-REQ-01] As an Owner, I must be able to see if one of my games is requested for a certain future time period by another user and to accept or decline that request. I should see the name of the user that requested it, the time period, the game requested, the game picture.
-        public RequestsFromOthersViewModel(IRequestService requestService)
+        public RequestsFromOthersViewModel(IRequestService requestService, ICurrentUserContext currentUserContext)
         {
             _requestService = requestService;
+            _currentUserContext = currentUserContext;
+            OwnerId = _currentUserContext.CurrentUserId;
             LoadRequests(1, PageSize);
         }
 
-        //[REQ-REQ-04] As an Owner, I should see the requests in descending order by the start date of the request.
         public void LoadRequests(int page, int pageSize)
         {
-            OwnerId = (App.Current as App)?.CurrentUserID ?? 1;
+            OwnerId = _currentUserContext.CurrentUserId;
             var allRequests = _requestService.GetRequestsForOwner(OwnerId)
                 .OrderByDescending(r => r.StartDate)
                 .ToImmutableList();
@@ -107,7 +105,6 @@ namespace Property_and_Management.src.Viewmodels
         public void NextPage() => CurrentPage = Math.Min(CurrentPage + 1, PageCount);
         public void PrevPage() => CurrentPage = Math.Max(CurrentPage - 1, 1);
 
-        //[REQ-REQ-02] As an Owner, once I accepted a request I shouldn’t have to manually decline the other requests for that game with overlapping time intervals with the accepted request, it should be handled by the system.
         public void ApproveRequest(int requestId)
         {
             var result = _requestService.ApproveRequest(requestId, OwnerId);
@@ -128,7 +125,7 @@ namespace Property_and_Management.src.Viewmodels
             return result;
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -137,6 +134,5 @@ namespace Property_and_Management.src.Viewmodels
         public void OnCompleted() => LoadRequests(CurrentPage, PageSize);
         public void OnError(Exception error) => System.Diagnostics.Debug.WriteLine(error.Message);
         public void OnNext(RequestDTO value) => LoadRequests(CurrentPage, PageSize);
-
     }
 }

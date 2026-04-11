@@ -13,7 +13,19 @@ namespace Property_and_Management.src.Views
     {
         public MenuBarViewModel ViewModel { get; }
 
-        // The Menu stores a private copy of the service to pass out later
+        // Maps page keys emitted by the ViewModel to concrete View types.
+        // Concrete type knowledge belongs in the View layer, not in ViewModels.
+        private static readonly Dictionary<AppPage, Type> PageTypeMap = new()
+        {
+            { AppPage.Listings,            typeof(ListingsPage) },
+            { AppPage.RequestsFromOthers,  typeof(RequestsFromOthersPage) },
+            { AppPage.RentalsFromOthers,   typeof(RentalsFromOthersPage) },
+            { AppPage.RequestsToOthers,    typeof(RequestsToOthersPage) },
+            { AppPage.RentalsToOthers,     typeof(RentalsToOthersPage) },
+            { AppPage.Notifications,       typeof(NotificationsPage) }
+        };
+
+        // The Menu keeps a reference to IGameService so it can pass it to pages that need it.
         private IGameService _passedGameService;
 
         public MenuBarView()
@@ -30,15 +42,14 @@ namespace Property_and_Management.src.Views
             base.OnNavigatedTo(e);
 
             if (e.Parameter is IGameService gameService)
-            {
                 _passedGameService = gameService;
-            }
         }
 
-        // When the user clicks "Listings", pass the service to the new page!
-        private void OnViewModelRequestedNavigation(System.Type pageType)
+        private void OnViewModelRequestedNavigation(AppPage page)
         {
-            // Pass the service right through the ContentFrame!
+            if (!PageTypeMap.TryGetValue(page, out var pageType))
+                return;
+
             ContentFrame.Navigate(pageType, _passedGameService);
         }
 
