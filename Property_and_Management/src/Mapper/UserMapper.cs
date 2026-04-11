@@ -1,30 +1,30 @@
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
 
 namespace Property_and_Management.src.Mapper
 {
-    public class UserMapper : IMapper<User, UserDTO>
+    public class UserMapper : IMapper<User, UserDataTransferObject>
     {
-        public UserDTO ToDTO(User user)
+        public UserDataTransferObject ToDataTransferObject(User user)
         {
             if (user == null) return null;
 
-            return new UserDTO
+            return new UserDataTransferObject
             {
                 Id = user.Id,
                 DisplayName = user.DisplayName
             };
         }
 
-        public User ToModel(UserDTO userDto)
+        public User ToModel(UserDataTransferObject userDataTransferObject)
         {
-            if (userDto == null) return null;
+            if (userDataTransferObject == null) return null;
 
             return new User
             {
-                Id = userDto.Id,
-                DisplayName = userDto.DisplayName
+                Id = userDataTransferObject.Id,
+                DisplayName = userDataTransferObject.DisplayName
             };
         }
     }

@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Property_and_Management;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Viewmodels;
 
 namespace Property_and_Management.src.Views
@@ -25,12 +25,12 @@ namespace Property_and_Management.src.Views
 
         private void GamePicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ViewModel.SelectedGame = GamePicker.SelectedItem as GameDTO;
+            ViewModel.SelectedGame = GamePicker.SelectedItem as GameDataTransferObject;
         }
 
         private void RenterPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ViewModel.SelectedRenter = RenterPicker.SelectedItem as UserDTO;
+            ViewModel.SelectedRenter = RenterPicker.SelectedItem as UserDataTransferObject;
         }
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -48,26 +48,15 @@ namespace Property_and_Management.src.Views
                 }
                 else
                 {
-                    var dialog = new ContentDialog
-                    {
-                        Title = Constants.DialogTitles.RentalFailed,
-                        Content = error,
-                        CloseButtonText = Constants.DialogButtons.Ok,
-                        XamlRoot = this.XamlRoot
-                    };
-                    await dialog.ShowAsync();
+                    await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.RentalFailed, error);
                 }
             }
             else
             {
-                var dialog = new ContentDialog
-                {
-                    Title = Constants.DialogTitles.ValidationError,
-                    Content = Constants.DialogMessages.CreateRentalValidationError,
-                    CloseButtonText = Constants.DialogButtons.Ok,
-                    XamlRoot = this.XamlRoot
-                };
-                await dialog.ShowAsync();
+                await DialogHelper.ShowMessageAsync(
+                    this.XamlRoot,
+                    Constants.DialogTitles.ValidationError,
+                    Constants.DialogMessages.CreateRentalValidationError);
             }
         }
     }

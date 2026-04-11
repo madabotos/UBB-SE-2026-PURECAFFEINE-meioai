@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Immutable;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 
 namespace Property_and_Management.src.Interface
 {
@@ -9,12 +9,12 @@ namespace Property_and_Management.src.Interface
         /// <summary>
         /// Returns all rentals where the user is the renter.
         /// </summary>
-        ImmutableList<RentalDTO> GetRentalsForRenter(int renterId);
+        ImmutableList<RentalDataTransferObject> GetRentalsForRenter(int renterId);
 
         /// <summary>
         /// Returns all rentals where the user is the owner.
         /// </summary>
-        ImmutableList<RentalDTO> GetRentalsForOwner(int ownerId);
+        ImmutableList<RentalDataTransferObject> GetRentalsForOwner(int ownerId);
 
         /// <summary>
         /// Returns true if the time slot is available for the given game.

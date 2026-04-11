@@ -1,24 +1,24 @@
 using System.Collections.Immutable;
 using System;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 
 namespace Property_and_Management.src.Interface
 {
     public interface IRequestService
     {
         /// <summary>
-        /// Returns ImmutableList<RequestDTO> of all requests made by a specific renter.
+        /// Returns ImmutableList<RequestDataTransferObject> of all requests made by a specific renter.
         /// </summary>
         /// <param name="renterId"></param>
         /// <returns></returns>
-        ImmutableList<RequestDTO> GetRequestsForRenter(int renterId);
+        ImmutableList<RequestDataTransferObject> GetRequestsForRenter(int renterId);
 
         /// <summary>
         /// Returns owner's incoming rental requests as immutable list.
         /// </summary>
         /// <param name="ownerId"></param>
         /// <returns></returns>
-        ImmutableList<RequestDTO> GetRequestsForOwner(int ownerId);
+        ImmutableList<RequestDataTransferObject> GetRequestsForOwner(int ownerId);
 
         /// <summary>
         /// Creates new request with game ID, renter/owner IDs, and date range; returns new request ID.

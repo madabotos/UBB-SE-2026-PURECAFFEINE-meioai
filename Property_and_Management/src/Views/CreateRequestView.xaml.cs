@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Property_and_Management;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Service;
 using Property_and_Management.src.Viewmodels;
 
@@ -27,7 +27,7 @@ namespace Property_and_Management.src.Views
 
         private void GamePicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ViewModel.SelectedGame = GamePicker.SelectedItem as GameDTO;
+            ViewModel.SelectedGame = GamePicker.SelectedItem as GameDataTransferObject;
         }
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -49,29 +49,18 @@ namespace Property_and_Management.src.Views
                     {
                         CreateRequestError.OWNER_CANNOT_RENT_ERROR => "You cannot rent your own game.",
                         CreateRequestError.DATES_UNAVAILABLE_ERROR => "The selected dates are not available.",
-                        CreateRequestError.GAMEID_DOES_NOT_EXIST_ERROR => "The selected game no longer exists.",
+                        CreateRequestError.GAME_ID_DOES_NOT_EXIST_ERROR => "The selected game no longer exists.",
                         _ => Constants.DialogMessages.UnexpectedErrorOccurred
                     };
-                    var dialog = new ContentDialog
-                    {
-                        Title = Constants.DialogTitles.RequestFailed,
-                        Content = message,
-                        CloseButtonText = Constants.DialogButtons.Ok,
-                        XamlRoot = this.XamlRoot
-                    };
-                    await dialog.ShowAsync();
+                    await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.RequestFailed, message);
                 }
             }
             else
             {
-                var dialog = new ContentDialog
-                {
-                    Title = Constants.DialogTitles.ValidationError,
-                    Content = Constants.DialogMessages.CreateRequestValidationError,
-                    CloseButtonText = Constants.DialogButtons.Ok,
-                    XamlRoot = this.XamlRoot
-                };
-                await dialog.ShowAsync();
+                await DialogHelper.ShowMessageAsync(
+                    this.XamlRoot,
+                    Constants.DialogTitles.ValidationError,
+                    Constants.DialogMessages.CreateRequestValidationError);
             }
         }
     }

@@ -6,7 +6,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Property_and_Management;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Viewmodels;
 
 namespace Property_and_Management.src.Views
@@ -44,17 +44,13 @@ namespace Property_and_Management.src.Views
             if (sender is not Button clickedButton || clickedButton.Tag is not int requestId)
                 return;
 
-            ContentDialog cancelDialog = new ContentDialog
-            {
-                Title = Constants.DialogTitles.CancelRequestConfirmation,
-                Content = "Are you sure you want to cancel this request?",
-                PrimaryButtonText = Constants.DialogButtons.CancelRequest,
-                CloseButtonText = Constants.DialogButtons.GoBack,
-                DefaultButton = ContentDialogButton.Close,
-                XamlRoot = this.XamlRoot
-            };
-
-            var result = await cancelDialog.ShowAsync();
+            var result = await DialogHelper.ShowConfirmationAsync(
+                this.XamlRoot,
+                Constants.DialogTitles.CancelRequestConfirmation,
+                "Are you sure you want to cancel this request?",
+                Constants.DialogButtons.CancelRequest,
+                Constants.DialogButtons.GoBack,
+                ContentDialogButton.Close);
 
             if (result == ContentDialogResult.Primary)
             {

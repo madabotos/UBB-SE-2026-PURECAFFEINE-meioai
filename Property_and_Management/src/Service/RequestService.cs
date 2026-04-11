@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Property_and_Management;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
 
@@ -13,7 +13,7 @@ namespace Property_and_Management.src.Service
     {
         OWNER_CANNOT_RENT_ERROR = -1,
         DATES_UNAVAILABLE_ERROR = -2,
-        GAMEID_DOES_NOT_EXIST_ERROR = -3
+        GAME_ID_DOES_NOT_EXIST_ERROR = -3
     }
 
     public enum ApproveRequestError
@@ -57,7 +57,7 @@ namespace Property_and_Management.src.Service
         private readonly IRentalRepository _rentalRepository;
         private readonly INotificationService _notificationService;
         private readonly IGameRepository _gameRepository;
-        private readonly IMapper<Request, RequestDTO> _requestMapper;
+        private readonly IMapper<Request, RequestDataTransferObject> _requestMapper;
 
         private const int BufferHours = 48;
         private const int NewEntityId = 0;
@@ -71,7 +71,7 @@ namespace Property_and_Management.src.Service
             IRentalRepository rentalRepository,
             IGameRepository gameRepository,
             INotificationService notificationService,
-            IMapper<Request, RequestDTO> requestMapper)
+            IMapper<Request, RequestDataTransferObject> requestMapper)
         {
             _requestRepository = requestRepository;
             _rentalRepository = rentalRepository;
@@ -80,16 +80,16 @@ namespace Property_and_Management.src.Service
             _requestMapper = requestMapper;
         }
 
-        public ImmutableList<RequestDTO> GetRequestsForRenter(int renterId) =>
+        public ImmutableList<RequestDataTransferObject> GetRequestsForRenter(int renterId) =>
             _requestRepository
                 .GetRequestsByRenter(renterId)
-                .Select(request => _requestMapper.ToDTO(request))
+                .Select(request => _requestMapper.ToDataTransferObject(request))
                 .ToImmutableList();
 
-        public ImmutableList<RequestDTO> GetRequestsForOwner(int ownerId) =>
+        public ImmutableList<RequestDataTransferObject> GetRequestsForOwner(int ownerId) =>
             _requestRepository
                 .GetRequestsByOwner(ownerId)
-                .Select(request => _requestMapper.ToDTO(request))
+                .Select(request => _requestMapper.ToDataTransferObject(request))
                 .ToImmutableList();
 
         // [BL-LFC-01] Create a new PENDING request
@@ -101,7 +101,7 @@ namespace Property_and_Management.src.Service
 
             try { _gameRepository.Get(gameId); }
             catch (KeyNotFoundException)
-            { return (int)CreateRequestError.GAMEID_DOES_NOT_EXIST_ERROR; }
+            { return (int)CreateRequestError.GAME_ID_DOES_NOT_EXIST_ERROR; }
 
             if (!CheckAvailability(gameId, startDate, endDate))
                 return (int)CreateRequestError.DATES_UNAVAILABLE_ERROR;
@@ -145,22 +145,7 @@ namespace Property_and_Management.src.Service
                 return (int)ApproveRequestError.TRANSACTION_FAILED_ERROR;
             }
 
-            // Post-commit notifications
-            foreach (var overlappingRequest in overlappingRequests)
-            {
-                _notificationService.SendNotificationToUser(
-                    overlappingRequest.Renter?.Id ?? MissingUserId,
-                    new NotificationDTO
-                    {
-                        Id = NewEntityId,
-                        User = new UserDTO { Id = overlappingRequest.Renter?.Id ?? MissingUserId },
-                        Timestamp = DateTime.UtcNow,
-                        Title = Constants.NotificationTitles.BookingUnavailable,
-                        Body = $"Your request for {request.Game?.Name ?? "the selected game"} " +
-                               $"({overlappingRequest.StartDate:d}-{overlappingRequest.EndDate:d}) was declined " +
-                               $"because the game is no longer available in that period."
-                    });
-            }
+            NotifyOverlappingRequestsUnavailable(overlappingRequests, request.Game?.Name ?? "the selected game");
 
             _notificationService.ScheduleUpcomingRentalReminder(
                 request.Renter?.Id ?? MissingUserId,
@@ -184,18 +169,12 @@ namespace Property_and_Management.src.Service
             _notificationService.DeleteNotificationsByRequestId(requestId);
             _requestRepository.Delete(requestId);
 
-            _notificationService.SendNotificationToUser(
-                request.Renter?.Id ?? MissingUserId,
-                new NotificationDTO
-                {
-                    Id = NewEntityId,
-                    User = new UserDTO { Id = request.Renter?.Id ?? MissingUserId },
-                    Timestamp = DateTime.UtcNow,
-                    Title = Constants.NotificationTitles.RentalRequestDeclined,
-                    Body = $"Your request for {request.Game?.Name ?? "the selected game"} " +
-                           $"({request.StartDate:d}-{request.EndDate:d}) was declined. " +
-                           $"Reason: {reason}"
-                });
+            var renterId = request.Renter?.Id ?? MissingUserId;
+            var gameName = request.Game?.Name ?? "the selected game";
+            SendNotificationToUser(
+                renterId,
+                Constants.NotificationTitles.RentalRequestDeclined,
+                $"Your request for {gameName} {FormatRequestPeriod(request.StartDate, request.EndDate)} was declined. Reason: {reason}");
 
             return requestId;
         }
@@ -224,18 +203,12 @@ namespace Property_and_Management.src.Service
                 _notificationService.DeleteNotificationsByRequestId(request.Id);
                 _requestRepository.Delete(request.Id);
 
-                _notificationService.SendNotificationToUser(
-                    request.Renter?.Id ?? MissingUserId,
-                    new NotificationDTO
-                    {
-                        Id = NewEntityId,
-                        User = new UserDTO { Id = request.Renter?.Id ?? MissingUserId },
-                        Timestamp = DateTime.UtcNow,
-                        Title = Constants.NotificationTitles.RentalRequestCancelled,
-                        Body = $"Your request for {request.Game?.Name ?? "the selected game"} " +
-                               $"({request.StartDate:d}-{request.EndDate:d}) has been cancelled " +
-                               $"because the game is no longer available."
-                    });
+                var renterId = request.Renter?.Id ?? MissingUserId;
+                var gameName = request.Game?.Name ?? "the selected game";
+                SendNotificationToUser(
+                    renterId,
+                    Constants.NotificationTitles.RentalRequestCancelled,
+                    $"Your request for {gameName} {FormatRequestPeriod(request.StartDate, request.EndDate)} has been cancelled because the game is no longer available.");
             }
         }
 
@@ -299,17 +272,12 @@ namespace Property_and_Management.src.Service
             if (rentalId < MinimumSuccessfulEntityId)
                 return rentalId;
 
-            _notificationService.SendNotificationToUser(
-                request.Renter?.Id ?? MissingUserId,
-                new NotificationDTO
-                {
-                    Id = NewEntityId,
-                    User = new UserDTO { Id = request.Renter?.Id ?? MissingUserId },
-                    Timestamp = DateTime.UtcNow,
-                    Title = Constants.NotificationTitles.RentalRequestApproved,
-                    Body = $"Your request for {request.Game?.Name ?? "the selected game"} " +
-                           $"({request.StartDate:d}-{request.EndDate:d}) was approved."
-                });
+            var renterId = request.Renter?.Id ?? MissingUserId;
+            var gameName = request.Game?.Name ?? "the selected game";
+            SendNotificationToUser(
+                renterId,
+                Constants.NotificationTitles.RentalRequestApproved,
+                $"Your request for {gameName} {FormatRequestPeriod(request.StartDate, request.EndDate)} was approved.");
 
             return rentalId;
         }
@@ -347,45 +315,19 @@ namespace Property_and_Management.src.Service
             var renterName = request.Renter?.DisplayName ?? "The requester";
             var gameName = request.Game?.Name ?? "a game";
 
-            foreach (var overlappingRequest in overlappingRequests)
-            {
-                _notificationService.SendNotificationToUser(
-                    overlappingRequest.Renter?.Id ?? MissingUserId,
-                    new NotificationDTO
-                    {
-                        Id = NewEntityId,
-                        User = new UserDTO { Id = overlappingRequest.Renter?.Id ?? MissingUserId },
-                        Timestamp = DateTime.UtcNow,
-                        Title = Constants.NotificationTitles.BookingUnavailable,
-                        Body = $"Your request for {gameName} " +
-                               $"({overlappingRequest.StartDate:d}-{overlappingRequest.EndDate:d}) was declined " +
-                               $"because the game is no longer available in that period."
-                    });
-            }
+            NotifyOverlappingRequestsUnavailable(overlappingRequests, gameName);
 
-            _notificationService.SendNotificationToUser(
+            SendNotificationToUser(
                 request.OfferingUser?.Id ?? request.Owner?.Id ?? MissingUserId,
-                new NotificationDTO
-                {
-                    Id = NewEntityId,
-                    User = new UserDTO { Id = request.OfferingUser?.Id ?? request.Owner?.Id ?? MissingUserId },
-                    Timestamp = DateTime.UtcNow,
-                    Title = Constants.NotificationTitles.OfferAccepted,
-                    Body = $"{renterName} accepted your offer for {gameName}",
-                    Type = NotificationType.OfferResult
-                });
+                Constants.NotificationTitles.OfferAccepted,
+                $"{renterName} accepted your offer for {gameName}",
+                NotificationType.OfferResult);
 
-            _notificationService.SendNotificationToUser(
+            SendNotificationToUser(
                 renterId,
-                new NotificationDTO
-                {
-                    Id = NewEntityId,
-                    User = new UserDTO { Id = renterId },
-                    Timestamp = DateTime.UtcNow,
-                    Title = Constants.NotificationTitles.RentalConfirmed,
-                    Body = $"You accepted the offer for {gameName} from {ownerName}",
-                    Type = NotificationType.OfferResult
-                });
+                Constants.NotificationTitles.RentalConfirmed,
+                $"You accepted the offer for {gameName} from {ownerName}",
+                NotificationType.OfferResult);
 
             _notificationService.ScheduleUpcomingRentalReminder(
                 request.Renter?.Id ?? MissingUserId,
@@ -415,31 +357,54 @@ namespace Property_and_Management.src.Service
             var ownerName = request.Owner?.DisplayName ?? "The owner";
             var gameName = request.Game?.Name ?? "a game";
 
-            _notificationService.SendNotificationToUser(
+            SendNotificationToUser(
                 request.OfferingUser?.Id ?? request.Owner?.Id ?? MissingUserId,
-                new NotificationDTO
-                {
-                    Id = NewEntityId,
-                    User = new UserDTO { Id = request.OfferingUser?.Id ?? request.Owner?.Id ?? MissingUserId },
-                    Timestamp = DateTime.UtcNow,
-                    Title = Constants.NotificationTitles.OfferDenied,
-                    Body = $"{renterName} denied your offer for {gameName}",
-                    Type = NotificationType.OfferResult
-                });
+                Constants.NotificationTitles.OfferDenied,
+                $"{renterName} denied your offer for {gameName}",
+                NotificationType.OfferResult);
 
-            _notificationService.SendNotificationToUser(
+            SendNotificationToUser(
                 renterId,
-                new NotificationDTO
-                {
-                    Id = NewEntityId,
-                    User = new UserDTO { Id = renterId },
-                    Timestamp = DateTime.UtcNow,
-                    Title = Constants.NotificationTitles.OfferDeclined,
-                    Body = $"You declined the offer for {gameName} from {ownerName}",
-                    Type = NotificationType.OfferResult
-                });
+                Constants.NotificationTitles.OfferDeclined,
+                $"You declined the offer for {gameName} from {ownerName}",
+                NotificationType.OfferResult);
 
             return requestId;
+        }
+
+        private void NotifyOverlappingRequestsUnavailable(ImmutableList<Request> overlappingRequests, string gameName)
+        {
+            foreach (var overlappingRequest in overlappingRequests)
+            {
+                var renterId = overlappingRequest.Renter?.Id ?? MissingUserId;
+                SendNotificationToUser(
+                    renterId,
+                    Constants.NotificationTitles.BookingUnavailable,
+                    $"Your request for {gameName} {FormatRequestPeriod(overlappingRequest.StartDate, overlappingRequest.EndDate)} was declined because the game is no longer available in that period.");
+            }
+        }
+
+        private void SendNotificationToUser(int userId, string title, string body, NotificationType type = default)
+        {
+            _notificationService.SendNotificationToUser(userId, BuildNotification(userId, title, body, type));
+        }
+
+        private NotificationDataTransferObject BuildNotification(int userId, string title, string body, NotificationType type)
+        {
+            return new NotificationDataTransferObject
+            {
+                Id = NewEntityId,
+                User = new UserDataTransferObject { Id = userId },
+                Timestamp = DateTime.UtcNow,
+                Title = title,
+                Body = body,
+                Type = type
+            };
+        }
+
+        private static string FormatRequestPeriod(DateTime startDate, DateTime endDate)
+        {
+            return $"({startDate:d}-{endDate:d})";
         }
     }
 }

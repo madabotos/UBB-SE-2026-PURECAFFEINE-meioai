@@ -9,13 +9,13 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml.Controls.Primitives;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Interface;
 using Windows.ApplicationModel.VoiceCommands;
 
 namespace Property_and_Management.src.Viewmodels
 {
-    public class NotificationsViewModel : INotifyPropertyChanged, IObserver<NotificationDTO>, IDisposable
+    public class NotificationsViewModel : INotifyPropertyChanged, IObserver<NotificationDataTransferObject>, IDisposable
     {
         private const int DefaultPageSize = 3;
         private const int FirstPageNumber = 1;
@@ -26,15 +26,15 @@ namespace Property_and_Management.src.Viewmodels
         private const int MinimumSuccessfulOperationResult = 1;
         private const int DefaultUserId = 1;
 
-        private ObservableCollection<NotificationDTO> _notifications = new ObservableCollection<NotificationDTO>();
-        private ObservableCollection<NotificationDTO> _pagedNotifications = new ObservableCollection<NotificationDTO>();
+        private ObservableCollection<NotificationDataTransferObject> _notifications = new ObservableCollection<NotificationDataTransferObject>();
+        private ObservableCollection<NotificationDataTransferObject> _pagedNotifications = new ObservableCollection<NotificationDataTransferObject>();
         private readonly INotificationService _notificationService;
         private readonly IRequestService _requestService;
         private readonly ICurrentUserContext _currentUserContext;
         private readonly IDisposable _subscription;
         private HashSet<int> _dismissedNotificationIds = new HashSet<int>();
 
-        private ImmutableList<NotificationDTO> _allNotifications = ImmutableList<NotificationDTO>.Empty;
+        private ImmutableList<NotificationDataTransferObject> _allNotifications = ImmutableList<NotificationDataTransferObject>.Empty;
 
         public int CurrentUserId { get; private set; }
 
@@ -49,7 +49,7 @@ namespace Property_and_Management.src.Viewmodels
                 if (_currentPage != value)
                 {
                     _currentPage = value;
-                    OnProperyChanged();
+                    OnPropertyChanged();
                     UpdatePaging();
                 }
             }
@@ -61,7 +61,7 @@ namespace Property_and_Management.src.Viewmodels
 
         public int DisplayedCount => PagedNotifications?.Count ?? NoItemsCount;
 
-        public ObservableCollection<NotificationDTO> Notifications
+        public ObservableCollection<NotificationDataTransferObject> Notifications
         {
             get => _notifications;
             set
@@ -69,12 +69,12 @@ namespace Property_and_Management.src.Viewmodels
                 if (_notifications != value)
                 {
                     _notifications = value;
-                    OnProperyChanged();
+                    OnPropertyChanged();
                 }
             }
         }
 
-        public ObservableCollection<NotificationDTO> PagedNotifications
+        public ObservableCollection<NotificationDataTransferObject> PagedNotifications
         {
             get => _pagedNotifications;
             private set
@@ -82,12 +82,12 @@ namespace Property_and_Management.src.Viewmodels
                 if (_pagedNotifications != value)
                 {
                     _pagedNotifications = value;
-                    OnProperyChanged(nameof(PagedNotifications));
-                    OnProperyChanged(nameof(DisplayedCount));
-                    OnProperyChanged(nameof(TotalCount));
-                    OnProperyChanged(nameof(PageCount));
-                    OnProperyChanged(nameof(CurrentPage));
-                    OnProperyChanged(nameof(ShowingText));
+                    OnPropertyChanged(nameof(PagedNotifications));
+                    OnPropertyChanged(nameof(DisplayedCount));
+                    OnPropertyChanged(nameof(TotalCount));
+                    OnPropertyChanged(nameof(PageCount));
+                    OnPropertyChanged(nameof(CurrentPage));
+                    OnPropertyChanged(nameof(ShowingText));
                 }
             }
         }
@@ -117,36 +117,36 @@ namespace Property_and_Management.src.Viewmodels
                 .OrderByDescending(notification => notification.Id)
                 .ToImmutableList();
 
-            Notifications = new ObservableCollection<NotificationDTO>(_allNotifications);
+            Notifications = new ObservableCollection<NotificationDataTransferObject>(_allNotifications);
 
             // reset paging
             _currentPage = FirstPageNumber;
             UpdatePaging();
 
-            OnProperyChanged(nameof(TotalCount));
-            OnProperyChanged(nameof(PageCount));
-            OnProperyChanged(nameof(ShowingText));
+            OnPropertyChanged(nameof(TotalCount));
+            OnPropertyChanged(nameof(PageCount));
+            OnPropertyChanged(nameof(ShowingText));
         }
 
-        // small internal wrapper to convert repository results -> DTO list (keeps call sites short)
-        private System.Collections.Immutable.ImmutableList<NotificationDTO> GetNotificationsForCurrentUser()
+        // small internal wrapper to convert repository results -> Data Transfer Object list (keeps call sites short)
+        private System.Collections.Immutable.ImmutableList<NotificationDataTransferObject> GetNotificationsForCurrentUser()
         {
             return _notificationService.GetNotificationsForUser(CurrentUserId);
         }
 
         private void UpdatePaging()
         {
-            if (_allNotifications == null) _allNotifications = ImmutableList<NotificationDTO>.Empty;
+            if (_allNotifications == null) _allNotifications = ImmutableList<NotificationDataTransferObject>.Empty;
 
             if (CurrentPage < FirstPageNumber) _currentPage = FirstPageNumber;
             if (CurrentPage > PageCount) _currentPage = PageCount;
 
             var skip = (CurrentPage - FirstPageNumber) * PageSize;
             var pageItems = _allNotifications.Skip(skip).Take(PageSize).ToList();
-            PagedNotifications = new ObservableCollection<NotificationDTO>(pageItems);
+            PagedNotifications = new ObservableCollection<NotificationDataTransferObject>(pageItems);
 
-            OnProperyChanged(nameof(DisplayedCount));
-            OnProperyChanged(nameof(ShowingText));
+            OnPropertyChanged(nameof(DisplayedCount));
+            OnPropertyChanged(nameof(ShowingText));
         }
 
         public void NextPage()
@@ -175,15 +175,15 @@ namespace Property_and_Management.src.Viewmodels
                 .Where(notification => !_dismissedNotificationIds.Contains(notification.Id))
                 .OrderByDescending(notification => notification.Id)
                 .ToImmutableList();
-            Notifications = new ObservableCollection<NotificationDTO>(_allNotifications);
+            Notifications = new ObservableCollection<NotificationDataTransferObject>(_allNotifications);
 
             // ensure current page is valid
             if (CurrentPage > PageCount) _currentPage = PageCount;
             UpdatePaging();
 
-            OnProperyChanged(nameof(TotalCount));
-            OnProperyChanged(nameof(PageCount));
-            OnProperyChanged(nameof(ShowingText));
+            OnPropertyChanged(nameof(TotalCount));
+            OnPropertyChanged(nameof(PageCount));
+            OnPropertyChanged(nameof(ShowingText));
         }
 
         private string GetDismissedStoragePath()
@@ -224,7 +224,7 @@ namespace Property_and_Management.src.Viewmodels
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
-        private void OnProperyChanged([CallerMemberName] string propertyName = "")
+        private void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
@@ -239,7 +239,7 @@ namespace Property_and_Management.src.Viewmodels
             Console.WriteLine($"Notification observable error: {error.Message}");
         }
 
-        public void OnNext(NotificationDTO value)
+        public void OnNext(NotificationDataTransferObject value)
         {
             // Trigger an update from the service
             LoadNotificationsForUser(CurrentUserId == MinimumValidNotificationId ? DefaultUserId : CurrentUserId);

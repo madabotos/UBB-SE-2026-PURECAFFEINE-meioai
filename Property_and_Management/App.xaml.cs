@@ -21,7 +21,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
 using Microsoft.Windows.AppLifecycle;
 using Microsoft.Windows.AppNotifications;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Mapper;
 using Property_and_Management.src.Model;
@@ -112,11 +112,11 @@ namespace Property_and_Management
         {
             var serviceCollection = new ServiceCollection();
 
-            serviceCollection.AddSingleton<IMapper<User, UserDTO>, UserMapper>();
-            serviceCollection.AddSingleton<IMapper<Game, GameDTO>, GameMapper>();
-            serviceCollection.AddSingleton<IMapper<Notification, NotificationDTO>, NotificationMapper>();
-            serviceCollection.AddSingleton<IMapper<Rental, RentalDTO>, RentalMapper>();
-            serviceCollection.AddSingleton<IMapper<Request, RequestDTO>, RequestMapper>();
+            serviceCollection.AddSingleton<IMapper<User, UserDataTransferObject>, UserMapper>();
+            serviceCollection.AddSingleton<IMapper<Game, GameDataTransferObject>, GameMapper>();
+            serviceCollection.AddSingleton<IMapper<Notification, NotificationDataTransferObject>, NotificationMapper>();
+            serviceCollection.AddSingleton<IMapper<Rental, RentalDataTransferObject>, RentalMapper>();
+            serviceCollection.AddSingleton<IMapper<Request, RequestDataTransferObject>, RequestMapper>();
 
 
             // Infrastructure

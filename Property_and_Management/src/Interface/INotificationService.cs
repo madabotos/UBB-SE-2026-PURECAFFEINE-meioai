@@ -1,35 +1,35 @@
 using System;
 using System.Collections.Immutable;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 
 namespace Property_and_Management.src.Interface
 {
-    public interface INotificationService : IObservable<NotificationDTO>
+    public interface INotificationService : IObservable<NotificationDataTransferObject>
     {
         /// <summary>Get a notification by its identifier.</summary>
         /// <param name="id">The identifier of the notification.</param>
-        /// <returns>The <see cref="NotificationDTO"/> with the specified identifier.</returns>
-        NotificationDTO GetNotificationById(int id);
+        /// <returns>The <see cref="NotificationDataTransferObject"/> with the specified identifier.</returns>
+        NotificationDataTransferObject GetNotificationById(int id);
 
         /// <summary>Delete a notification by its identifier and return the deleted item.</summary>
         /// <param name="id">The identifier of the notification.</param>
-        /// <returns>The deleted <see cref="NotificationDTO"/>.</returns>
-        NotificationDTO DeleteNotificationById(int id);
+        /// <returns>The deleted <see cref="NotificationDataTransferObject"/>.</returns>
+        NotificationDataTransferObject DeleteNotificationById(int id);
 
         /// <summary>Update an existing notification identified by id.</summary>
         /// <param name="id">The identifier of the notification to update.</param>
         /// <param name="notification">The updated notification data.</param>
-        void UpdateNotificationById(int id, NotificationDTO notification);
+        void UpdateNotificationById(int id, NotificationDataTransferObject notification);
 
         /// <summary>Send a notification to a specific user.</summary>
         /// <param name="userId">The identifier of the user.</param>
         /// <param name="notification">The notification to send.</param>
-        void SendNotificationToUser(int userId, NotificationDTO notification);
+        void SendNotificationToUser(int userId, NotificationDataTransferObject notification);
 
         /// <summary>Return all notifications for a given user.</summary>
         /// <param name="userId">The identifier of the user.</param>
-        /// <returns>A list of <see cref="NotificationDTO"/> objects for the specified user.</returns>
-        ImmutableList<NotificationDTO> GetNotificationsForUser(int userId);
+        /// <returns>A list of <see cref="NotificationDataTransferObject"/> objects for the specified user.</returns>
+        ImmutableList<NotificationDataTransferObject> GetNotificationsForUser(int userId);
 
         /// <summary>
         /// Subscribes to recive notifications for the given userId

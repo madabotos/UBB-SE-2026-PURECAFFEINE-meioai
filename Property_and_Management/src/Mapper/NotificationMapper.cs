@@ -1,26 +1,26 @@
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
 
 namespace Property_and_Management.src.Mapper
 {
-    public class NotificationMapper : IMapper<Notification, NotificationDTO>
+    public class NotificationMapper : IMapper<Notification, NotificationDataTransferObject>
     {
-        private readonly IMapper<User, UserDTO> _userMapper;
+        private readonly IMapper<User, UserDataTransferObject> _userMapper;
 
-        public NotificationMapper(IMapper<User, UserDTO> userMapper)
+        public NotificationMapper(IMapper<User, UserDataTransferObject> userMapper)
         {
             _userMapper = userMapper;
         }
 
-        public NotificationDTO ToDTO(Notification notification)
+        public NotificationDataTransferObject ToDataTransferObject(Notification notification)
         {
             if (notification == null) return null;
 
-            return new NotificationDTO
+            return new NotificationDataTransferObject
             {
                 Id = notification.Id,
-                User = _userMapper.ToDTO(notification.User),
+                User = _userMapper.ToDataTransferObject(notification.User),
                 Timestamp = notification.Timestamp,
                 Title = notification.Title,
                 Body = notification.Body,
@@ -29,19 +29,19 @@ namespace Property_and_Management.src.Mapper
             };
         }
 
-        public Notification ToModel(NotificationDTO notificationDto)
+        public Notification ToModel(NotificationDataTransferObject notificationDataTransferObject)
         {
-            if (notificationDto == null) return null;
+            if (notificationDataTransferObject == null) return null;
 
             return new Notification
             {
-                Id = notificationDto.Id,
-                User = _userMapper.ToModel(notificationDto.User),
-                Timestamp = notificationDto.Timestamp,
-                Title = notificationDto.Title,
-                Body = notificationDto.Body,
-                Type = notificationDto.Type,
-                RelatedRequestId = notificationDto.RelatedRequestId
+                Id = notificationDataTransferObject.Id,
+                User = _userMapper.ToModel(notificationDataTransferObject.User),
+                Timestamp = notificationDataTransferObject.Timestamp,
+                Title = notificationDataTransferObject.Title,
+                Body = notificationDataTransferObject.Body,
+                Type = notificationDataTransferObject.Type,
+                RelatedRequestId = notificationDataTransferObject.RelatedRequestId
             };
         }
     }

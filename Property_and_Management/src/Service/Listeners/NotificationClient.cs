@@ -5,7 +5,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Interface;
 using ServerCommunication;
 
@@ -63,7 +63,7 @@ namespace Property_and_Management.src.Service.Listeners
             if (message == null)
                 throw new ArgumentNullException(nameof(message));
 
-            // Translate infrastructure message to domain DTO before notifying subscribers,
+            // Translate infrastructure message to domain Data Transfer Object before notifying subscribers,
             // so callers never need to know about ServerCommunication types.
             var incoming = new IncomingNotification
             {

@@ -6,7 +6,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Property_and_Management;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Service;
 using Property_and_Management.src.Viewmodels;
 
@@ -56,21 +56,17 @@ namespace Property_and_Management.src.Views
             if (sender is not Button clickedButton || clickedButton.Tag is not int requestId)
                 return;
 
-            var request = clickedButton.DataContext as RequestDTO;
+            var request = clickedButton.DataContext as RequestDataTransferObject;
             var gameName = request?.Game?.Name ?? "this game";
             var renterName = request?.Renter?.DisplayName ?? "the requester";
 
-            ContentDialog offerDialog = new ContentDialog
-            {
-                Title = Constants.DialogTitles.ApproveRequestConfirmation,
-                Content = $"Approve request for {gameName} from {renterName} for {request?.StartDateDisplayLong} - {request?.EndDateDisplayLong}? A rental will be created immediately.",
-                PrimaryButtonText = Constants.DialogButtons.Approve,
-                CloseButtonText = Constants.DialogButtons.Cancel,
-                DefaultButton = ContentDialogButton.Primary,
-                XamlRoot = this.XamlRoot
-            };
-
-            var result = await offerDialog.ShowAsync();
+            var result = await DialogHelper.ShowConfirmationAsync(
+                this.XamlRoot,
+                Constants.DialogTitles.ApproveRequestConfirmation,
+                $"Approve request for {gameName} from {renterName} for {request?.StartDateDisplayLong} - {request?.EndDateDisplayLong}? A rental will be created immediately.",
+                Constants.DialogButtons.Approve,
+                Constants.DialogButtons.Cancel,
+                ContentDialogButton.Primary);
 
             if (result == ContentDialogResult.Primary)
             {
@@ -89,14 +85,7 @@ namespace Property_and_Management.src.Views
                         }
                         : Constants.DialogMessages.UnexpectedErrorOccurred;
 
-                    var errorDialog = new ContentDialog
-                    {
-                        Title = Constants.DialogTitles.ApproveFailed,
-                        Content = message,
-                        CloseButtonText = Constants.DialogButtons.Ok,
-                        XamlRoot = this.XamlRoot
-                    };
-                    await errorDialog.ShowAsync();
+                    await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.ApproveFailed, message);
                 }
             }
         }
@@ -106,7 +95,7 @@ namespace Property_and_Management.src.Views
             if (sender is not Button clickedButton || clickedButton.Tag is not int requestId)
                 return;
 
-            var request = clickedButton.DataContext as RequestDTO;
+            var request = clickedButton.DataContext as RequestDataTransferObject;
             var gameName = request?.Game?.Name ?? "this game";
             var renterName = request?.Renter?.DisplayName ?? "the requester";
 
@@ -125,17 +114,13 @@ namespace Property_and_Management.src.Views
             });
             contentPanel.Children.Add(reasonBox);
 
-            var denyDialog = new ContentDialog
-            {
-                Title = Constants.DialogTitles.DeclineRequestConfirmation,
-                Content = contentPanel,
-                PrimaryButtonText = Constants.DialogButtons.Decline,
-                CloseButtonText = Constants.DialogButtons.Cancel,
-                DefaultButton = ContentDialogButton.Primary,
-                XamlRoot = this.XamlRoot
-            };
-
-            var dialogResult = await denyDialog.ShowAsync();
+            var dialogResult = await DialogHelper.ShowConfirmationAsync(
+                this.XamlRoot,
+                Constants.DialogTitles.DeclineRequestConfirmation,
+                contentPanel,
+                Constants.DialogButtons.Decline,
+                Constants.DialogButtons.Cancel,
+                ContentDialogButton.Primary);
             if (dialogResult != ContentDialogResult.Primary)
                 return;
 
@@ -159,14 +144,7 @@ namespace Property_and_Management.src.Views
                     }
                     : Constants.DialogMessages.UnexpectedErrorOccurred;
 
-                var errorDialog = new ContentDialog
-                {
-                    Title = Constants.DialogTitles.DeclineFailed,
-                    Content = message,
-                    CloseButtonText = Constants.DialogButtons.Ok,
-                    XamlRoot = this.XamlRoot
-                };
-                await errorDialog.ShowAsync();
+                await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.DeclineFailed, message);
             }
         }
 

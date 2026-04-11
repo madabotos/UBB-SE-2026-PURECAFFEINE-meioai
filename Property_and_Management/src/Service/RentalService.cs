@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Linq;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
 
@@ -11,7 +11,7 @@ namespace Property_and_Management.src.Service
     {
         private readonly IRentalRepository _rentalRepository;
         private readonly IGameRepository _gameRepository;
-        private readonly IMapper<Rental, RentalDTO> _rentalMapper;
+        private readonly IMapper<Rental, RentalDataTransferObject> _rentalMapper;
 
         private const int BufferHours = 48;
         private const int NewEntityId = 0;
@@ -19,7 +19,7 @@ namespace Property_and_Management.src.Service
         public RentalService(
             IRentalRepository rentalRepository,
             IGameRepository gameRepository,
-            IMapper<Rental, RentalDTO> rentalMapper)
+            IMapper<Rental, RentalDataTransferObject> rentalMapper)
         {
             _rentalRepository = rentalRepository;
             _gameRepository = gameRepository;
@@ -55,16 +55,16 @@ namespace Property_and_Management.src.Service
             _rentalRepository.AddConfirmed(rental);
         }
 
-        public ImmutableList<RentalDTO> GetRentalsForRenter(int renterId) =>
+        public ImmutableList<RentalDataTransferObject> GetRentalsForRenter(int renterId) =>
             _rentalRepository
                 .GetRentalsByRenter(renterId)
-                .Select(rental => _rentalMapper.ToDTO(rental))
+                .Select(rental => _rentalMapper.ToDataTransferObject(rental))
                 .ToImmutableList();
 
-        public ImmutableList<RentalDTO> GetRentalsForOwner(int ownerId) =>
+        public ImmutableList<RentalDataTransferObject> GetRentalsForOwner(int ownerId) =>
             _rentalRepository
                 .GetRentalsByOwner(ownerId)
-                .Select(rental => _rentalMapper.ToDTO(rental))
+                .Select(rental => _rentalMapper.ToDataTransferObject(rental))
                 .ToImmutableList();
     }
 }

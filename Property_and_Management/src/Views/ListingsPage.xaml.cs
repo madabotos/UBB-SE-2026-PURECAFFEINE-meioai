@@ -5,7 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Property_and_Management;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Viewmodels;
 
 namespace Property_and_Management.src.Views
@@ -31,7 +31,7 @@ namespace Property_and_Management.src.Views
         private void EditGameButton_Click(object sender, RoutedEventArgs e)
         {
             var clickedButton = sender as Button;
-            var gameToEdit = clickedButton?.Tag as GameDTO;
+            var gameToEdit = clickedButton?.Tag as GameDataTransferObject;
 
             if (gameToEdit != null)
             {
@@ -43,22 +43,17 @@ namespace Property_and_Management.src.Views
         private async void DeleteGameButton_Click(object sender, RoutedEventArgs e)
         {
             var clickedButton = sender as Button;
-            var gameToDelete = clickedButton?.Tag as GameDTO;
+            var gameToDelete = clickedButton?.Tag as GameDataTransferObject;
 
             if (gameToDelete == null) return;
 
-            // Create the confirmation prompt
-            ContentDialog deleteDialog = new ContentDialog
-            {
-                Title = Constants.DialogTitles.DeleteGameConfirmation,
-                Content = $"Are you sure you want to permanently delete '{gameToDelete.Name}'? Pending requests will be cancelled and notified. Deletion is blocked if active or upcoming rentals exist.",
-                PrimaryButtonText = Constants.DialogButtons.Delete,
-                CloseButtonText = Constants.DialogButtons.Cancel,
-                DefaultButton = ContentDialogButton.Close,
-                XamlRoot = this.XamlRoot
-            };
-
-            var result = await deleteDialog.ShowAsync();
+            var result = await DialogHelper.ShowConfirmationAsync(
+                this.XamlRoot,
+                Constants.DialogTitles.DeleteGameConfirmation,
+                $"Are you sure you want to permanently delete '{gameToDelete.Name}'? Pending requests will be cancelled and notified. Deletion is blocked if active or upcoming rentals exist.",
+                Constants.DialogButtons.Delete,
+                Constants.DialogButtons.Cancel,
+                ContentDialogButton.Close);
 
             if (result == ContentDialogResult.Primary)
             {
@@ -67,25 +62,17 @@ namespace Property_and_Management.src.Views
                     // Execute deletion in the ViewModel
                     ViewModel.DeleteGame(gameToDelete);
 
-                    var successDialog = new ContentDialog
-                    {
-                        Title = Constants.DialogTitles.GameRemoved,
-                        Content = $"There are {NoActiveRentalsCount} active rentals for this game. It was removed successfully.",
-                        CloseButtonText = Constants.DialogButtons.Ok,
-                        XamlRoot = this.XamlRoot
-                    };
-                    await successDialog.ShowAsync();
+                    await DialogHelper.ShowMessageAsync(
+                        this.XamlRoot,
+                        Constants.DialogTitles.GameRemoved,
+                        $"There are {NoActiveRentalsCount} active rentals for this game. It was removed successfully.");
                 }
                 catch (InvalidOperationException invalidOperationException)
                 {
-                    var blockedDialog = new ContentDialog
-                    {
-                        Title = Constants.DialogTitles.CannotDeleteGame,
-                        Content = invalidOperationException.Message,
-                        CloseButtonText = Constants.DialogButtons.Ok,
-                        XamlRoot = this.XamlRoot
-                    };
-                    await blockedDialog.ShowAsync();
+                    await DialogHelper.ShowMessageAsync(
+                        this.XamlRoot,
+                        Constants.DialogTitles.CannotDeleteGame,
+                        invalidOperationException.Message);
                 }
             }
         }

@@ -18,7 +18,7 @@ namespace Property_and_Management.src.Repository
 
         private const int BufferHours = 48;
 
-        private const string BaseSelectSql =
+        private const string BaseSelectQuery =
             "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, " +
             "g.name AS game_name, g.image AS game_image, " +
             "ofu.display_name AS offering_user_display_name " +
@@ -57,7 +57,7 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = BaseSelectSql;
+                    command.CommandText = BaseSelectQuery;
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -99,7 +99,7 @@ namespace Property_and_Management.src.Repository
             request.Id = Convert.ToInt32(command.ExecuteScalar());
         }
 
-        private static readonly string DeleteWithOutputSql =
+        private static readonly string DeleteWithOutputQuery =
             "DELETE r OUTPUT deleted.request_id, deleted.game_id, deleted.renter_id, deleted.owner_id, " +
             "deleted.start_date, deleted.end_date, deleted.status, deleted.offering_user_id, " +
             "ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, " +
@@ -119,7 +119,7 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = DeleteWithOutputSql;
+                    command.CommandText = DeleteWithOutputQuery;
                     command.Parameters.AddWithValue("@id", removedEntityId);
                     using (var reader = command.ExecuteReader())
                     {
@@ -198,7 +198,7 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = BaseSelectSql + " WHERE r.request_id = @id";
+                    command.CommandText = BaseSelectQuery + " WHERE r.request_id = @id";
                     command.Parameters.AddWithValue("@id", id);
                     using (var reader = command.ExecuteReader())
                     {
@@ -218,7 +218,7 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = BaseSelectSql + " WHERE r.owner_id = @owner_id";
+                    command.CommandText = BaseSelectQuery + " WHERE r.owner_id = @owner_id";
                     command.Parameters.AddWithValue("@owner_id", ownerId);
                     using (var reader = command.ExecuteReader())
                     {
@@ -238,7 +238,7 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = BaseSelectSql + " WHERE r.renter_id = @renter_id";
+                    command.CommandText = BaseSelectQuery + " WHERE r.renter_id = @renter_id";
                     command.Parameters.AddWithValue("@renter_id", renterId);
                     using (var reader = command.ExecuteReader())
                     {
@@ -258,7 +258,7 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = BaseSelectSql + " WHERE r.game_id = @game_id";
+                    command.CommandText = BaseSelectQuery + " WHERE r.game_id = @game_id";
                     command.Parameters.AddWithValue("@game_id", gameId);
                     using (var reader = command.ExecuteReader())
                     {
@@ -314,10 +314,10 @@ namespace Property_and_Management.src.Repository
 
                 // 4. Delete overlapping requests
                 foreach (var overlappingRequest in overlappingRequests)
-                    DeleteRequestById(overlappingRequest.Id, connection, transaction);
+                    DeleteRequestByIdentifier(overlappingRequest.Id, connection, transaction);
 
                 // 5. Delete the approved request
-                DeleteRequestById(approvedRequest.Id, connection, transaction);
+                DeleteRequestByIdentifier(approvedRequest.Id, connection, transaction);
 
                 transaction.Commit();
                 return (rental.Id, overlappingRequests.ToImmutableList());
@@ -377,7 +377,7 @@ namespace Property_and_Management.src.Repository
             command.ExecuteNonQuery();
         }
 
-        private static void DeleteRequestById(int requestId, SqlConnection connection, SqlTransaction transaction)
+        private static void DeleteRequestByIdentifier(int requestId, SqlConnection connection, SqlTransaction transaction)
         {
             using var command = connection.CreateCommand();
             command.Transaction = transaction;

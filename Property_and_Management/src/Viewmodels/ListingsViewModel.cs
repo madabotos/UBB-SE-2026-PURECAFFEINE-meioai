@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Interface;
 
 namespace Property_and_Management.src.Viewmodels
@@ -18,10 +18,10 @@ namespace Property_and_Management.src.Viewmodels
         private readonly int _currentUserId;
 
         // We keep a hidden list of all games in memory
-        private ObservableCollection<GameDTO> _allListings = new ObservableCollection<GameDTO>();
+        private ObservableCollection<GameDataTransferObject> _allListings = new ObservableCollection<GameDataTransferObject>();
 
         // The UI binds to THIS list, which only holds the current page's games
-        public ObservableCollection<GameDTO> PagedListings { get; set; } = new ObservableCollection<GameDTO>();
+        public ObservableCollection<GameDataTransferObject> PagedListings { get; set; } = new ObservableCollection<GameDataTransferObject>();
 
         // Pagination Properties
         private int _pageSize = DefaultPageSize; // Change this to show more/less items per page
@@ -84,9 +84,9 @@ namespace Property_and_Management.src.Viewmodels
             if (CurrentPage > FirstPageNumber) CurrentPage -= PageStep;
         }
 
-        public void DeleteGame(GameDTO game)
+        public void DeleteGame(GameDataTransferObject game)
         {
-            _gameService.DeleteGameById(game.Id);
+            _gameService.DeleteGameByIdentifier(game.Id);
             _allListings.Remove(game);
 
             // If deleting the last item on a page leaves it empty, step back a page

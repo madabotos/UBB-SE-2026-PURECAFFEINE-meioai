@@ -2,7 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Interface;
 
 namespace Property_and_Management.src.Viewmodels
@@ -16,18 +16,18 @@ namespace Property_and_Management.src.Viewmodels
 
         public int CurrentUserId => _currentUserContext.CurrentUserId;
 
-        public ObservableCollection<GameDTO> MyGames { get; set; } = new();
-        public ObservableCollection<UserDTO> AvailableRenters { get; set; } = new();
+        public ObservableCollection<GameDataTransferObject> MyGames { get; set; } = new();
+        public ObservableCollection<UserDataTransferObject> AvailableRenters { get; set; } = new();
 
-        private GameDTO _selectedGame;
-        public GameDTO SelectedGame
+        private GameDataTransferObject _selectedGame;
+        public GameDataTransferObject SelectedGame
         {
             get => _selectedGame;
             set { _selectedGame = value; OnPropertyChanged(); }
         }
 
-        private UserDTO _selectedRenter;
-        public UserDTO SelectedRenter
+        private UserDataTransferObject _selectedRenter;
+        public UserDataTransferObject SelectedRenter
         {
             get => _selectedRenter;
             set { _selectedRenter = value; OnPropertyChanged(); }
@@ -75,10 +75,7 @@ namespace Property_and_Management.src.Viewmodels
         {
             if (SelectedGame == null) return false;
             if (SelectedRenter == null) return false;
-            if (StartDate == null || EndDate == null) return false;
-            if (StartDate.Value.Date >= EndDate.Value.Date) return false;
-            if (StartDate.Value.Date < DateTimeOffset.Now.Date) return false;
-            return true;
+            return DateRangeValidationHelper.HasValidFutureDateRange(StartDate, EndDate);
         }
 
         public string SaveRental()

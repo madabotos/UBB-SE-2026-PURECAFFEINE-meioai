@@ -1,6 +1,6 @@
 using System;
 
-namespace Property_and_Management.src.DTO
+namespace Property_and_Management.src.DataTransferObjects
 {
     public sealed class IncomingNotification
     {

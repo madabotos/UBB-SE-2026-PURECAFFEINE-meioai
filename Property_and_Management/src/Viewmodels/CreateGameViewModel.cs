@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Property_and_Management;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Interface;
 
 namespace Property_and_Management.src.Viewmodels
@@ -47,46 +46,30 @@ namespace Property_and_Management.src.Viewmodels
 
         public List<string> ValidateInputs()
         {
-            var errors = new List<string>();
-
-            if (string.IsNullOrWhiteSpace(Name) || Name.Length < MinimumNameLength || Name.Length > MaximumNameLength)
-                errors.Add(Constants.ValidationMessages.NameLengthRange(MinimumNameLength, MaximumNameLength));
-            if (Price < MinimumAllowedPrice)
-                errors.Add(Constants.ValidationMessages.PriceMinimum(MinimumAllowedPrice));
-            if (MinPlayers < MinimumPlayerCount)
-                errors.Add(Constants.ValidationMessages.MinimumPlayerCount(MinimumPlayerCount));
-            if (MaxPlayers < MinPlayers)
-                errors.Add(Constants.ValidationMessages.MaximumPlayerCountComparedToMinimum);
-            if (string.IsNullOrWhiteSpace(Description) || Description.Length < MinimumDescriptionLength || Description.Length > MaximumDescriptionLength)
-                errors.Add(Constants.ValidationMessages.DescriptionLengthRange(MinimumDescriptionLength, MaximumDescriptionLength));
-
-            return errors;
+            return GameInputHelper.BuildValidationErrors(
+                Name,
+                Price,
+                MinPlayers,
+                MaxPlayers,
+                Description,
+                MinimumNameLength,
+                MaximumNameLength,
+                MinimumAllowedPrice,
+                MinimumPlayerCount,
+                MinimumDescriptionLength,
+                MaximumDescriptionLength);
         }
 
-        public GameDTO SaveGame()
+        public GameDataTransferObject SaveGame()
         {
             if (ValidateInputs().Count > NoValidationErrors) return null;
 
-            if (Image == null || Image.Length == EmptyImageLength)
-            {
-                try
-                {
-                    string defaultImagePath = System.IO.Path.Combine(
-                        System.AppDomain.CurrentDomain.BaseDirectory,
-                        "Assets",
-                        "default-game-placeholder.jpg");
-                    Image = System.IO.File.ReadAllBytes(defaultImagePath);
-                }
-                catch
-                {
-                    Image = Array.Empty<byte>();
-                }
-            }
+            Image = GameInputHelper.EnsureImageOrDefault(Image, AppDomain.CurrentDomain.BaseDirectory);
 
-            var newGameDto = new GameDTO
+            var newgameDataTransferObject = new GameDataTransferObject
             {
                 Id = NewEntityId,
-                Owner = new UserDTO { Id = CurrentUserId },
+                Owner = new UserDataTransferObject { Id = CurrentUserId },
                 Name = Name,
                 Price = Price,
                 MinimumPlayerNumber = MinPlayers,
@@ -96,8 +79,8 @@ namespace Property_and_Management.src.Viewmodels
                 IsActive = IsActive
             };
 
-            _gameService.AddGame(newGameDto);
-            return newGameDto;
+            _gameService.AddGame(newgameDataTransferObject);
+            return newgameDataTransferObject;
         }
     }
 }

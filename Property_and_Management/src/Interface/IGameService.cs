@@ -1,5 +1,5 @@
 using System.Collections.Immutable;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 
 namespace Property_and_Management.src.Interface
 {
@@ -7,29 +7,29 @@ namespace Property_and_Management.src.Interface
     {
         /// <summary>Add a new game.</summary>
         /// <param name="game">The added game data.</param>
-        void AddGame(GameDTO game);
+        void AddGame(GameDataTransferObject game);
 
-        /// <summary>Update an existing game identified by id.</summary>
-        /// <param name="id">The identifier of the game.</param>
+        /// <summary>Update an existing game identified by its identifier.</summary>
+        /// <param name="gameIdentifier">The identifier of the game.</param>
         /// <param name="game">The updated game data.</param>
-        public void UpdateGameById(int id, GameDTO game);
+        public void UpdateGameByIdentifier(int gameIdentifier, GameDataTransferObject game);
 
         /// <summary>Delete a game by its identifier and return the deleted item.</summary>
-        /// <param name="id">The identifier of the game.</param>
-        /// <returns>The deleted <see cref="GameDTO"/>.</returns>
-        public GameDTO DeleteGameById(int id);
+        /// <param name="gameIdentifier">The identifier of the game.</param>
+        /// <returns>The deleted <see cref="GameDataTransferObject"/>.</returns>
+        public GameDataTransferObject DeleteGameByIdentifier(int gameIdentifier);
 
         /// <summary>Get a game by its identifier and returns it.</summary>
-        /// <param name="id">The identifier of the game.</param>
-        /// <returns>The <see cref="GameDTO"/>.</returns>
-        public GameDTO GetGameById(int id);
+        /// <param name="gameIdentifier">The identifier of the game.</param>
+        /// <returns>The <see cref="GameDataTransferObject"/>.</returns>
+        public GameDataTransferObject GetGameByIdentifier(int gameIdentifier);
 
         /// <summary>Return all games of a given owner.</summary>
         /// <param name="ownerId">The identifier of the owner.</param>
-        /// <returns>A list of <see cref="GameDTO"/> objects for the specified owner.</returns>
-        public ImmutableList<GameDTO> GetGamesForOwner(int ownerId);
+        /// <returns>A list of <see cref="GameDataTransferObject"/> objects for the specified owner.</returns>
+        public ImmutableList<GameDataTransferObject> GetGamesForOwner(int ownerId);
 
         /// <summary>Return all games in the system.</summary>
-        ImmutableList<GameDTO> GetAllGames();
+        ImmutableList<GameDataTransferObject> GetAllGames();
     }
 }

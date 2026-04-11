@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 
 namespace Property_and_Management.src.Interface
 {

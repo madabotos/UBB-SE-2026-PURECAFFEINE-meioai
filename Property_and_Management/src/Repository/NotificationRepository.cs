@@ -14,7 +14,7 @@ namespace Property_and_Management.src.Repository
         private readonly string _connectionString =
             System.Configuration.ConfigurationManager.ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
 
-        private const string BaseSelectSql =
+        private const string BaseSelectQuery =
             "SELECT n.*, u.display_name AS user_display_name FROM Notifications n LEFT JOIN Users u ON u.id = n.user_id";
 
         private static Notification ReadNotificationFromReader(SqlDataReader reader)
@@ -36,7 +36,7 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = BaseSelectSql;
+                    command.CommandText = BaseSelectQuery;
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -122,7 +122,7 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = BaseSelectSql + " WHERE n.notification_id = @id";
+                    command.CommandText = BaseSelectQuery + " WHERE n.notification_id = @id";
                     command.Parameters.AddWithValue("@id", id);
                     using (var reader = command.ExecuteReader())
                     {
@@ -144,7 +144,7 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = BaseSelectSql + " WHERE n.user_id = @user_id";
+                    command.CommandText = BaseSelectQuery + " WHERE n.user_id = @user_id";
                     command.Parameters.AddWithValue("@user_id", userId);
                     using (var reader = command.ExecuteReader())
                     {
@@ -166,7 +166,7 @@ namespace Property_and_Management.src.Repository
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = BaseSelectSql + " WHERE n.related_request_id = @request_id AND n.type = @type";
+                    command.CommandText = BaseSelectQuery + " WHERE n.related_request_id = @request_id AND n.type = @type";
                     command.Parameters.AddWithValue("@request_id", requestId);
                     command.Parameters.AddWithValue("@type", (int)NotificationType.OfferReceived);
                     using (var reader = command.ExecuteReader())

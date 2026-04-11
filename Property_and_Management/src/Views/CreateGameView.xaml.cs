@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,36 +49,27 @@ namespace Property_and_Management.src.Views
             }
             else
             {
-                // If validation fails, display an error message [cite: 124]
-                var dialog = new ContentDialog
-                {
-                    Title = Constants.DialogTitles.ValidationError,
-                    Content = string.Join(Environment.NewLine, validationErrors),
-                    CloseButtonText = Constants.DialogButtons.Ok,
-                    XamlRoot = this.XamlRoot
-                };
-                await dialog.ShowAsync();
+                await ShowValidationErrorsAsync(validationErrors);
             }
         }
 
         private void SyncPriceFromInput()
         {
-            var priceText = PriceNumberBox.Text?.Trim();
-
-            if (string.IsNullOrWhiteSpace(priceText))
-            {
-                ViewModel.Price = InvalidOrEmptyPriceValue;
-                return;
-            }
-
-            if (double.TryParse(priceText, NumberStyles.Float, CultureInfo.CurrentCulture, out var parsedPrice) ||
-                double.TryParse(priceText, NumberStyles.Float, CultureInfo.InvariantCulture, out parsedPrice))
+            if (PriceInputParser.TryParsePriceInput(PriceNumberBox.Text, out var parsedPrice))
             {
                 ViewModel.PriceDouble = parsedPrice;
                 return;
             }
 
             ViewModel.Price = InvalidOrEmptyPriceValue;
+        }
+
+        private async System.Threading.Tasks.Task ShowValidationErrorsAsync(System.Collections.Generic.IEnumerable<string> validationErrors)
+        {
+            await DialogHelper.ShowMessageAsync(
+                this.XamlRoot,
+                Constants.DialogTitles.ValidationError,
+                string.Join(Environment.NewLine, validationErrors));
         }
 
         private async void UploadImageButton_Click(object sender, RoutedEventArgs e)

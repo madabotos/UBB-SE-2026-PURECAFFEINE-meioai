@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Interface;
 
 namespace Property_and_Management.src.Viewmodels
@@ -18,9 +18,9 @@ namespace Property_and_Management.src.Viewmodels
 
         private readonly IRentalService _rentalService;
         private readonly ICurrentUserContext _currentUserContext;
-        private ObservableCollection<RentalDTO> _rentals = new();
-        private ObservableCollection<RentalDTO> _pagedRentals = new();
-        private ImmutableList<RentalDTO> _allRentals = ImmutableList<RentalDTO>.Empty;
+        private ObservableCollection<RentalDataTransferObject> _rentals = new();
+        private ObservableCollection<RentalDataTransferObject> _pagedRentals = new();
+        private ImmutableList<RentalDataTransferObject> _allRentals = ImmutableList<RentalDataTransferObject>.Empty;
 
         public int OwnerId { get; private set; }
 
@@ -45,7 +45,7 @@ namespace Property_and_Management.src.Viewmodels
         public int PageCount => Math.Max(FirstPageNumber, (int)Math.Ceiling((double)TotalCount / PageSize));
         public int DisplayedCount => _pagedRentals?.Count ?? NoItemsCount;
 
-        public ObservableCollection<RentalDTO> Rentals
+        public ObservableCollection<RentalDataTransferObject> Rentals
         {
             get => _rentals;
             set
@@ -58,7 +58,7 @@ namespace Property_and_Management.src.Viewmodels
             }
         }
 
-        public ObservableCollection<RentalDTO> PagedRentals
+        public ObservableCollection<RentalDataTransferObject> PagedRentals
         {
             get => _pagedRentals;
             set
@@ -93,7 +93,7 @@ namespace Property_and_Management.src.Viewmodels
                 .ToImmutableList();
 
             _allRentals = allRentals;
-            Rentals = new ObservableCollection<RentalDTO>(allRentals);
+            Rentals = new ObservableCollection<RentalDataTransferObject>(allRentals);
 
             CurrentPage = page;
             UpdatePaging();
@@ -103,7 +103,7 @@ namespace Property_and_Management.src.Viewmodels
         {
             var skip = (CurrentPage - FirstPageNumber) * PageSize;
             var pageItems = _allRentals.Skip(skip).Take(PageSize).ToList();
-            PagedRentals = new ObservableCollection<RentalDTO>(pageItems);
+            PagedRentals = new ObservableCollection<RentalDataTransferObject>(pageItems);
         }
 
         public void NextPage() => CurrentPage = Math.Min(CurrentPage + PageStep, PageCount);

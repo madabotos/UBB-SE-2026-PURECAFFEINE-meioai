@@ -4,12 +4,12 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Interface;
 
 namespace Property_and_Management.src.Viewmodels
 {
-    public class RequestsToOthersViewModel : INotifyPropertyChanged, IObserver<RequestDTO>
+    public class RequestsToOthersViewModel : INotifyPropertyChanged, IObserver<RequestDataTransferObject>
     {
         private const int DefaultPageSize = 3;
         private const int FirstPageNumber = 1;
@@ -18,9 +18,9 @@ namespace Property_and_Management.src.Viewmodels
 
         private readonly IRequestService _requestService;
         private readonly ICurrentUserContext _currentUserContext;
-        private ObservableCollection<RequestDTO> _requests = new();
-        private ObservableCollection<RequestDTO> _pagedRequests = new();
-        private ImmutableList<RequestDTO> _allRequests = ImmutableList<RequestDTO>.Empty;
+        private ObservableCollection<RequestDataTransferObject> _requests = new();
+        private ObservableCollection<RequestDataTransferObject> _pagedRequests = new();
+        private ImmutableList<RequestDataTransferObject> _allRequests = ImmutableList<RequestDataTransferObject>.Empty;
 
         public int RenterId { get; private set; }
 
@@ -45,7 +45,7 @@ namespace Property_and_Management.src.Viewmodels
         public int PageCount => Math.Max(FirstPageNumber, (int)Math.Ceiling((double)TotalCount / PageSize));
         public int DisplayedCount => _pagedRequests?.Count ?? NoItemsCount;
 
-        public ObservableCollection<RequestDTO> Requests
+        public ObservableCollection<RequestDataTransferObject> Requests
         {
             get => _requests;
             set
@@ -58,7 +58,7 @@ namespace Property_and_Management.src.Viewmodels
             }
         }
 
-        public ObservableCollection<RequestDTO> PagedRequests
+        public ObservableCollection<RequestDataTransferObject> PagedRequests
         {
             get => _pagedRequests;
             set
@@ -93,7 +93,7 @@ namespace Property_and_Management.src.Viewmodels
                 .ToImmutableList();
 
             _allRequests = allRequests;
-            Requests = new ObservableCollection<RequestDTO>(allRequests);
+            Requests = new ObservableCollection<RequestDataTransferObject>(allRequests);
 
             CurrentPage = page;
             UpdatePaging();
@@ -103,7 +103,7 @@ namespace Property_and_Management.src.Viewmodels
         {
             var skip = (CurrentPage - FirstPageNumber) * PageSize;
             var pageItems = _allRequests.Skip(skip).Take(PageSize).ToList();
-            PagedRequests = new ObservableCollection<RequestDTO>(pageItems);
+            PagedRequests = new ObservableCollection<RequestDataTransferObject>(pageItems);
         }
 
         public void NextPage() => CurrentPage = Math.Min(CurrentPage + PageStep, PageCount);
@@ -123,6 +123,6 @@ namespace Property_and_Management.src.Viewmodels
 
         public void OnCompleted() => LoadRequests(CurrentPage, PageSize);
         public void OnError(Exception error) => System.Diagnostics.Debug.WriteLine(error.Message);
-        public void OnNext(RequestDTO value) => LoadRequests(CurrentPage, PageSize);
+        public void OnNext(RequestDataTransferObject value) => LoadRequests(CurrentPage, PageSize);
     }
 }

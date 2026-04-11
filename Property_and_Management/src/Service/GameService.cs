@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Linq;
-using Property_and_Management.src.DTO;
+using Property_and_Management.src.DataTransferObjects;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
 
@@ -11,7 +11,7 @@ namespace Property_and_Management.src.Service
     {
         private readonly IGameRepository _gameRepository;
         private readonly IRentalRepository _rentalRepository;
-        private readonly IMapper<Game, GameDTO> _gameMapper;
+        private readonly IMapper<Game, GameDataTransferObject> _gameMapper;
         private readonly IRequestService _requestService;
         private const int NoActiveOrUpcomingRentals = 0;
         private const int SingularRentalCount = 1;
@@ -19,7 +19,7 @@ namespace Property_and_Management.src.Service
         public GameService(
             IGameRepository gameRepository,
             IRentalRepository rentalRepository,
-            IMapper<Game, GameDTO> gameMapper,
+            IMapper<Game, GameDataTransferObject> gameMapper,
             IRequestService requestService)
         {
             _gameRepository = gameRepository;
@@ -28,19 +28,19 @@ namespace Property_and_Management.src.Service
             _requestService = requestService;
         }
 
-        public void AddGame(GameDTO game)
+        public void AddGame(GameDataTransferObject game)
         {
             _gameRepository.Add(_gameMapper.ToModel(game));
         }
 
-        public void UpdateGameById(int id, GameDTO game)
+        public void UpdateGameByIdentifier(int gameIdentifier, GameDataTransferObject game)
         {
-            _gameRepository.Update(id, _gameMapper.ToModel(game));
+            _gameRepository.Update(gameIdentifier, _gameMapper.ToModel(game));
         }
 
-        public GameDTO DeleteGameById(int id)
+        public GameDataTransferObject DeleteGameByIdentifier(int gameIdentifier)
         {
-            var rentals = _rentalRepository.GetRentalsByGame(id);
+            var rentals = _rentalRepository.GetRentalsByGame(gameIdentifier);
             var now = DateTime.Now;
             var activeOrUpcomingRentalsCount = rentals.Count(rental => rental.EndDate >= now);
             if (activeOrUpcomingRentalsCount > NoActiveOrUpcomingRentals)
@@ -57,28 +57,28 @@ namespace Property_and_Management.src.Service
 
             // Deleting a game invalidates pending requests for that game.
             // Reuse the existing deactivation flow to notify renters and clean requests first.
-            _requestService.OnGameDeactivated(id);
-            return _gameMapper.ToDTO(_gameRepository.Delete(id));
+            _requestService.OnGameDeactivated(gameIdentifier);
+            return _gameMapper.ToDataTransferObject(_gameRepository.Delete(gameIdentifier));
         }
 
-        public GameDTO GetGameById(int id)
+        public GameDataTransferObject GetGameByIdentifier(int gameIdentifier)
         {
-            return _gameMapper.ToDTO(_gameRepository.Get(id));
+            return _gameMapper.ToDataTransferObject(_gameRepository.Get(gameIdentifier));
         }
 
-        public ImmutableList<GameDTO> GetGamesForOwner(int ownerId)
+        public ImmutableList<GameDataTransferObject> GetGamesForOwner(int ownerId)
         {
             return _gameRepository
                 .GetGamesByOwner(ownerId)
-                .Select(game => _gameMapper.ToDTO(game))
+                .Select(game => _gameMapper.ToDataTransferObject(game))
                 .ToImmutableList();
         }
 
-        public ImmutableList<GameDTO> GetAllGames()
+        public ImmutableList<GameDataTransferObject> GetAllGames()
         {
             return _gameRepository
                 .GetAll()
-                .Select(game => _gameMapper.ToDTO(game))
+                .Select(game => _gameMapper.ToDataTransferObject(game))
                 .ToImmutableList();
         }
     }
