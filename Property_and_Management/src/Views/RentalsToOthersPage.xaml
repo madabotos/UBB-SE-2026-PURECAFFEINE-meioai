@@ -32,8 +32,7 @@
 
         <Grid Grid.Row="0" Margin="12">
             <TextBlock Text="My Rentals" Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center"/>
-            <Button Content="+ Create Rental" HorizontalAlignment="Right"
-                    Style="{StaticResource AccentButtonStyle}" Click="CreateRentalButton_Click"/>
+            
         </Grid>
 
         <ListView x:Name="ItemsListView" Grid.Row="1"

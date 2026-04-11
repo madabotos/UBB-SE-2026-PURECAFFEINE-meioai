@@ -2,7 +2,6 @@ using System;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Property_and_Management.src.DTO;
@@ -13,11 +12,12 @@ namespace Property_and_Management.src.Viewmodels
     public class RentalsFromOthersViewModel : INotifyPropertyChanged
     {
         private readonly IRentalService _rentalService;
+        private readonly ICurrentUserContext _currentUserContext;
         private ObservableCollection<RentalDTO> _rentals = new();
         private ObservableCollection<RentalDTO> _pagedRentals = new();
         private ImmutableList<RentalDTO> _allRentals = ImmutableList<RentalDTO>.Empty;
 
-        public int RenterId { get; private set; } = (App.Current as App)?.CurrentUserID ?? 1;
+        public int RenterId { get; private set; }
 
         private const int s_pageSizeConst = 3;
         public static int PageSize => s_pageSizeConst;
@@ -73,16 +73,17 @@ namespace Property_and_Management.src.Viewmodels
 
         public string ShowingText => $"Showing {DisplayedCount} of {TotalCount} rentals";
 
-        public RentalsFromOthersViewModel(IRentalService rentalService)
+        public RentalsFromOthersViewModel(IRentalService rentalService, ICurrentUserContext currentUserContext)
         {
             _rentalService = rentalService;
+            _currentUserContext = currentUserContext;
+            RenterId = _currentUserContext.CurrentUserId;
             LoadRentals(1, PageSize);
         }
 
-        // [REQ-REN-02] As a User, I must be able to see the rentals in decreasing order of the start date of the rental.
         public void LoadRentals(int page, int pageSize)
         {
-            RenterId = (App.Current as App)?.CurrentUserID ?? 1;
+            RenterId = _currentUserContext.CurrentUserId;
             var allRentals = _rentalService.GetRentalsForRenter(RenterId)
                 .OrderByDescending(r => r.StartDate)
                 .ToImmutableList();
@@ -104,7 +105,7 @@ namespace Property_and_Management.src.Viewmodels
         public void NextPage() => CurrentPage = Math.Min(CurrentPage + 1, PageCount);
         public void PrevPage() => CurrentPage = Math.Max(CurrentPage - 1, 1);
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

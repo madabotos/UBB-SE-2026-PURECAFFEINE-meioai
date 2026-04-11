@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
 using ServerCommunication;
 
@@ -15,7 +15,7 @@ namespace Property_and_Management.src.Service.Listeners
     {
         private bool _disposed;
 
-        private readonly List<IObserver<MessageBase>> _subscribers = new();
+        private readonly List<IObserver<IncomingNotification>> _subscribers = new();
         private readonly UdpClient _udpClient;
 
         private readonly CancellationTokenSource _cancellationTokenSource = new();
@@ -29,7 +29,7 @@ namespace Property_and_Management.src.Service.Listeners
 
         public NotificationClient()
         {
-            _udpClient = new UdpClient(0); // OS will autoasign
+            _udpClient = new UdpClient(0); // OS will auto-assign
         }
 
         private void HandleMessagePacket(MessageWrapper wrappedMessage)
@@ -54,19 +54,23 @@ namespace Property_and_Management.src.Service.Listeners
 
         private void HandleSendNotificationMessage(MessageWrapper wrappedMessage)
         {
-            // Deserialize the message
             SendNotificationMessage? message = wrappedMessage.Deserialize<SendNotificationMessage>();
 
             if (message == null)
-            {
                 throw new ArgumentNullException(nameof(message));
-            }
 
-            // Send the message to the subscribers
-            foreach (var subscriber in _subscribers)
+            // Translate infrastructure message to domain DTO before notifying subscribers,
+            // so callers never need to know about ServerCommunication types.
+            var incoming = new IncomingNotification
             {
-                subscriber.OnNext(message);
-            }
+                UserId = message.UserId,
+                Timestamp = message.Timestamp,
+                Title = message.Title,
+                Body = message.Body
+            };
+
+            foreach (var subscriber in _subscribers)
+                subscriber.OnNext(incoming);
         }
 
         public void StopListening() => _cancellationTokenSource.Cancel();
@@ -88,7 +92,7 @@ namespace Property_and_Management.src.Service.Listeners
 
                     if (wrappedMessage == null)
                     {
-                        Console.WriteLine($"Recived bad json: {Encoding.UTF8.GetString(result.Buffer)}");
+                        Console.WriteLine($"Received bad json: {Encoding.UTF8.GetString(result.Buffer)}");
                         continue;
                     }
 
@@ -107,26 +111,20 @@ namespace Property_and_Management.src.Service.Listeners
                     catch (OperationCanceledException) { break; }
                     retryDelay = TimeSpan.FromTicks(Math.Min(retryDelay.Ticks * 2, MaxRetryDelay.Ticks));
                 }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-                catch (ObjectDisposedException)
-                {
-                    break;
-                }
+                catch (OperationCanceledException) { break; }
+                catch (ObjectDisposedException) { break; }
             }
         }
 
-        public IDisposable Subscribe(IObserver<MessageBase> observer)
+        public IDisposable Subscribe(IObserver<IncomingNotification> observer)
         {
             _subscribers.Add(observer);
-            return null;
+            return new Unsubscriber(_subscribers, observer);
         }
 
         public void SendNotification(int userId, string title, string body)
         {
-            var sendNotificationMessage = new SendNotificationMessage
+            var message = new SendNotificationMessage
             {
                 UserId = userId,
                 Timestamp = DateTime.UtcNow,
@@ -134,18 +132,14 @@ namespace Property_and_Management.src.Service.Listeners
                 Body = body
             };
 
-            byte[] data = CommunicationHelper.SerializeMessage(sendNotificationMessage);
+            byte[] data = CommunicationHelper.SerializeMessage(message);
             _udpClient.Send(data, data.Length, ServerEndpoint);
         }
 
         public void SubscribeToServer(int userId)
         {
-            var subscribeToServerMessage = new SubscribeToServerMessage
-            {
-                UserId = userId,
-            };
-
-            byte[] data = CommunicationHelper.SerializeMessage(subscribeToServerMessage);
+            var message = new SubscribeToServerMessage { UserId = userId };
+            byte[] data = CommunicationHelper.SerializeMessage(message);
             _udpClient.Send(data, data.Length, ServerEndpoint);
         }
 
@@ -157,6 +151,20 @@ namespace Property_and_Management.src.Service.Listeners
             _cancellationTokenSource.Cancel();
             _udpClient.Close();
             _cancellationTokenSource.Dispose();
+        }
+
+        private sealed class Unsubscriber : IDisposable
+        {
+            private readonly List<IObserver<IncomingNotification>> _subscribers;
+            private readonly IObserver<IncomingNotification> _observer;
+
+            public Unsubscriber(List<IObserver<IncomingNotification>> subscribers, IObserver<IncomingNotification> observer)
+            {
+                _subscribers = subscribers;
+                _observer = observer;
+            }
+
+            public void Dispose() => _subscribers.Remove(_observer);
         }
     }
 }

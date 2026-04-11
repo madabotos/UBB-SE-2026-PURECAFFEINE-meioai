@@ -11,8 +11,6 @@ using System.Threading.Tasks;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
-using Property_and_Management.src.Service;
-using ServerCommunication;
 using Windows.ApplicationModel.VoiceCommands;
 
 namespace Property_and_Management.src.Viewmodels
@@ -21,8 +19,9 @@ namespace Property_and_Management.src.Viewmodels
     {
         private ObservableCollection<NotificationDTO> _notifications = new ObservableCollection<NotificationDTO>();
         private ObservableCollection<NotificationDTO> _pagedNotifications = new ObservableCollection<NotificationDTO>();
-        private readonly NotificationService _notificationService;
+        private readonly INotificationService _notificationService;
         private readonly IRequestService _requestService;
+        private readonly ICurrentUserContext _currentUserContext;
         private readonly IDisposable _subscription;
         private HashSet<int> _dismissedNotificationIds = new HashSet<int>();
 
@@ -87,13 +86,14 @@ namespace Property_and_Management.src.Viewmodels
 
         public string ShowingText => $"Showing {DisplayedCount} of {TotalCount}";
 
-        public NotificationsViewModel(NotificationService notificationService, IRequestService requestService)
+        public NotificationsViewModel(INotificationService notificationService, IRequestService requestService,
+                                      ICurrentUserContext currentUserContext)
         {
             _notificationService = notificationService;
             _requestService = requestService;
+            _currentUserContext = currentUserContext;
 
-            // Default user
-            LoadNotificationsForUser((App.Current as App)?.CurrentUserID ?? 1);
+            LoadNotificationsForUser(_currentUserContext.CurrentUserId);
 
             _subscription = notificationService.Subscribe(this);
         }

@@ -12,8 +12,9 @@ namespace Property_and_Management.src.Viewmodels
     {
         private readonly IGameService _gameService;
         private readonly IRequestService _requestService;
+        private readonly ICurrentUserContext _currentUserContext;
 
-        public int CurrentUserId => (App.Current as App)?.CurrentUserID ?? 1;
+        public int CurrentUserId => _currentUserContext.CurrentUserId;
 
         public ObservableCollection<GameDTO> AvailableGames { get; set; } = new();
 
@@ -38,10 +39,12 @@ namespace Property_and_Management.src.Viewmodels
             set { _endDate = value; OnPropertyChanged(); }
         }
 
-        public CreateRequestViewModel(IGameService gameService, IRequestService requestService)
+        public CreateRequestViewModel(IGameService gameService, IRequestService requestService,
+                                      ICurrentUserContext currentUserContext)
         {
             _gameService = gameService;
             _requestService = requestService;
+            _currentUserContext = currentUserContext;
             LoadGames();
         }
 
@@ -51,9 +54,7 @@ namespace Property_and_Management.src.Viewmodels
             var games = _gameService.GetAllGames()
                 .Where(g => g.IsActive && g.Owner?.Id != CurrentUserId);
             foreach (var game in games)
-            {
                 AvailableGames.Add(game);
-            }
         }
 
         public bool ValidateInputs()
@@ -77,7 +78,7 @@ namespace Property_and_Management.src.Viewmodels
                 EndDate.Value.DateTime);
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

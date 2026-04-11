@@ -39,9 +39,7 @@ namespace Property_and_Management.src.Views
             _refreshTimer.Tick += (_, _) =>
             {
                 if (DataContext is NotificationsViewModel vm)
-                {
-                    vm.LoadNotificationsForUser(app.CurrentUserID);
-                }
+                    vm.LoadNotificationsForUser(vm.CurrentUserId);
             };
         }
 
@@ -49,23 +47,17 @@ namespace Property_and_Management.src.Views
         {
             base.OnNavigatedTo(e);
 
-            var app = (Property_and_Management.App)Application.Current;
-
             if (e.Parameter is NotificationsViewModel vm)
             {
                 DataContext = vm;
-                vm.LoadNotificationsForUser(app.CurrentUserID);
+                vm.LoadNotificationsForUser(vm.CurrentUserId);
 
-                // If the XAML contains a named ItemsControl / ListView called "ItemsListView" from older implementation,
-                // bind its ItemsSource to the VM's Notifications collection to preserve behavior.
                 if (this.FindName("ItemsListView") is ItemsControl items)
-                {
                     items.ItemsSource = vm.Notifications;
-                }
             }
             else if (DataContext is NotificationsViewModel defaultVm)
             {
-                defaultVm.LoadNotificationsForUser(app.CurrentUserID);
+                defaultVm.LoadNotificationsForUser(defaultVm.CurrentUserId);
             }
 
             _refreshTimer.Start();

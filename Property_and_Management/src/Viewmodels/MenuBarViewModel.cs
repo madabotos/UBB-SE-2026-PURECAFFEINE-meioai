@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using Property_and_Management.src.Views;
 
 namespace Property_and_Management.src.Viewmodels
 {
     public class MenuBarViewModel : INotifyPropertyChanged
     {
-        // The View will listen to this event to know when to switch pages
-        public event Action<Type> RequestNavigation;
+        // The View listens to this event to know which page to navigate to.
+        // Using AppPage enum keeps the ViewModel free of concrete View type references.
+        public event Action<AppPage> RequestNavigation;
 
         public Dictionary<string, Action> NavigationActions { get; }
 
@@ -19,12 +19,12 @@ namespace Property_and_Management.src.Viewmodels
         {
             NavigationActions = new Dictionary<string, Action>
             {
-                { "My Games", () => RequestNavigation?.Invoke(typeof(ListingsPage)) },
-                { "Others' Requests", () => RequestNavigation?.Invoke(typeof(RequestsFromOthersPage)) },
-                { "Others' Rentals", () => RequestNavigation?.Invoke(typeof(RentalsFromOthersPage))},
-                { "My Requests", () => RequestNavigation?.Invoke(typeof(RequestsToOthersPage)) },
-                { "My Rentals", () => RequestNavigation?.Invoke(typeof(RentalsToOthersPage))},
-                { "Notifications", () => RequestNavigation?.Invoke(typeof(Views.NotificationsPage)) }
+                { "My Games",           () => RequestNavigation?.Invoke(AppPage.Listings) },
+                { "Others' Requests",   () => RequestNavigation?.Invoke(AppPage.RequestsFromOthers) },
+                { "Others' Rentals",    () => RequestNavigation?.Invoke(AppPage.RentalsFromOthers) },
+                { "My Requests",        () => RequestNavigation?.Invoke(AppPage.RequestsToOthers) },
+                { "My Rentals",         () => RequestNavigation?.Invoke(AppPage.RentalsToOthers) },
+                { "Notifications",      () => RequestNavigation?.Invoke(AppPage.Notifications) }
             };
         }
 
@@ -36,9 +36,7 @@ namespace Property_and_Management.src.Viewmodels
                 if (_selectedPageName != value)
                 {
                     _selectedPageName = value;
-                    OnPropertyChanged(); // Update the UI
-
-                    // Trigger the navigation logic whenever the property changes
+                    OnPropertyChanged();
                     HandleNavigation(value);
                 }
             }
@@ -47,17 +45,12 @@ namespace Property_and_Management.src.Viewmodels
         private void HandleNavigation(string pageName)
         {
             OnPropertyChanged();
-
-            // Execute the lambda from the dictionary
             if (!string.IsNullOrEmpty(pageName) && NavigationActions.TryGetValue(pageName, out var action))
-            {
                 action.Invoke();
-            }
         }
 
-        // Standard INotifyPropertyChanged implementation
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string name = null)
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }

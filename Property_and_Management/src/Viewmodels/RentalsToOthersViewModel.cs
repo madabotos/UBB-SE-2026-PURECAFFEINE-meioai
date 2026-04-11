@@ -12,11 +12,12 @@ namespace Property_and_Management.src.Viewmodels
     public class RentalsToOthersViewModel : INotifyPropertyChanged
     {
         private readonly IRentalService _rentalService;
+        private readonly ICurrentUserContext _currentUserContext;
         private ObservableCollection<RentalDTO> _rentals = new();
         private ObservableCollection<RentalDTO> _pagedRentals = new();
         private ImmutableList<RentalDTO> _allRentals = ImmutableList<RentalDTO>.Empty;
 
-        public int OwnerId { get; private set; } = (App.Current as App)?.CurrentUserID ?? 1;
+        public int OwnerId { get; private set; }
 
         private const int s_pageSizeConst = 3;
         public static int PageSize => s_pageSizeConst;
@@ -72,16 +73,17 @@ namespace Property_and_Management.src.Viewmodels
 
         public string ShowingText => $"Showing {DisplayedCount} of {TotalCount} rentals";
 
-        public RentalsToOthersViewModel(IRentalService rentalService)
+        public RentalsToOthersViewModel(IRentalService rentalService, ICurrentUserContext currentUserContext)
         {
             _rentalService = rentalService;
+            _currentUserContext = currentUserContext;
+            OwnerId = _currentUserContext.CurrentUserId;
             LoadRentals(1, PageSize);
         }
 
-        // [REQ-REN-02] As a User, I must be able to see the rentals in decreasing order of the start date of the rental.
         public void LoadRentals(int page, int pageSize)
         {
-            OwnerId = (App.Current as App)?.CurrentUserID ?? 1;
+            OwnerId = _currentUserContext.CurrentUserId;
             var allRentals = _rentalService.GetRentalsForOwner(OwnerId)
                 .OrderByDescending(r => r.StartDate)
                 .ToImmutableList();
@@ -103,7 +105,7 @@ namespace Property_and_Management.src.Viewmodels
         public void NextPage() => CurrentPage = Math.Min(CurrentPage + 1, PageCount);
         public void PrevPage() => CurrentPage = Math.Max(CurrentPage - 1, 1);
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

@@ -4,35 +4,35 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Windows.AppNotifications;
-using Microsoft.Windows.AppNotifications.Builder;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
-using Property_and_Management.src.Repository;
-using Property_and_Management.src.Service.Listeners;
-using Property_and_Management.src.Views;
-using ServerCommunication;
 
 namespace Property_and_Management.src.Service
 {
-    public class NotificationService : INotificationService, IObserver<MessageBase>, IObservable<NotificationDTO>, IDisposable
+    public class NotificationService : INotificationService, IObserver<IncomingNotification>, IObservable<NotificationDTO>, IDisposable
     {
         private bool _disposed;
         private readonly CancellationTokenSource _scheduleCts = new();
-        private readonly NotificationRepository _notificationRepository;
+        private readonly INotificationRepository _notificationRepository;
         private readonly IMapper<Notification, NotificationDTO> _notificationMapper;
-
-        private IServerClient _serverClient;
+        private readonly IServerClient _serverClient;
+        private readonly ICurrentUserContext _currentUserContext;
+        private readonly IToastNotificationService _toastNotificationService;
         private List<IObserver<NotificationDTO>> _subscribers = [];
 
         public NotificationService(
-            NotificationRepository notificationRepository,
-            IMapper<Notification, NotificationDTO> notificationMapper)
+            INotificationRepository notificationRepository,
+            IMapper<Notification, NotificationDTO> notificationMapper,
+            IServerClient serverClient,
+            ICurrentUserContext currentUserContext,
+            IToastNotificationService toastNotificationService)
         {
             _notificationRepository = notificationRepository;
             _notificationMapper = notificationMapper;
-            _serverClient = new NotificationClient();
+            _serverClient = serverClient;
+            _currentUserContext = currentUserContext;
+            _toastNotificationService = toastNotificationService;
             _serverClient.Subscribe(this);
         }
 
@@ -67,8 +67,7 @@ namespace Property_and_Management.src.Service
 
             _notificationRepository.Add(notificationModel);
 
-            var currentUserId = (Property_and_Management.App.Current as Property_and_Management.App)?.CurrentUserID ?? 0;
-            if (currentUserId == userId)
+            if (_currentUserContext.CurrentUserId == userId)
             {
                 NotifySubscribers(new NotificationDTO
                 {
@@ -100,22 +99,18 @@ namespace Property_and_Management.src.Service
         public void OnCompleted() { }
         public void OnError(Exception error) { }
 
-        public void OnNext(MessageBase value)
+        public void OnNext(IncomingNotification value)
         {
-            if (value is SendNotificationMessage message)
+            var notificationDTO = new NotificationDTO
             {
-                var notificationDTO = new NotificationDTO
-                {
-                    User = new UserDTO { Id = message.UserId },
-                    Timestamp = message.Timestamp,
-                    Title = message.Title,
-                    Body = message.Body
-                };
+                User = new UserDTO { Id = value.UserId },
+                Timestamp = value.Timestamp,
+                Title = value.Title,
+                Body = value.Body
+            };
 
-                NotifySubscribers(notificationDTO);
-
-                ShowWindowsNotification(message.Title, message.Body);
-            }
+            NotifySubscribers(notificationDTO);
+            _toastNotificationService.Show(value.Title, value.Body);
         }
 
         private void NotifySubscribers(NotificationDTO notificationDTO)
@@ -144,17 +139,6 @@ namespace Property_and_Management.src.Service
             public void Dispose() => _subscribers.Remove(_observer);
         }
 
-        private void ShowWindowsNotification(string title, string body)
-        {
-            var notification = new AppNotificationBuilder()
-                .AddArgument("navigate", nameof(NotificationsPage))
-                .AddText(title)
-                .AddText(body)
-                .BuildNotification();
-
-            AppNotificationManager.Default.Show(notification);
-        }
-
         public void SubscribeToServer(int userId) => _serverClient.SubscribeToServer(userId);
 
         public void Dispose()
@@ -168,27 +152,16 @@ namespace Property_and_Management.src.Service
             (_serverClient as IDisposable)?.Dispose();
         }
 
-        public void ScheduleUpcomingRentalReminder(Rental rental)
+        public void ScheduleUpcomingRentalReminder(int renterId, int ownerId, string gameName, DateTime startDate)
         {
-            if (rental == null) throw new ArgumentNullException(nameof(rental));
-
-            DateTime scheduledTime = rental.StartDate.AddDays(-1);
+            DateTime scheduledTime = startDate.AddDays(-1);
             string title = "Upcoming Rental Reminder";
-            string body = ComposeUpcomingRentalBody(rental);
+            string body = $"Game: {gameName}\nStart: {startDate:dd/MM/yyyy HH:mm}\n" +
+                          "Delivery/Pick-up: Coordinate delivery/pick-up directly with the other party.";
 
-            ScheduleOrSendUserNotification(rental.Renter?.Id ?? 0, title, body, scheduledTime);
-            ScheduleOrSendUserNotification(rental.Owner?.Id ?? 0, title, body, scheduledTime);
+            ScheduleOrSendUserNotification(renterId, title, body, scheduledTime);
+            ScheduleOrSendUserNotification(ownerId, title, body, scheduledTime);
         }
-
-        private string ComposeUpcomingRentalBody(Rental rental)
-        {
-            var gameName = rental.Game?.Name ?? "your game";
-            var start = rental.StartDate.ToString("dd/MM/yyyy HH:mm");
-            return $"Game: {gameName}\nStart: {start}\nDelivery/Pick-up: {GetPickupInstructions(rental)}";
-        }
-
-        private string GetPickupInstructions(Rental rental) =>
-            "Coordinate delivery/pick-up directly with the other party.";
 
         private void ScheduleOrSendUserNotification(int userId, string title, string body, DateTime scheduledTime)
         {
@@ -210,7 +183,6 @@ namespace Property_and_Management.src.Service
                 return;
             }
 
-            // Persist to DB now so the reminder survives an app restart
             _notificationRepository.Add(new Notification
             {
                 Id = 0,
@@ -220,14 +192,13 @@ namespace Property_and_Management.src.Service
                 Body = body
             });
 
-            // Best-effort: deliver the live push + toast at the scheduled time
             _ = Task.Run(async () =>
             {
                 try
                 {
                     await Task.Delay(delay, _scheduleCts.Token);
                     _serverClient.SendNotification(userId, title, body);
-                    ShowWindowsNotification(title, body);
+                    _toastNotificationService.Show(title, body);
                 }
                 catch (OperationCanceledException) { }
                 catch { }

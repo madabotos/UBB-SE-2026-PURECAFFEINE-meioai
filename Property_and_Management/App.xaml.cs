@@ -26,7 +26,9 @@ using Property_and_Management.src.Interface;
 using Property_and_Management.src.Mapper;
 using Property_and_Management.src.Model;
 using Property_and_Management.src.Repository;
+using Property_and_Management.src;
 using Property_and_Management.src.Service;
+using Property_and_Management.src.Service.Listeners;
 using Property_and_Management.src.Viewmodels;
 using Property_and_Management.src.Views;
 using Windows.ApplicationModel;
@@ -57,10 +59,10 @@ namespace Property_and_Management
 
         // Private dependencies and state
         private Window? _mainWindow;
-        private NotificationRepository _notificationRepository;
-        private NotificationService _notification_service;
-        private GameRepository _gameRepository;
-        private GameService _gameService;
+        private INotificationRepository _notificationRepository;
+        private INotificationService _notification_service;
+        private IGameRepository _gameRepository;
+        private IGameService _gameService;
         private readonly NotificationManager _notificationManager;
 
         /// <summary>
@@ -103,23 +105,31 @@ namespace Property_and_Management
             serviceCollection.AddSingleton<IMapper<Request, RequestDTO>, RequestMapper>();
 
 
+            // Infrastructure
+            serviceCollection.AddSingleton<ICurrentUserContext>(new CurrentUserContext(CurrentUserID));
+            serviceCollection.AddSingleton<IToastNotificationService, ToastNotificationService>();
+            serviceCollection.AddSingleton<IServerClient, NotificationClient>();
+
+            // Repositories
             serviceCollection.AddSingleton<IUserRepository, UserRepository>();
             serviceCollection.AddSingleton<IGameRepository, GameRepository>();
             serviceCollection.AddSingleton<IRequestRepository, RequestRepository>();
             serviceCollection.AddSingleton<IRentalRepository, RentalRepository>();
             serviceCollection.AddSingleton<INotificationRepository, NotificationRepository>();
-            serviceCollection.AddSingleton<NotificationRepository>(sp => (NotificationRepository)sp.GetRequiredService<INotificationRepository>());
 
+            // Services
+            serviceCollection.AddSingleton<IUserService, UserService>();
             serviceCollection.AddSingleton<IGameService, GameService>();
             serviceCollection.AddSingleton<IRentalService, RentalService>();
             serviceCollection.AddSingleton<INotificationService, NotificationService>();
-            serviceCollection.AddSingleton<NotificationService>(sp => (NotificationService)sp.GetRequiredService<INotificationService>());
-
             serviceCollection.AddSingleton<IRequestService, RequestService>();
 
+            // ViewModels
             serviceCollection.AddSingleton<NotificationsViewModel>();
             serviceCollection.AddSingleton<MenuBarViewModel>();
-            serviceCollection.AddTransient(sp => new ListingsViewModel(sp.GetRequiredService<IGameService>(), CurrentUserID));
+            serviceCollection.AddTransient(sp => new ListingsViewModel(
+                sp.GetRequiredService<IGameService>(),
+                sp.GetRequiredService<ICurrentUserContext>().CurrentUserId));
             serviceCollection.AddTransient<CreateGameViewModel>();
             serviceCollection.AddTransient<EditGameViewModel>();
             serviceCollection.AddTransient<CreateRequestViewModel>();
@@ -233,7 +243,7 @@ namespace Property_and_Management
             AppDomain.CurrentDomain.ProcessExit += (sender, eventArgs) =>
             {
                 _notificationManager.Unregister();
-                _notification_service?.Dispose();
+                (_notification_service as IDisposable)?.Dispose();
             };
 
             // When a notification is clicked, bring the window to foreground and optionally navigate
@@ -298,10 +308,10 @@ namespace Property_and_Management
             RootFrame = new Frame();
 
             // Resolve repository/service/viewmodel from DI container
-            _notificationRepository = Services.GetRequiredService<NotificationRepository>();
-            _notification_service = Services.GetRequiredService<NotificationService>();
-            _gameRepository = (GameRepository)Services.GetRequiredService<IGameRepository>();
-            _gameService = (GameService)Services.GetRequiredService<IGameService>();
+            _notificationRepository = Services.GetRequiredService<INotificationRepository>();
+            _notification_service = Services.GetRequiredService<INotificationService>();
+            _gameRepository = Services.GetRequiredService<IGameRepository>();
+            _gameService = Services.GetRequiredService<IGameService>();
             NotificationsViewModel = Services.GetRequiredService<NotificationsViewModel>();
 
             // Start listening and subscribe for the configured user

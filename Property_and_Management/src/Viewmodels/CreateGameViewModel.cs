@@ -1,19 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
 
 namespace Property_and_Management.src.Viewmodels
 {
     public class CreateGameViewModel
     {
         private readonly IGameService _gameService;
+        private readonly ICurrentUserContext _currentUserContext;
 
-        // UI Binding Properties
         public string Name { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public double PriceDouble
@@ -27,11 +24,12 @@ namespace Property_and_Management.src.Viewmodels
         public bool IsActive { get; set; } = true;
         public byte[] Image { get; set; } = null;
 
-        public int CurrentUserId { get; set; } = (App.Current as App)?.CurrentUserID ?? 1;
+        public int CurrentUserId => _currentUserContext.CurrentUserId;
 
-        public CreateGameViewModel(IGameService gameService)
+        public CreateGameViewModel(IGameService gameService, ICurrentUserContext currentUserContext)
         {
             _gameService = gameService;
+            _currentUserContext = currentUserContext;
         }
 
         public List<string> ValidateInputs()
