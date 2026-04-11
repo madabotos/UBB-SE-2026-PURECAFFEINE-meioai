@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System;
 using Property_and_Management.src.DTO;
 
 namespace Property_and_Management.src.Interface

@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
+using Property_and_Management;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Viewmodels;
 
@@ -21,9 +22,9 @@ namespace Property_and_Management.src.Views
         {
             base.OnNavigatedTo(e);
 
-            if (e.Parameter is RequestsToOthersViewModel vm)
+            if (e.Parameter is RequestsToOthersViewModel requestsToOthersViewModel)
             {
-                DataContext = vm;
+                DataContext = requestsToOthersViewModel;
                 return;
             }
 
@@ -40,15 +41,15 @@ namespace Property_and_Management.src.Views
 
         private async void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not Button btn || btn.Tag is not int requestId)
+            if (sender is not Button clickedButton || clickedButton.Tag is not int requestId)
                 return;
 
             ContentDialog cancelDialog = new ContentDialog
             {
-                Title = "Cancel Request?",
+                Title = Constants.DialogTitles.CancelRequestConfirmation,
                 Content = "Are you sure you want to cancel this request?",
-                PrimaryButtonText = "Cancel Request",
-                CloseButtonText = "Go Back",
+                PrimaryButtonText = Constants.DialogButtons.CancelRequest,
+                CloseButtonText = Constants.DialogButtons.GoBack,
                 DefaultButton = ContentDialogButton.Close,
                 XamlRoot = this.XamlRoot
             };
@@ -57,8 +58,8 @@ namespace Property_and_Management.src.Views
 
             if (result == ContentDialogResult.Primary)
             {
-                var vm = DataContext as RequestsToOthersViewModel;
-                vm?.CancelRequest(requestId);
+                var requestsToOthersViewModel = DataContext as RequestsToOthersViewModel;
+                requestsToOthersViewModel?.CancelRequest(requestId);
             }
         }
 
@@ -69,9 +70,9 @@ namespace Property_and_Management.src.Views
 
         private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
         {
-            if (sender is not Image img) return;
+            if (sender is not Image failedImage) return;
 
-            if (img.Source is BitmapImage current &&
+            if (failedImage.Source is BitmapImage current &&
                 current.UriSource != null &&
                 current.UriSource.AbsoluteUri.EndsWith("/Assets/default-game-placeholder.jpg", StringComparison.OrdinalIgnoreCase))
             {
@@ -80,17 +81,17 @@ namespace Property_and_Management.src.Views
 
             if (Resources.TryGetValue("DefaultGameImage", out var localResource) && localResource is BitmapImage localImage)
             {
-                img.Source = localImage;
+                failedImage.Source = localImage;
                 return;
             }
 
             if (Application.Current.Resources.TryGetValue("DefaultGameImage", out var appResource) && appResource is BitmapImage appImage)
             {
-                img.Source = appImage;
+                failedImage.Source = appImage;
                 return;
             }
 
-            img.Source = new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.jpg"));
+            failedImage.Source = new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.jpg"));
         }
 
         private void NextButton_Click(object sender, RoutedEventArgs e)

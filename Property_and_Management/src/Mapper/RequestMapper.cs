@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
@@ -20,37 +15,37 @@ namespace Property_and_Management.src.Mapper
             _userMapper = userMapper;
         }
 
-        public RequestDTO ToDTO(Request entity)
+        public RequestDTO ToDTO(Request request)
         {
-            if (entity == null) return null;
+            if (request == null) return null;
 
             return new RequestDTO
             {
-                Id = entity.Id,
-                Game = _gameMapper.ToDTO(entity.Game),
-                Renter = _userMapper.ToDTO(entity.Renter),
-                Owner = _userMapper.ToDTO(entity.Owner),
-                StartDate = entity.StartDate,
-                EndDate = entity.EndDate,
-                Status = entity.Status,
-                OfferingUser = entity.OfferingUser != null ? _userMapper.ToDTO(entity.OfferingUser) : null
+                Id = request.Id,
+                Game = _gameMapper.ToDTO(request.Game),
+                Renter = _userMapper.ToDTO(request.Renter),
+                Owner = _userMapper.ToDTO(request.Owner),
+                StartDate = request.StartDate,
+                EndDate = request.EndDate,
+                Status = request.Status,
+                OfferingUser = request.OfferingUser != null ? _userMapper.ToDTO(request.OfferingUser) : null
             };
         }
 
-        public Request ToModel(RequestDTO dto)
+        public Request ToModel(RequestDTO requestDto)
         {
-            if (dto == null) return null;
+            if (requestDto == null) return null;
 
             return new Request
             {
-                Id = dto.Id,
-                Game = _gameMapper.ToModel(dto.Game),
-                Renter = _userMapper.ToModel(dto.Renter),
-                Owner = _userMapper.ToModel(dto.Owner),
-                StartDate = dto.StartDate,
-                EndDate = dto.EndDate,
-                Status = dto.Status,
-                OfferingUser = dto.OfferingUser != null ? _userMapper.ToModel(dto.OfferingUser) : null
+                Id = requestDto.Id,
+                Game = _gameMapper.ToModel(requestDto.Game),
+                Renter = _userMapper.ToModel(requestDto.Renter),
+                Owner = _userMapper.ToModel(requestDto.Owner),
+                StartDate = requestDto.StartDate,
+                EndDate = requestDto.EndDate,
+                Status = requestDto.Status,
+                OfferingUser = requestDto.OfferingUser != null ? _userMapper.ToModel(requestDto.OfferingUser) : null
             };
         }
     }

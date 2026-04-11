@@ -14,6 +14,7 @@ namespace Property_and_Management.src.Service
         private readonly IMapper<Rental, RentalDTO> _rentalMapper;
 
         private const int BufferHours = 48;
+        private const int NewEntityId = 0;
 
         public RentalService(
             IRentalRepository rentalRepository,
@@ -44,7 +45,7 @@ namespace Property_and_Management.src.Service
                 throw new InvalidOperationException("Seller ID must match Game Owner ID [ENT-REN-04].");
 
             var rental = new Rental(
-                id: 0,
+                id: NewEntityId,
                 game: new Game { Id = gameId },
                 renter: new User { Id = renterId },
                 owner: new User { Id = ownerId },
@@ -57,13 +58,13 @@ namespace Property_and_Management.src.Service
         public ImmutableList<RentalDTO> GetRentalsForRenter(int renterId) =>
             _rentalRepository
                 .GetRentalsByRenter(renterId)
-                .Select(r => _rentalMapper.ToDTO(r))
+                .Select(rental => _rentalMapper.ToDTO(rental))
                 .ToImmutableList();
 
         public ImmutableList<RentalDTO> GetRentalsForOwner(int ownerId) =>
             _rentalRepository
                 .GetRentalsByOwner(ownerId)
-                .Select(r => _rentalMapper.ToDTO(r))
+                .Select(rental => _rentalMapper.ToDTO(rental))
                 .ToImmutableList();
     }
 }

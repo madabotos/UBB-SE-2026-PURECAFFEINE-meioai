@@ -1,11 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
-using Property_and_Management.src.Repository;
 
 namespace Property_and_Management.src.Service
 {
@@ -15,6 +13,8 @@ namespace Property_and_Management.src.Service
         private readonly IRentalRepository _rentalRepository;
         private readonly IMapper<Game, GameDTO> _gameMapper;
         private readonly IRequestService _requestService;
+        private const int NoActiveOrUpcomingRentals = 0;
+        private const int SingularRentalCount = 1;
 
         public GameService(
             IGameRepository gameRepository,
@@ -42,10 +42,10 @@ namespace Property_and_Management.src.Service
         {
             var rentals = _rentalRepository.GetRentalsByGame(id);
             var now = DateTime.Now;
-            var activeOrUpcomingRentalsCount = rentals.Count(r => r.EndDate >= now);
-            if (activeOrUpcomingRentalsCount > 0)
+            var activeOrUpcomingRentalsCount = rentals.Count(rental => rental.EndDate >= now);
+            if (activeOrUpcomingRentalsCount > NoActiveOrUpcomingRentals)
             {
-                var rentalWord = activeOrUpcomingRentalsCount == 1 ? "rental" : "rentals";
+                var rentalWord = activeOrUpcomingRentalsCount == SingularRentalCount ? "rental" : "rentals";
                 throw new InvalidOperationException(
                     $"There are {activeOrUpcomingRentalsCount} active {rentalWord} for this game and it cannot be removed now.");
             }

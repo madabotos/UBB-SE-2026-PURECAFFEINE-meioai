@@ -10,6 +10,8 @@ namespace Property_and_Management.src.Viewmodels
 {
     public class CreateRequestViewModel : INotifyPropertyChanged
     {
+        private const int InvalidRequestResult = -1;
+
         private readonly IGameService _gameService;
         private readonly IRequestService _requestService;
         private readonly ICurrentUserContext _currentUserContext;
@@ -52,7 +54,7 @@ namespace Property_and_Management.src.Viewmodels
         {
             AvailableGames.Clear();
             var games = _gameService.GetAllGames()
-                .Where(g => g.IsActive && g.Owner?.Id != CurrentUserId);
+                .Where(game => game.IsActive && game.Owner?.Id != CurrentUserId);
             foreach (var game in games)
                 AvailableGames.Add(game);
         }
@@ -68,7 +70,7 @@ namespace Property_and_Management.src.Viewmodels
 
         public int SaveRequest()
         {
-            if (!ValidateInputs()) return -1;
+            if (!ValidateInputs()) return InvalidRequestResult;
 
             return _requestService.CreateRequest(
                 SelectedGame.Id,

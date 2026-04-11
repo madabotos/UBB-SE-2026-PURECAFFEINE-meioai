@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Property_and_Management;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
@@ -12,8 +13,12 @@ namespace Property_and_Management.src.Service
 {
     public class NotificationService : INotificationService, IObserver<IncomingNotification>, IObservable<NotificationDTO>, IDisposable
     {
+        private const int ReminderLeadDays = 1;
+        private const int NewEntityId = 0;
+        private const int MissingUserId = 0;
+
         private bool _disposed;
-        private readonly CancellationTokenSource _scheduleCts = new();
+        private readonly CancellationTokenSource _scheduleCancellationTokenSource = new();
         private readonly INotificationRepository _notificationRepository;
         private readonly IMapper<Notification, NotificationDTO> _notificationMapper;
         private readonly IServerClient _serverClient;
@@ -45,7 +50,7 @@ namespace Property_and_Management.src.Service
         public ImmutableList<NotificationDTO> GetNotificationsForUser(int userId) =>
             _notificationRepository
                 .GetNotificationsByUser(userId)
-                .Select(entity => _notificationMapper.ToDTO(entity))
+                .Select(notification => _notificationMapper.ToDTO(notification))
                 .ToImmutableList();
 
         public void SendNotificationToUser(int userId, NotificationDTO notification)
@@ -56,7 +61,7 @@ namespace Property_and_Management.src.Service
 
             var notificationModel = new Notification
             {
-                Id = 0,
+                Id = NewEntityId,
                 User = new User { Id = userId },
                 Timestamp = timestamp,
                 Title = notification.Title,
@@ -99,24 +104,24 @@ namespace Property_and_Management.src.Service
         public void OnCompleted() { }
         public void OnError(Exception error) { }
 
-        public void OnNext(IncomingNotification value)
+        public void OnNext(IncomingNotification incomingNotification)
         {
-            var notificationDTO = new NotificationDTO
+            var notificationDto = new NotificationDTO
             {
-                User = new UserDTO { Id = value.UserId },
-                Timestamp = value.Timestamp,
-                Title = value.Title,
-                Body = value.Body
+                User = new UserDTO { Id = incomingNotification.UserId },
+                Timestamp = incomingNotification.Timestamp,
+                Title = incomingNotification.Title,
+                Body = incomingNotification.Body
             };
 
-            NotifySubscribers(notificationDTO);
-            _toastNotificationService.Show(value.Title, value.Body);
+            NotifySubscribers(notificationDto);
+            _toastNotificationService.Show(incomingNotification.Title, incomingNotification.Body);
         }
 
-        private void NotifySubscribers(NotificationDTO notificationDTO)
+        private void NotifySubscribers(NotificationDTO notificationDto)
         {
             foreach (var subscriber in _subscribers.ToArray())
-                subscriber.OnNext(notificationDTO);
+                subscriber.OnNext(notificationDto);
         }
 
         public IDisposable Subscribe(IObserver<NotificationDTO> observer)
@@ -146,16 +151,16 @@ namespace Property_and_Management.src.Service
             if (_disposed) return;
             _disposed = true;
 
-            _scheduleCts.Cancel();
-            _scheduleCts.Dispose();
+            _scheduleCancellationTokenSource.Cancel();
+            _scheduleCancellationTokenSource.Dispose();
             StopListening();
             (_serverClient as IDisposable)?.Dispose();
         }
 
         public void ScheduleUpcomingRentalReminder(int renterId, int ownerId, string gameName, DateTime startDate)
         {
-            DateTime scheduledTime = startDate.AddDays(-1);
-            string title = "Upcoming Rental Reminder";
+            DateTime scheduledTime = startDate.AddDays(-ReminderLeadDays);
+            string title = Constants.NotificationTitles.UpcomingRentalReminder;
             string body = $"Game: {gameName}\nStart: {startDate:dd/MM/yyyy HH:mm}\n" +
                           "Delivery/Pick-up: Coordinate delivery/pick-up directly with the other party.";
 
@@ -165,11 +170,11 @@ namespace Property_and_Management.src.Service
 
         private void ScheduleOrSendUserNotification(int userId, string title, string body, DateTime scheduledTime)
         {
-            if (userId == 0) return;
+            if (userId == MissingUserId) return;
 
             TimeSpan delay = scheduledTime.ToUniversalTime() - DateTime.UtcNow;
 
-            var dto = new NotificationDTO
+            var notificationDto = new NotificationDTO
             {
                 Timestamp = scheduledTime,
                 Title = title,
@@ -179,13 +184,13 @@ namespace Property_and_Management.src.Service
 
             if (delay <= TimeSpan.Zero)
             {
-                SendNotificationToUser(userId, dto);
+                SendNotificationToUser(userId, notificationDto);
                 return;
             }
 
             _notificationRepository.Add(new Notification
             {
-                Id = 0,
+                Id = NewEntityId,
                 User = new User { Id = userId },
                 Timestamp = scheduledTime,
                 Title = title,
@@ -196,7 +201,7 @@ namespace Property_and_Management.src.Service
             {
                 try
                 {
-                    await Task.Delay(delay, _scheduleCts.Token);
+                    await Task.Delay(delay, _scheduleCancellationTokenSource.Token);
                     _serverClient.SendNotification(userId, title, body);
                     _toastNotificationService.Show(title, body);
                 }

@@ -34,7 +34,7 @@ namespace Property_and_Management.src.Views
             ViewModel = App.Services.GetRequiredService<MenuBarViewModel>();
             this.DataContext = ViewModel;
             ViewModel.RequestNavigation += OnViewModelRequestedNavigation;
-            this.Unloaded += (_, _) => ViewModel.RequestNavigation -= OnViewModelRequestedNavigation;
+            this.Unloaded += (pageSender, unloadedEventArgs) => ViewModel.RequestNavigation -= OnViewModelRequestedNavigation;
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -55,8 +55,8 @@ namespace Property_and_Management.src.Views
 
         public void NavigateToNotifications()
         {
-            var app = Application.Current as Property_and_Management.App;
-            ContentFrame.Navigate(typeof(NotificationsPage), app?.NotificationsViewModel);
+            var applicationInstance = Application.Current as Property_and_Management.App;
+            ContentFrame.Navigate(typeof(NotificationsPage), applicationInstance?.NotificationsViewModel);
             ViewModel.SelectedPageName = "Notifications";
         }
     }

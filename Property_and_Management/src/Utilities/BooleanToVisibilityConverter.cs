@@ -8,7 +8,7 @@ namespace Property_and_Management.src.Utilities
     {
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            return (value is bool b && b) ? Visibility.Visible : Visibility.Collapsed;
+            return (value is bool isVisible && isVisible) ? Visibility.Visible : Visibility.Collapsed;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
@@ -19,7 +19,7 @@ namespace Property_and_Management.src.Utilities
     {
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            return (value is bool b && b) ? Visibility.Collapsed : Visibility.Visible;
+            return (value is bool isVisible && isVisible) ? Visibility.Collapsed : Visibility.Visible;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)

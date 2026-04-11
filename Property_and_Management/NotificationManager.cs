@@ -39,11 +39,11 @@ namespace Property_and_Management
                 notificationManager.Register();
                 _isRegistered = true;
             }
-            catch (Exception ex)
+            catch (Exception registrationException)
             {
                 // This prevents crashes if the app restarts during debugging 
                 // and Windows thinks it's already registered.
-                System.Diagnostics.Debug.WriteLine($"Toast manager failed to register: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Toast manager failed to register: {registrationException.Message}");
             }
         }
 

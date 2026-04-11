@@ -1,11 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
-using Property_and_Management.src.DTO;
 
 namespace Property_and_Management.src.DTO
 {

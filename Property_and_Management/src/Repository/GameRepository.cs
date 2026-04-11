@@ -9,6 +9,9 @@ namespace Property_and_Management.src.Repository
 {
     public class GameRepository : IGameRepository
     {
+        private const int MissingForeignKeyId = 0;
+        private const int VarBinaryMaxLength = -1;
+
         private readonly string _connectionString =
             System.Configuration.ConfigurationManager.ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
 
@@ -44,13 +47,13 @@ namespace Property_and_Management.src.Repository
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "INSERT INTO Games(owner_id, name, price, minimum_player_number, maximum_player_number, description, image, is_active) VALUES(@owner_id, @name, @price, @min_players, @max_players, @description, @image, @is_active); SELECT SCOPE_IDENTITY();";
-                    command.Parameters.AddWithValue("@owner_id", newEntity.Owner?.Id ?? 0);
+                    command.Parameters.AddWithValue("@owner_id", newEntity.Owner?.Id ?? MissingForeignKeyId);
                     command.Parameters.AddWithValue("@name", newEntity.Name ?? string.Empty);
                     command.Parameters.AddWithValue("@price", newEntity.Price);
                     command.Parameters.AddWithValue("@min_players", newEntity.MinimumPlayerNumber);
                     command.Parameters.AddWithValue("@max_players", newEntity.MaximumPlayerNumber);
                     command.Parameters.AddWithValue("@description", newEntity.Description ?? string.Empty);
-                    command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@image", System.Data.SqlDbType.VarBinary, -1)
+                    command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@image", System.Data.SqlDbType.VarBinary, VarBinaryMaxLength)
                     {
                         Value = (object)newEntity.Image ?? DBNull.Value
                     });
@@ -95,13 +98,13 @@ namespace Property_and_Management.src.Repository
                 {
                     command.CommandText = "UPDATE Games SET owner_id = @owner_id, name = @name, price = @price, minimum_player_number = @min_players, maximum_player_number = @max_players, description = @description, image = @image, is_active = @is_active WHERE game_id = @id";
                     command.Parameters.AddWithValue("@id", updatedEntityId);
-                    command.Parameters.AddWithValue("@owner_id", newEntity.Owner?.Id ?? 0);
+                    command.Parameters.AddWithValue("@owner_id", newEntity.Owner?.Id ?? MissingForeignKeyId);
                     command.Parameters.AddWithValue("@name", newEntity.Name ?? string.Empty);
                     command.Parameters.AddWithValue("@price", newEntity.Price);
                     command.Parameters.AddWithValue("@min_players", newEntity.MinimumPlayerNumber);
                     command.Parameters.AddWithValue("@max_players", newEntity.MaximumPlayerNumber);
                     command.Parameters.AddWithValue("@description", newEntity.Description ?? string.Empty);
-                    command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@image", System.Data.SqlDbType.VarBinary, -1)
+                    command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@image", System.Data.SqlDbType.VarBinary, VarBinaryMaxLength)
                     {
                         Value = (object)newEntity.Image ?? DBNull.Value
                     });

@@ -10,6 +10,9 @@ namespace Property_and_Management.src.Repository
 {
     public class RequestRepository : IRequestRepository
     {
+        private const int NewEntityId = 0;
+        private const int MissingForeignKeyId = 0;
+
         private readonly string _connectionString =
             System.Configuration.ConfigurationManager.ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
 
@@ -65,20 +68,20 @@ namespace Property_and_Management.src.Repository
             return list.ToImmutableList();
         }
 
-        public void Add(Request entity)
+        public void Add(Request request)
         {
             using (var connection = new SqlConnection(_connectionString))
             {
                 connection.Open();
                 using (var transaction = connection.BeginTransaction())
                 {
-                    AddInternal(entity, connection, transaction);
+                    AddInternal(request, connection, transaction);
                     transaction.Commit();
                 }
             }
         }
 
-        private static void AddInternal(Request entity, SqlConnection connection, SqlTransaction transaction)
+        private static void AddInternal(Request request, SqlConnection connection, SqlTransaction transaction)
         {
             using var command = connection.CreateCommand();
             command.Transaction = transaction;
@@ -86,14 +89,14 @@ namespace Property_and_Management.src.Repository
                 "INSERT INTO Requests(game_id, renter_id, owner_id, start_date, end_date, status, offering_user_id) " +
                 "VALUES(@game_id, @renter_id, @owner_id, @start_date, @end_date, @status, @offering_user_id); " +
                 "SELECT SCOPE_IDENTITY();";
-            command.Parameters.AddWithValue("@game_id", entity.Game?.Id ?? 0);
-            command.Parameters.AddWithValue("@renter_id", entity.Renter?.Id ?? 0);
-            command.Parameters.AddWithValue("@owner_id", entity.Owner?.Id ?? 0);
-            command.Parameters.AddWithValue("@start_date", entity.StartDate);
-            command.Parameters.AddWithValue("@end_date", entity.EndDate);
-            command.Parameters.AddWithValue("@status", (int)entity.Status);
-            command.Parameters.AddWithValue("@offering_user_id", entity.OfferingUser?.Id ?? (object)DBNull.Value);
-            entity.Id = Convert.ToInt32(command.ExecuteScalar());
+            command.Parameters.AddWithValue("@game_id", request.Game?.Id ?? MissingForeignKeyId);
+            command.Parameters.AddWithValue("@renter_id", request.Renter?.Id ?? MissingForeignKeyId);
+            command.Parameters.AddWithValue("@owner_id", request.Owner?.Id ?? MissingForeignKeyId);
+            command.Parameters.AddWithValue("@start_date", request.StartDate);
+            command.Parameters.AddWithValue("@end_date", request.EndDate);
+            command.Parameters.AddWithValue("@status", (int)request.Status);
+            command.Parameters.AddWithValue("@offering_user_id", request.OfferingUser?.Id ?? (object)DBNull.Value);
+            request.Id = Convert.ToInt32(command.ExecuteScalar());
         }
 
         private static readonly string DeleteWithOutputSql =
@@ -159,9 +162,9 @@ namespace Property_and_Management.src.Repository
                         "start_date = @start_date, end_date = @end_date, status = @status, " +
                         "offering_user_id = @offering_user_id WHERE request_id = @id";
                     command.Parameters.AddWithValue("@id", updatedEntityId);
-                    command.Parameters.AddWithValue("@game_id", newEntity.Game?.Id ?? 0);
-                    command.Parameters.AddWithValue("@renter_id", newEntity.Renter?.Id ?? 0);
-                    command.Parameters.AddWithValue("@owner_id", newEntity.Owner?.Id ?? 0);
+                    command.Parameters.AddWithValue("@game_id", newEntity.Game?.Id ?? MissingForeignKeyId);
+                    command.Parameters.AddWithValue("@renter_id", newEntity.Renter?.Id ?? MissingForeignKeyId);
+                    command.Parameters.AddWithValue("@owner_id", newEntity.Owner?.Id ?? MissingForeignKeyId);
                     command.Parameters.AddWithValue("@start_date", newEntity.StartDate);
                     command.Parameters.AddWithValue("@end_date", newEntity.EndDate);
                     command.Parameters.AddWithValue("@status", (int)newEntity.Status);
@@ -276,48 +279,48 @@ namespace Property_and_Management.src.Repository
             try
             {
                 // 1. Find open requests that overlap with the approved request's buffered window
-                var overlapping = QueryOverlappingRequests(
-                    approvedRequest.Game?.Id ?? 0, approvedRequest.Id,
+                var overlappingRequests = QueryOverlappingRequests(
+                    approvedRequest.Game?.Id ?? MissingForeignKeyId, approvedRequest.Id,
                     bufferedStart, bufferedEnd, connection, transaction);
 
                 // 2. Delete notifications for all affected requests before deleting the requests
                 //    (FK constraint: notifications reference requests)
-                foreach (var req in overlapping)
-                    DeleteNotificationsForRequest(req.Id, connection, transaction);
+                foreach (var overlappingRequest in overlappingRequests)
+                    DeleteNotificationsForRequest(overlappingRequest.Id, connection, transaction);
                 DeleteNotificationsForRequest(approvedRequest.Id, connection, transaction);
 
                 // 3. Insert the rental
                 var rental = new Rental(
-                    id: 0,
+                    id: NewEntityId,
                     game: approvedRequest.Game,
                     renter: approvedRequest.Renter,
                     owner: approvedRequest.Owner,
                     startDate: approvedRequest.StartDate,
                     endDate: approvedRequest.EndDate);
 
-                using (var cmd = connection.CreateCommand())
+                using (var command = connection.CreateCommand())
                 {
-                    cmd.Transaction = transaction;
-                    cmd.CommandText =
+                    command.Transaction = transaction;
+                    command.CommandText =
                         "INSERT INTO Rentals(game_id, renter_id, owner_id, start_date, end_date) " +
                         "VALUES(@game_id, @renter_id, @owner_id, @start_date, @end_date); SELECT SCOPE_IDENTITY();";
-                    cmd.Parameters.AddWithValue("@game_id", rental.Game?.Id ?? 0);
-                    cmd.Parameters.AddWithValue("@renter_id", rental.Renter?.Id ?? 0);
-                    cmd.Parameters.AddWithValue("@owner_id", rental.Owner?.Id ?? 0);
-                    cmd.Parameters.AddWithValue("@start_date", rental.StartDate);
-                    cmd.Parameters.AddWithValue("@end_date", rental.EndDate);
-                    rental.Id = Convert.ToInt32(cmd.ExecuteScalar());
+                    command.Parameters.AddWithValue("@game_id", rental.Game?.Id ?? MissingForeignKeyId);
+                    command.Parameters.AddWithValue("@renter_id", rental.Renter?.Id ?? MissingForeignKeyId);
+                    command.Parameters.AddWithValue("@owner_id", rental.Owner?.Id ?? MissingForeignKeyId);
+                    command.Parameters.AddWithValue("@start_date", rental.StartDate);
+                    command.Parameters.AddWithValue("@end_date", rental.EndDate);
+                    rental.Id = Convert.ToInt32(command.ExecuteScalar());
                 }
 
                 // 4. Delete overlapping requests
-                foreach (var req in overlapping)
-                    DeleteRequestById(req.Id, connection, transaction);
+                foreach (var overlappingRequest in overlappingRequests)
+                    DeleteRequestById(overlappingRequest.Id, connection, transaction);
 
                 // 5. Delete the approved request
                 DeleteRequestById(approvedRequest.Id, connection, transaction);
 
                 transaction.Commit();
-                return (rental.Id, overlapping.ToImmutableList());
+                return (rental.Id, overlappingRequests.ToImmutableList());
             }
             catch
             {
@@ -332,9 +335,9 @@ namespace Property_and_Management.src.Repository
             SqlConnection connection, SqlTransaction transaction)
         {
             var list = new List<Request>();
-            using var cmd = connection.CreateCommand();
-            cmd.Transaction = transaction;
-            cmd.CommandText =
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText =
                 "SELECT r.request_id, r.game_id, r.renter_id, r.owner_id, r.start_date, r.end_date, " +
                 "ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, " +
                 "g.name AS game_name, g.image AS game_image " +
@@ -344,11 +347,11 @@ namespace Property_and_Management.src.Repository
                 "LEFT JOIN Games g ON g.game_id = r.game_id " +
                 "WHERE r.game_id = @game_id AND r.request_id != @exclude_id " +
                 "AND r.start_date < @buffered_end AND r.end_date > @buffered_start";
-            cmd.Parameters.AddWithValue("@game_id", gameId);
-            cmd.Parameters.AddWithValue("@exclude_id", excludeRequestId);
-            cmd.Parameters.AddWithValue("@buffered_end", bufferedEnd);
-            cmd.Parameters.AddWithValue("@buffered_start", bufferedStart);
-            using var reader = cmd.ExecuteReader();
+            command.Parameters.AddWithValue("@game_id", gameId);
+            command.Parameters.AddWithValue("@exclude_id", excludeRequestId);
+            command.Parameters.AddWithValue("@buffered_end", bufferedEnd);
+            command.Parameters.AddWithValue("@buffered_start", bufferedStart);
+            using var reader = command.ExecuteReader();
             while (reader.Read())
             {
                 var game = new Game
@@ -367,20 +370,20 @@ namespace Property_and_Management.src.Repository
 
         private static void DeleteNotificationsForRequest(int requestId, SqlConnection connection, SqlTransaction transaction)
         {
-            using var cmd = connection.CreateCommand();
-            cmd.Transaction = transaction;
-            cmd.CommandText = "DELETE FROM Notifications WHERE related_request_id = @id";
-            cmd.Parameters.AddWithValue("@id", requestId);
-            cmd.ExecuteNonQuery();
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = "DELETE FROM Notifications WHERE related_request_id = @id";
+            command.Parameters.AddWithValue("@id", requestId);
+            command.ExecuteNonQuery();
         }
 
         private static void DeleteRequestById(int requestId, SqlConnection connection, SqlTransaction transaction)
         {
-            using var cmd = connection.CreateCommand();
-            cmd.Transaction = transaction;
-            cmd.CommandText = "DELETE FROM Requests WHERE request_id = @id";
-            cmd.Parameters.AddWithValue("@id", requestId);
-            cmd.ExecuteNonQuery();
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = "DELETE FROM Requests WHERE request_id = @id";
+            command.Parameters.AddWithValue("@id", requestId);
+            command.ExecuteNonQuery();
         }
     }
 }

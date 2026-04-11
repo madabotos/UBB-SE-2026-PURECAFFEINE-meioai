@@ -1,4 +1,3 @@
-using System;
 using Property_and_Management.src.Interface;
 
 namespace Property_and_Management.src.Model

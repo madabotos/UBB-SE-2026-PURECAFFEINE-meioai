@@ -13,6 +13,10 @@ namespace Property_and_Management.src.Service.Listeners
 {
     public class NotificationClient : IServerClient, IDisposable
     {
+        private const int NotificationServerPort = 4544;
+        private const int AutoAssignLocalUdpPort = 0;
+        private const int InitialRetryCount = 0;
+        private const int RetryBackoffMultiplier = 2;
         private bool _disposed;
 
         private readonly List<IObserver<IncomingNotification>> _subscribers = new();
@@ -25,11 +29,11 @@ namespace Property_and_Management.src.Service.Listeners
         private static readonly TimeSpan InitialRetryDelay = TimeSpan.FromSeconds(1);
         private static readonly TimeSpan MaxRetryDelay = TimeSpan.FromSeconds(30);
 
-        public IPEndPoint ServerEndpoint => new IPEndPoint(IPAddress.Loopback, 4544);
+        public IPEndPoint ServerEndpoint => new IPEndPoint(IPAddress.Loopback, NotificationServerPort);
 
         public NotificationClient()
         {
-            _udpClient = new UdpClient(0); // OS will auto-assign
+            _udpClient = new UdpClient(AutoAssignLocalUdpPort); // OS will auto-assign
         }
 
         private void HandleMessagePacket(MessageWrapper wrappedMessage)
@@ -46,9 +50,9 @@ namespace Property_and_Management.src.Service.Listeners
                         break;
                 }
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                Console.WriteLine($"Exception when handling message packet: {ex.Message}");
+                Console.WriteLine($"Exception when handling message packet: {exception.Message}");
             }
         }
 
@@ -77,7 +81,7 @@ namespace Property_and_Management.src.Service.Listeners
 
         public async Task ListenAsync()
         {
-            int retryCount = 0;
+            int retryCount = InitialRetryCount;
             var retryDelay = InitialRetryDelay;
 
             while (!CancellationToken.IsCancellationRequested)
@@ -85,7 +89,7 @@ namespace Property_and_Management.src.Service.Listeners
                 try
                 {
                     var result = await _udpClient.ReceiveAsync(CancellationToken);
-                    retryCount = 0;
+                    retryCount = InitialRetryCount;
                     retryDelay = InitialRetryDelay;
 
                     MessageWrapper? wrappedMessage = CommunicationHelper.GetMessageWrapper(result.Buffer);
@@ -98,18 +102,18 @@ namespace Property_and_Management.src.Service.Listeners
 
                     HandleMessagePacket(wrappedMessage);
                 }
-                catch (SocketException ex)
+                catch (SocketException socketException)
                 {
                     retryCount++;
                     if (retryCount > MaxRetries)
                     {
-                        Console.WriteLine($"UDP client: max retries ({MaxRetries}) reached, stopping. Last error: {ex.Message}");
+                        Console.WriteLine($"UDP client: max retries ({MaxRetries}) reached, stopping. Last error: {socketException.Message}");
                         break;
                     }
-                    Console.WriteLine($"UDP client: SocketException ({ex.Message}), retry {retryCount}/{MaxRetries} in {retryDelay.TotalSeconds}s");
+                    Console.WriteLine($"UDP client: SocketException ({socketException.Message}), retry {retryCount}/{MaxRetries} in {retryDelay.TotalSeconds}s");
                     try { await Task.Delay(retryDelay, CancellationToken); }
                     catch (OperationCanceledException) { break; }
-                    retryDelay = TimeSpan.FromTicks(Math.Min(retryDelay.Ticks * 2, MaxRetryDelay.Ticks));
+                    retryDelay = TimeSpan.FromTicks(Math.Min(retryDelay.Ticks * RetryBackoffMultiplier, MaxRetryDelay.Ticks));
                 }
                 catch (OperationCanceledException) { break; }
                 catch (ObjectDisposedException) { break; }

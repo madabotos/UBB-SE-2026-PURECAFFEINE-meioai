@@ -2,6 +2,7 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Property_and_Management;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Viewmodels;
 
@@ -49,9 +50,9 @@ namespace Property_and_Management.src.Views
                 {
                     var dialog = new ContentDialog
                     {
-                        Title = "Rental Failed",
+                        Title = Constants.DialogTitles.RentalFailed,
                         Content = error,
-                        CloseButtonText = "OK",
+                        CloseButtonText = Constants.DialogButtons.Ok,
                         XamlRoot = this.XamlRoot
                     };
                     await dialog.ShowAsync();
@@ -61,9 +62,9 @@ namespace Property_and_Management.src.Views
             {
                 var dialog = new ContentDialog
                 {
-                    Title = "Validation Error",
-                    Content = "Please select a game, a renter, and a valid date range (start before end, not in the past).",
-                    CloseButtonText = "OK",
+                    Title = Constants.DialogTitles.ValidationError,
+                    Content = Constants.DialogMessages.CreateRentalValidationError,
+                    CloseButtonText = Constants.DialogButtons.Ok,
                     XamlRoot = this.XamlRoot
                 };
                 await dialog.ShowAsync();

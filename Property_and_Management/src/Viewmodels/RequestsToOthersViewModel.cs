@@ -11,6 +11,11 @@ namespace Property_and_Management.src.Viewmodels
 {
     public class RequestsToOthersViewModel : INotifyPropertyChanged, IObserver<RequestDTO>
     {
+        private const int DefaultPageSize = 3;
+        private const int FirstPageNumber = 1;
+        private const int PageStep = 1;
+        private const int NoItemsCount = 0;
+
         private readonly IRequestService _requestService;
         private readonly ICurrentUserContext _currentUserContext;
         private ObservableCollection<RequestDTO> _requests = new();
@@ -19,10 +24,9 @@ namespace Property_and_Management.src.Viewmodels
 
         public int RenterId { get; private set; }
 
-        private const int s_pageSizeConst = 3;
-        public static int PageSize => s_pageSizeConst;
+        public static int PageSize => DefaultPageSize;
 
-        private int _currentPage = 1;
+        private int _currentPage = FirstPageNumber;
         public int CurrentPage
         {
             get => _currentPage;
@@ -37,9 +41,9 @@ namespace Property_and_Management.src.Viewmodels
             }
         }
 
-        public int TotalCount => _allRequests?.Count ?? 0;
-        public int PageCount => Math.Max(1, (int)Math.Ceiling((double)TotalCount / PageSize));
-        public int DisplayedCount => _pagedRequests?.Count ?? 0;
+        public int TotalCount => _allRequests?.Count ?? NoItemsCount;
+        public int PageCount => Math.Max(FirstPageNumber, (int)Math.Ceiling((double)TotalCount / PageSize));
+        public int DisplayedCount => _pagedRequests?.Count ?? NoItemsCount;
 
         public ObservableCollection<RequestDTO> Requests
         {
@@ -78,14 +82,14 @@ namespace Property_and_Management.src.Viewmodels
             _requestService = requestService;
             _currentUserContext = currentUserContext;
             RenterId = _currentUserContext.CurrentUserId;
-            LoadRequests(1, PageSize);
+            LoadRequests(FirstPageNumber, PageSize);
         }
 
         public void LoadRequests(int page, int pageSize)
         {
             RenterId = _currentUserContext.CurrentUserId;
             var allRequests = _requestService.GetRequestsForRenter(RenterId)
-                .OrderByDescending(r => r.StartDate)
+                .OrderByDescending(request => request.StartDate)
                 .ToImmutableList();
 
             _allRequests = allRequests;
@@ -97,13 +101,13 @@ namespace Property_and_Management.src.Viewmodels
 
         private void UpdatePaging()
         {
-            var skip = (CurrentPage - 1) * PageSize;
+            var skip = (CurrentPage - FirstPageNumber) * PageSize;
             var pageItems = _allRequests.Skip(skip).Take(PageSize).ToList();
             PagedRequests = new ObservableCollection<RequestDTO>(pageItems);
         }
 
-        public void NextPage() => CurrentPage = Math.Min(CurrentPage + 1, PageCount);
-        public void PrevPage() => CurrentPage = Math.Max(CurrentPage - 1, 1);
+        public void NextPage() => CurrentPage = Math.Min(CurrentPage + PageStep, PageCount);
+        public void PrevPage() => CurrentPage = Math.Max(CurrentPage - FirstPageNumber, FirstPageNumber);
 
         public void CancelRequest(int requestId)
         {

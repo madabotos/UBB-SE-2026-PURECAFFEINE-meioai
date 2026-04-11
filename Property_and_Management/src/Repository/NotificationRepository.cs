@@ -9,6 +9,8 @@ namespace Property_and_Management.src.Repository
 {
     public class NotificationRepository : INotificationRepository
     {
+        private const int MissingUserId = 0;
+
         private readonly string _connectionString =
             System.Configuration.ConfigurationManager.ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
 
@@ -55,7 +57,7 @@ namespace Property_and_Management.src.Repository
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "INSERT INTO Notifications(user_id, timestamp, title, body, type, related_request_id) VALUES(@user_id, @timestamp, @title, @body, @type, @related_request_id); SELECT SCOPE_IDENTITY();";
-                    command.Parameters.AddWithValue("@user_id", newEntity.User?.Id ?? 0);
+                    command.Parameters.AddWithValue("@user_id", newEntity.User?.Id ?? MissingUserId);
                     command.Parameters.AddWithValue("@timestamp", newEntity.Timestamp);
                     command.Parameters.AddWithValue("@title", newEntity.Title);
                     command.Parameters.AddWithValue("@body", newEntity.Body);
@@ -102,7 +104,7 @@ namespace Property_and_Management.src.Repository
                 {
                     command.CommandText = "UPDATE Notifications SET user_id = @user_id, timestamp = @timestamp, title = @title, body = @body, type = @type, related_request_id = @related_request_id WHERE notification_id = @id";
                     command.Parameters.AddWithValue("@id", updatedEntityId);
-                    command.Parameters.AddWithValue("@user_id", newEntity.User?.Id ?? 0);
+                    command.Parameters.AddWithValue("@user_id", newEntity.User?.Id ?? MissingUserId);
                     command.Parameters.AddWithValue("@timestamp", newEntity.Timestamp);
                     command.Parameters.AddWithValue("@title", newEntity.Title);
                     command.Parameters.AddWithValue("@body", newEntity.Body);

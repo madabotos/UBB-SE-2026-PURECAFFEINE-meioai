@@ -11,6 +11,11 @@ namespace Property_and_Management.src.Viewmodels
 {
     public class RentalsToOthersViewModel : INotifyPropertyChanged
     {
+        private const int DefaultPageSize = 3;
+        private const int FirstPageNumber = 1;
+        private const int PageStep = 1;
+        private const int NoItemsCount = 0;
+
         private readonly IRentalService _rentalService;
         private readonly ICurrentUserContext _currentUserContext;
         private ObservableCollection<RentalDTO> _rentals = new();
@@ -19,10 +24,9 @@ namespace Property_and_Management.src.Viewmodels
 
         public int OwnerId { get; private set; }
 
-        private const int s_pageSizeConst = 3;
-        public static int PageSize => s_pageSizeConst;
+        public static int PageSize => DefaultPageSize;
 
-        private int _currentPage = 1;
+        private int _currentPage = FirstPageNumber;
         public int CurrentPage
         {
             get => _currentPage;
@@ -37,9 +41,9 @@ namespace Property_and_Management.src.Viewmodels
             }
         }
 
-        public int TotalCount => _allRentals?.Count ?? 0;
-        public int PageCount => Math.Max(1, (int)Math.Ceiling((double)TotalCount / PageSize));
-        public int DisplayedCount => _pagedRentals?.Count ?? 0;
+        public int TotalCount => _allRentals?.Count ?? NoItemsCount;
+        public int PageCount => Math.Max(FirstPageNumber, (int)Math.Ceiling((double)TotalCount / PageSize));
+        public int DisplayedCount => _pagedRentals?.Count ?? NoItemsCount;
 
         public ObservableCollection<RentalDTO> Rentals
         {
@@ -78,14 +82,14 @@ namespace Property_and_Management.src.Viewmodels
             _rentalService = rentalService;
             _currentUserContext = currentUserContext;
             OwnerId = _currentUserContext.CurrentUserId;
-            LoadRentals(1, PageSize);
+            LoadRentals(FirstPageNumber, PageSize);
         }
 
         public void LoadRentals(int page, int pageSize)
         {
             OwnerId = _currentUserContext.CurrentUserId;
             var allRentals = _rentalService.GetRentalsForOwner(OwnerId)
-                .OrderByDescending(r => r.StartDate)
+                .OrderByDescending(rental => rental.StartDate)
                 .ToImmutableList();
 
             _allRentals = allRentals;
@@ -97,13 +101,13 @@ namespace Property_and_Management.src.Viewmodels
 
         private void UpdatePaging()
         {
-            var skip = (CurrentPage - 1) * PageSize;
+            var skip = (CurrentPage - FirstPageNumber) * PageSize;
             var pageItems = _allRentals.Skip(skip).Take(PageSize).ToList();
             PagedRentals = new ObservableCollection<RentalDTO>(pageItems);
         }
 
-        public void NextPage() => CurrentPage = Math.Min(CurrentPage + 1, PageCount);
-        public void PrevPage() => CurrentPage = Math.Max(CurrentPage - 1, 1);
+        public void NextPage() => CurrentPage = Math.Min(CurrentPage + PageStep, PageCount);
+        public void PrevPage() => CurrentPage = Math.Max(CurrentPage - FirstPageNumber, FirstPageNumber);
 
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string propertyName = "")

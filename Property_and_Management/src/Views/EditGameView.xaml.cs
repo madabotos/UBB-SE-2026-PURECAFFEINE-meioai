@@ -12,6 +12,7 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using Property_and_Management;
 using Property_and_Management.src.Viewmodels;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -21,6 +22,9 @@ namespace Property_and_Management.src.Views
 {
     public sealed partial class EditGameView : Page
     {
+        private const int EmptyImageLength = 0;
+        private const decimal InvalidOrEmptyPriceValue = 0m;
+
         public EditGameViewModel ViewModel { get; }
 
         public EditGameView()
@@ -41,7 +45,7 @@ namespace Property_and_Management.src.Views
                 this.Bindings.Update();
             }
 
-            if (ViewModel.Image != null && ViewModel.Image.Length > 0)
+            if (ViewModel.Image != null && ViewModel.Image.Length > EmptyImageLength)
             {
                 using (var memoryStream = new System.IO.MemoryStream(ViewModel.Image))
                 {
@@ -77,9 +81,9 @@ namespace Property_and_Management.src.Views
                 // If validation fails, display inline error [cite: 133]
                 var dialog = new ContentDialog
                 {
-                    Title = "Validation Error",
+                    Title = Constants.DialogTitles.ValidationError,
                     Content = string.Join(Environment.NewLine, validationErrors),
-                    CloseButtonText = "OK",
+                    CloseButtonText = Constants.DialogButtons.Ok,
                     XamlRoot = this.XamlRoot
                 };
                 await dialog.ShowAsync();
@@ -92,7 +96,7 @@ namespace Property_and_Management.src.Views
 
             if (string.IsNullOrWhiteSpace(priceText))
             {
-                ViewModel.Price = 0;
+                ViewModel.Price = InvalidOrEmptyPriceValue;
                 return;
             }
 
@@ -103,7 +107,7 @@ namespace Property_and_Management.src.Views
                 return;
             }
 
-            ViewModel.Price = 0;
+            ViewModel.Price = InvalidOrEmptyPriceValue;
         }
 
         private async void UploadImageButton_Click(object sender, RoutedEventArgs e)

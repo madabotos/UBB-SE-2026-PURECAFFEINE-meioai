@@ -10,6 +10,10 @@ namespace Property_and_Management.src.Viewmodels
 {
     public class ListingsViewModel : INotifyPropertyChanged
     {
+        private const int DefaultPageSize = 3;
+        private const int FirstPageNumber = 1;
+        private const int PageStep = 1;
+
         private readonly IGameService _gameService;
         private readonly int _currentUserId;
 
@@ -20,8 +24,8 @@ namespace Property_and_Management.src.Viewmodels
         public ObservableCollection<GameDTO> PagedListings { get; set; } = new ObservableCollection<GameDTO>();
 
         // Pagination Properties
-        private int _pageSize = 3; // Change this to show more/less items per page
-        private int _currentPage = 1;
+        private int _pageSize = DefaultPageSize; // Change this to show more/less items per page
+        private int _currentPage = FirstPageNumber;
 
         public int CurrentPage
         {
@@ -29,7 +33,7 @@ namespace Property_and_Management.src.Viewmodels
             set { _currentPage = value; OnPropertyChanged(); UpdatePagedListings(); }
         }
 
-        public int PageCount => (int)Math.Ceiling((double)_allListings.Count / _pageSize) == 0 ? 1 : (int)Math.Ceiling((double)_allListings.Count / _pageSize);
+        public int PageCount => Math.Max(FirstPageNumber, (int)Math.Ceiling((double)_allListings.Count / _pageSize));
 
         public string ShowingText => $"Showing {PagedListings.Count} of {_allListings.Count} games";
 
@@ -50,7 +54,7 @@ namespace Property_and_Management.src.Viewmodels
                 _allListings.Add(game);
             }
 
-            CurrentPage = 1; // This automatically calls UpdatePagedListings()
+            CurrentPage = FirstPageNumber; // This automatically calls UpdatePagedListings()
         }
 
         private void UpdatePagedListings()
@@ -58,7 +62,7 @@ namespace Property_and_Management.src.Viewmodels
             PagedListings.Clear();
 
             // Skip previous pages, Take the next batch!
-            var pagedData = _allListings.Skip((CurrentPage - 1) * _pageSize).Take(_pageSize);
+            var pagedData = _allListings.Skip((CurrentPage - FirstPageNumber) * _pageSize).Take(_pageSize);
 
             foreach (var item in pagedData)
             {
@@ -72,12 +76,12 @@ namespace Property_and_Management.src.Viewmodels
 
         public void NextPage()
         {
-            if (CurrentPage < PageCount) CurrentPage++;
+            if (CurrentPage < PageCount) CurrentPage += PageStep;
         }
 
         public void PrevPage()
         {
-            if (CurrentPage > 1) CurrentPage--;
+            if (CurrentPage > FirstPageNumber) CurrentPage -= PageStep;
         }
 
         public void DeleteGame(GameDTO game)

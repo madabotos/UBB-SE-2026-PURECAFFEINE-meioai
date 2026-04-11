@@ -19,8 +19,8 @@ namespace Property_and_Management.src.Service
 
         public ImmutableList<UserDTO> GetUsersExcept(int excludeUserId) =>
             _userRepository.GetAll()
-                .Where(u => u.Id != excludeUserId)
-                .Select(u => _userMapper.ToDTO(u))
+                .Where(user => user.Id != excludeUserId)
+                .Select(user => _userMapper.ToDTO(user))
                 .ToImmutableList();
     }
 }

@@ -1,5 +1,3 @@
-using System;
-
 namespace Property_and_Management.src.Interface
 {
     public interface IEntity

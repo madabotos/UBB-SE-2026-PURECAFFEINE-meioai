@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Property_and_Management;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
 
@@ -8,6 +9,18 @@ namespace Property_and_Management.src.Viewmodels
 {
     public class CreateGameViewModel
     {
+        private const int DefaultMinimumPlayers = 1;
+        private const int DefaultMaximumPlayers = 4;
+        private const int MinimumNameLength = 5;
+        private const int MaximumNameLength = 30;
+        private const decimal MinimumAllowedPrice = 1m;
+        private const int MinimumPlayerCount = 1;
+        private const int MinimumDescriptionLength = 10;
+        private const int MaximumDescriptionLength = 500;
+        private const int NoValidationErrors = 0;
+        private const int EmptyImageLength = 0;
+        private const int NewEntityId = 0;
+
         private readonly IGameService _gameService;
         private readonly ICurrentUserContext _currentUserContext;
 
@@ -18,8 +31,8 @@ namespace Property_and_Management.src.Viewmodels
             get => (double)Price;
             set => Price = (decimal)value;
         }
-        public int MinPlayers { get; set; } = 1;
-        public int MaxPlayers { get; set; } = 4;
+        public int MinPlayers { get; set; } = DefaultMinimumPlayers;
+        public int MaxPlayers { get; set; } = DefaultMaximumPlayers;
         public string Description { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
         public byte[] Image { get; set; } = null;
@@ -36,25 +49,25 @@ namespace Property_and_Management.src.Viewmodels
         {
             var errors = new List<string>();
 
-            if (string.IsNullOrWhiteSpace(Name) || Name.Length < 5 || Name.Length > 30)
-                errors.Add("Name must be between 5 and 30 characters.");
-            if (Price < 1)
-                errors.Add("Price must be greater than or equal to 1.");
-            if (MinPlayers < 1)
-                errors.Add("Minimum player count must be at least 1.");
+            if (string.IsNullOrWhiteSpace(Name) || Name.Length < MinimumNameLength || Name.Length > MaximumNameLength)
+                errors.Add(Constants.ValidationMessages.NameLengthRange(MinimumNameLength, MaximumNameLength));
+            if (Price < MinimumAllowedPrice)
+                errors.Add(Constants.ValidationMessages.PriceMinimum(MinimumAllowedPrice));
+            if (MinPlayers < MinimumPlayerCount)
+                errors.Add(Constants.ValidationMessages.MinimumPlayerCount(MinimumPlayerCount));
             if (MaxPlayers < MinPlayers)
-                errors.Add("Maximum player count must be greater than or equal to minimum player count.");
-            if (string.IsNullOrWhiteSpace(Description) || Description.Length < 10 || Description.Length > 500)
-                errors.Add("Description must be between 10 and 500 characters.");
+                errors.Add(Constants.ValidationMessages.MaximumPlayerCountComparedToMinimum);
+            if (string.IsNullOrWhiteSpace(Description) || Description.Length < MinimumDescriptionLength || Description.Length > MaximumDescriptionLength)
+                errors.Add(Constants.ValidationMessages.DescriptionLengthRange(MinimumDescriptionLength, MaximumDescriptionLength));
 
             return errors;
         }
 
         public GameDTO SaveGame()
         {
-            if (ValidateInputs().Count > 0) return null;
+            if (ValidateInputs().Count > NoValidationErrors) return null;
 
-            if (Image == null || Image.Length == 0)
+            if (Image == null || Image.Length == EmptyImageLength)
             {
                 try
                 {
@@ -66,13 +79,13 @@ namespace Property_and_Management.src.Viewmodels
                 }
                 catch
                 {
-                    Image = new byte[0];
+                    Image = Array.Empty<byte>();
                 }
             }
 
             var newGameDto = new GameDTO
             {
-                Id = 0,
+                Id = NewEntityId,
                 Owner = new UserDTO { Id = CurrentUserId },
                 Name = Name,
                 Price = Price,

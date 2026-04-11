@@ -11,6 +11,12 @@ namespace Property_and_Management.src.Viewmodels
 {
     public class RequestsFromOthersViewModel : INotifyPropertyChanged, IObserver<RequestDTO>
     {
+        private const int DefaultPageSize = 3;
+        private const int FirstPageNumber = 1;
+        private const int PageStep = 1;
+        private const int NoItemsCount = 0;
+        private const int MinimumSuccessfulOperationResult = 1;
+
         private readonly IRequestService _requestService;
         private readonly ICurrentUserContext _currentUserContext;
         private ObservableCollection<RequestDTO> _requests = new();
@@ -19,10 +25,9 @@ namespace Property_and_Management.src.Viewmodels
 
         public int OwnerId { get; private set; }
 
-        private const int s_pageSizeConst = 3;
-        public static int PageSize => s_pageSizeConst;
+        public static int PageSize => DefaultPageSize;
 
-        private int _currentPage = 1;
+        private int _currentPage = FirstPageNumber;
         public int CurrentPage
         {
             get => _currentPage;
@@ -37,9 +42,9 @@ namespace Property_and_Management.src.Viewmodels
             }
         }
 
-        public int TotalCount => _allRequests?.Count ?? 0;
-        public int PageCount => Math.Max(1, (int)Math.Ceiling((double)TotalCount / PageSize));
-        public int DisplayedCount => _pagedRequests?.Count ?? 0;
+        public int TotalCount => _allRequests?.Count ?? NoItemsCount;
+        public int PageCount => Math.Max(FirstPageNumber, (int)Math.Ceiling((double)TotalCount / PageSize));
+        public int DisplayedCount => _pagedRequests?.Count ?? NoItemsCount;
 
         public ObservableCollection<RequestDTO> Requests
         {
@@ -78,14 +83,14 @@ namespace Property_and_Management.src.Viewmodels
             _requestService = requestService;
             _currentUserContext = currentUserContext;
             OwnerId = _currentUserContext.CurrentUserId;
-            LoadRequests(1, PageSize);
+            LoadRequests(FirstPageNumber, PageSize);
         }
 
         public void LoadRequests(int page, int pageSize)
         {
             OwnerId = _currentUserContext.CurrentUserId;
             var allRequests = _requestService.GetRequestsForOwner(OwnerId)
-                .OrderByDescending(r => r.StartDate)
+                .OrderByDescending(request => request.StartDate)
                 .ToImmutableList();
 
             _allRequests = allRequests;
@@ -97,31 +102,31 @@ namespace Property_and_Management.src.Viewmodels
 
         private void UpdatePaging()
         {
-            var skip = (CurrentPage - 1) * PageSize;
+            var skip = (CurrentPage - FirstPageNumber) * PageSize;
             var pageItems = _allRequests.Skip(skip).Take(PageSize).ToList();
             PagedRequests = new ObservableCollection<RequestDTO>(pageItems);
         }
 
-        public void NextPage() => CurrentPage = Math.Min(CurrentPage + 1, PageCount);
-        public void PrevPage() => CurrentPage = Math.Max(CurrentPage - 1, 1);
+        public void NextPage() => CurrentPage = Math.Min(CurrentPage + PageStep, PageCount);
+        public void PrevPage() => CurrentPage = Math.Max(CurrentPage - FirstPageNumber, FirstPageNumber);
 
         public void ApproveRequest(int requestId)
         {
             var result = _requestService.ApproveRequest(requestId, OwnerId);
-            if (result > 0) LoadRequests(CurrentPage, PageSize);
+            if (result >= MinimumSuccessfulOperationResult) LoadRequests(CurrentPage, PageSize);
         }
 
         public int DenyRequest(int requestId, string reason)
         {
             var result = _requestService.DenyRequest(requestId, OwnerId, reason);
-            if (result > 0) LoadRequests(CurrentPage, PageSize);
+            if (result >= MinimumSuccessfulOperationResult) LoadRequests(CurrentPage, PageSize);
             return result;
         }
 
         public int OfferGame(int requestId)
         {
             var result = _requestService.OfferGame(requestId, OwnerId);
-            if (result > 0) LoadRequests(CurrentPage, PageSize);
+            if (result >= MinimumSuccessfulOperationResult) LoadRequests(CurrentPage, PageSize);
             return result;
         }
 

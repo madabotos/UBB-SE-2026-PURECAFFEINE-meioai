@@ -43,6 +43,20 @@ namespace Property_and_Management
     /// </summary>
     public partial class App : Application
     {
+        private const int DefaultUserId = 1;
+        private const int UserIdArgumentIndex = 1;
+        private const int KeyPartIndex = 0;
+        private const int ValuePartIndex = 1;
+        private const int SplitKeyValuePartsCount = 2;
+        private const int DevModePrimaryUserId = 1;
+        private const int DevModeSecondaryUserId = 2;
+        private const int NoRunningProcessCount = 0;
+        private const int SuccessExitCode = 0;
+
+        private const string TwoWindowsEnvironmentKey = "TWO_WINDOWS";
+        private const string EnabledEnvironmentValue = "true";
+        private const string NotificationNavigationArgumentKey = "navigate";
+
         public static IServiceProvider Services { get; private set; } = default!;
 
         // Public application state
@@ -73,7 +87,7 @@ namespace Property_and_Management
             CurrentUserID = GetUserIdFromArgs();
 
             // Two-window dev mode: user 1 spawns the notification server + a second client
-            if (CurrentUserID == 1 && IsTwoWindowsEnabled())
+            if (CurrentUserID == DevModePrimaryUserId && IsTwoWindowsEnabled())
             {
                 StartNotificationServer();
                 LaunchSecondClient();
@@ -144,14 +158,13 @@ namespace Property_and_Management
 
         private int GetUserIdFromArgs()
         {
-            int defaultUserId = 1;
             string[] commandLineArgs = Environment.GetCommandLineArgs(); // first arg is the executable path
-            if (commandLineArgs.Length > 1 && int.TryParse(commandLineArgs[1], out int parsedUserId))
+            if (commandLineArgs.Length > UserIdArgumentIndex && int.TryParse(commandLineArgs[UserIdArgumentIndex], out int parsedUserId))
             {
                 return parsedUserId;
             }
 
-            return defaultUserId;
+            return DefaultUserId;
         }
 
         #region Two-window dev mode
@@ -182,9 +195,9 @@ namespace Property_and_Management
                 {
                     var trimmed = line.Trim();
                     if (trimmed.StartsWith('#') || !trimmed.Contains('=')) continue;
-                    var parts = trimmed.Split('=', 2);
-                    if (parts[0].Trim() == "TWO_WINDOWS")
-                        return parts[1].Trim().Equals("true", StringComparison.OrdinalIgnoreCase);
+                    var parts = trimmed.Split('=', SplitKeyValuePartsCount);
+                    if (parts[KeyPartIndex].Trim() == TwoWindowsEnvironmentKey)
+                        return parts[ValuePartIndex].Trim().Equals(EnabledEnvironmentValue, StringComparison.OrdinalIgnoreCase);
                 }
             }
             catch { }
@@ -195,7 +208,7 @@ namespace Property_and_Management
         {
             try
             {
-                if (Process.GetProcessesByName("NotificationServer").Length > 0) return;
+                if (Process.GetProcessesByName("NotificationServer").Length > NoRunningProcessCount) return;
 
                 var repoRoot = FindRepoRoot();
                 if (repoRoot == null) return;
@@ -227,7 +240,7 @@ namespace Property_and_Management
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = currentExe,
-                    Arguments = "2",
+                    Arguments = DevModeSecondaryUserId.ToString(),
                     UseShellExecute = true,
                     WorkingDirectory = System.IO.Path.GetDirectoryName(currentExe)
                 });
@@ -253,8 +266,8 @@ namespace Property_and_Management
                 {
                     _mainWindow?.Activate();
 
-                    if (eventArguments.Arguments.ContainsKey("navigate") &&
-                        eventArguments.Arguments["navigate"] == nameof(NotificationsPage))
+                    if (eventArguments.Arguments.ContainsKey(NotificationNavigationArgumentKey) &&
+                        eventArguments.Arguments[NotificationNavigationArgumentKey] == nameof(NotificationsPage))
                     {
                         ActivateWindow();
                         NavigateToNotificationsWithinShell();
@@ -292,11 +305,11 @@ namespace Property_and_Management
             if (!appInstance.IsCurrent)
             {
                 appInstance.RedirectActivationToAsync(Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs()).AsTask().Wait();
-                Environment.Exit(0);
+                Environment.Exit(SuccessExitCode);
             }
 
             // Get the current instance and activate the window
-            appInstance.Activated += (sender, args) =>
+            appInstance.Activated += (sender, activationEventArgs) =>
             {
                 ActivateWindow();
             };
@@ -372,7 +385,7 @@ namespace Property_and_Management
 
             // 1. Create a Command for Open
             var openCommand = new XamlUICommand();
-            openCommand.ExecuteRequested += (s, e) =>
+            openCommand.ExecuteRequested += (commandSender, executeRequestedEventArgs) =>
             {
                 ActivateWindow();
             };
@@ -385,10 +398,10 @@ namespace Property_and_Management
 
             // 2. Create a Command for Exit
             var exitCommand = new XamlUICommand();
-            exitCommand.ExecuteRequested += (s, e) =>
+            exitCommand.ExecuteRequested += (commandSender, executeRequestedEventArgs) =>
             {
                 _trayIcon.Dispose();
-                Environment.Exit(0);
+                Environment.Exit(SuccessExitCode);
             };
 
             var exitItem = new MenuFlyoutItem

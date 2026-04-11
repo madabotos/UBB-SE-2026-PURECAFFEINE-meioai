@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
+using Property_and_Management;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Viewmodels;
 
@@ -11,6 +12,8 @@ namespace Property_and_Management.src.Views
 {
     public sealed partial class ListingsPage : Page
     {
+        private const int NoActiveRentalsCount = 0;
+
         public ListingsViewModel ViewModel { get; private set; }
 
         public ListingsPage()
@@ -27,8 +30,8 @@ namespace Property_and_Management.src.Views
         // UI-LST-04: Redirect to Edit Game page
         private void EditGameButton_Click(object sender, RoutedEventArgs e)
         {
-            var btn = sender as Button;
-            var gameToEdit = btn?.Tag as GameDTO;
+            var clickedButton = sender as Button;
+            var gameToEdit = clickedButton?.Tag as GameDTO;
 
             if (gameToEdit != null)
             {
@@ -39,18 +42,18 @@ namespace Property_and_Management.src.Views
         // UI-LST-03: Prompt for confirmation, then delete
         private async void DeleteGameButton_Click(object sender, RoutedEventArgs e)
         {
-            var btn = sender as Button;
-            var gameToDelete = btn?.Tag as GameDTO;
+            var clickedButton = sender as Button;
+            var gameToDelete = clickedButton?.Tag as GameDTO;
 
             if (gameToDelete == null) return;
 
             // Create the confirmation prompt
             ContentDialog deleteDialog = new ContentDialog
             {
-                Title = "Delete Game?",
+                Title = Constants.DialogTitles.DeleteGameConfirmation,
                 Content = $"Are you sure you want to permanently delete '{gameToDelete.Name}'? Pending requests will be cancelled and notified. Deletion is blocked if active or upcoming rentals exist.",
-                PrimaryButtonText = "Delete",
-                CloseButtonText = "Cancel",
+                PrimaryButtonText = Constants.DialogButtons.Delete,
+                CloseButtonText = Constants.DialogButtons.Cancel,
                 DefaultButton = ContentDialogButton.Close,
                 XamlRoot = this.XamlRoot
             };
@@ -66,20 +69,20 @@ namespace Property_and_Management.src.Views
 
                     var successDialog = new ContentDialog
                     {
-                        Title = "Game Removed",
-                        Content = "There are 0 active rentals for this game. It was removed successfully.",
-                        CloseButtonText = "OK",
+                        Title = Constants.DialogTitles.GameRemoved,
+                        Content = $"There are {NoActiveRentalsCount} active rentals for this game. It was removed successfully.",
+                        CloseButtonText = Constants.DialogButtons.Ok,
                         XamlRoot = this.XamlRoot
                     };
                     await successDialog.ShowAsync();
                 }
-                catch (InvalidOperationException ex)
+                catch (InvalidOperationException invalidOperationException)
                 {
                     var blockedDialog = new ContentDialog
                     {
-                        Title = "Cannot Delete Game",
-                        Content = ex.Message,
-                        CloseButtonText = "OK",
+                        Title = Constants.DialogTitles.CannotDeleteGame,
+                        Content = invalidOperationException.Message,
+                        CloseButtonText = Constants.DialogButtons.Ok,
                         XamlRoot = this.XamlRoot
                     };
                     await blockedDialog.ShowAsync();
@@ -107,12 +110,12 @@ namespace Property_and_Management.src.Views
 
         private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
         {
-            if (sender is not Image img)
+            if (sender is not Image failedImage)
             {
                 return;
             }
 
-            if (img.Source is BitmapImage current &&
+            if (failedImage.Source is BitmapImage current &&
                 current.UriSource != null &&
                 current.UriSource.AbsoluteUri.EndsWith("/Assets/default-game-placeholder.jpg", StringComparison.OrdinalIgnoreCase))
             {
@@ -121,17 +124,17 @@ namespace Property_and_Management.src.Views
 
             if (Resources.TryGetValue("DefaultGameImage", out var localResource) && localResource is BitmapImage localImage)
             {
-                img.Source = localImage;
+                failedImage.Source = localImage;
                 return;
             }
 
             if (Application.Current.Resources.TryGetValue("DefaultGameImage", out var appResource) && appResource is BitmapImage appImage)
             {
-                img.Source = appImage;
+                failedImage.Source = appImage;
                 return;
             }
 
-            img.Source = new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.jpg"));
+            failedImage.Source = new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.jpg"));
         }
     }
 }

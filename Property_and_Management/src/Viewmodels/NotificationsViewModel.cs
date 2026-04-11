@@ -17,6 +17,15 @@ namespace Property_and_Management.src.Viewmodels
 {
     public class NotificationsViewModel : INotifyPropertyChanged, IObserver<NotificationDTO>, IDisposable
     {
+        private const int DefaultPageSize = 3;
+        private const int FirstPageNumber = 1;
+        private const int PageStep = 1;
+        private const int InvalidNotificationId = -1;
+        private const int MinimumValidNotificationId = 0;
+        private const int NoItemsCount = 0;
+        private const int MinimumSuccessfulOperationResult = 1;
+        private const int DefaultUserId = 1;
+
         private ObservableCollection<NotificationDTO> _notifications = new ObservableCollection<NotificationDTO>();
         private ObservableCollection<NotificationDTO> _pagedNotifications = new ObservableCollection<NotificationDTO>();
         private readonly INotificationService _notificationService;
@@ -29,10 +38,9 @@ namespace Property_and_Management.src.Viewmodels
 
         public int CurrentUserId { get; private set; }
 
-        private const int s_pageSizeConst = 3;
-        public static int PageSize => s_pageSizeConst;
+        public static int PageSize => DefaultPageSize;
 
-        private int _currentPage = 1;
+        private int _currentPage = FirstPageNumber;
         public int CurrentPage
         {
             get => _currentPage;
@@ -47,11 +55,11 @@ namespace Property_and_Management.src.Viewmodels
             }
         }
 
-        public int TotalCount => _allNotifications?.Count ?? 0;
+        public int TotalCount => _allNotifications?.Count ?? NoItemsCount;
 
-        public int PageCount => Math.Max(1, (int)Math.Ceiling((double)TotalCount / PageSize));
+        public int PageCount => Math.Max(FirstPageNumber, (int)Math.Ceiling((double)TotalCount / PageSize));
 
-        public int DisplayedCount => PagedNotifications?.Count ?? 0;
+        public int DisplayedCount => PagedNotifications?.Count ?? NoItemsCount;
 
         public ObservableCollection<NotificationDTO> Notifications
         {
@@ -112,7 +120,7 @@ namespace Property_and_Management.src.Viewmodels
             Notifications = new ObservableCollection<NotificationDTO>(_allNotifications);
 
             // reset paging
-            _currentPage = 1;
+            _currentPage = FirstPageNumber;
             UpdatePaging();
 
             OnProperyChanged(nameof(TotalCount));
@@ -130,10 +138,10 @@ namespace Property_and_Management.src.Viewmodels
         {
             if (_allNotifications == null) _allNotifications = ImmutableList<NotificationDTO>.Empty;
 
-            if (CurrentPage < 1) _currentPage = 1;
+            if (CurrentPage < FirstPageNumber) _currentPage = FirstPageNumber;
             if (CurrentPage > PageCount) _currentPage = PageCount;
 
-            var skip = (CurrentPage - 1) * PageSize;
+            var skip = (CurrentPage - FirstPageNumber) * PageSize;
             var pageItems = _allNotifications.Skip(skip).Take(PageSize).ToList();
             PagedNotifications = new ObservableCollection<NotificationDTO>(pageItems);
 
@@ -145,15 +153,15 @@ namespace Property_and_Management.src.Viewmodels
         {
             if (CurrentPage < PageCount)
             {
-                CurrentPage++;
+                CurrentPage += PageStep;
             }
         }
 
         public void PrevPage()
         {
-            if (CurrentPage > 1)
+            if (CurrentPage > FirstPageNumber)
             {
-                CurrentPage--;
+                CurrentPage -= PageStep;
             }
         }
 
@@ -204,8 +212,8 @@ namespace Property_and_Management.src.Viewmodels
 
             _dismissedNotificationIds = serialized
                 .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(token => int.TryParse(token, out var id) ? id : -1)
-                .Where(id => id > 0)
+                .Select(token => int.TryParse(token, out var id) ? id : InvalidNotificationId)
+                .Where(id => id > MinimumValidNotificationId)
                 .ToHashSet();
         }
 
@@ -234,20 +242,20 @@ namespace Property_and_Management.src.Viewmodels
         public void OnNext(NotificationDTO value)
         {
             // Trigger an update from the service
-            LoadNotificationsForUser(CurrentUserId == 0 ? 1 : CurrentUserId);
+            LoadNotificationsForUser(CurrentUserId == MinimumValidNotificationId ? DefaultUserId : CurrentUserId);
         }
 
         public int ApproveOffer(int requestId)
         {
             var result = _requestService.ApproveOffer(requestId, CurrentUserId);
-            if (result > 0) LoadNotificationsForUser(CurrentUserId);
+            if (result >= MinimumSuccessfulOperationResult) LoadNotificationsForUser(CurrentUserId);
             return result;
         }
 
         public int DenyOffer(int requestId)
         {
             var result = _requestService.DenyOffer(requestId, CurrentUserId);
-            if (result > 0) LoadNotificationsForUser(CurrentUserId);
+            if (result >= MinimumSuccessfulOperationResult) LoadNotificationsForUser(CurrentUserId);
             return result;
         }
 

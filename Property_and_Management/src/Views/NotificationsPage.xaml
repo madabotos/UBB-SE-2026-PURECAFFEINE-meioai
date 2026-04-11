@@ -5,7 +5,7 @@
       xmlns:local="using:Property_and_Management.src.Views"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-      xmlns:dto="using:Property_and_Management.src.DTO"
+      xmlns:notificationDtoNamespace="using:Property_and_Management.src.DTO"
       mc:Ignorable="d">
 
     <Page.Resources>
@@ -34,7 +34,7 @@
                   SelectionMode="None"
                   IsItemClickEnabled="False">
             <ListView.ItemTemplate>
-                <DataTemplate x:DataType="dto:NotificationDTO">
+                <DataTemplate x:DataType="notificationDtoNamespace:NotificationDTO">
                     <Grid Background="#2D2D2D" Margin="0,0,0,10" Padding="15" CornerRadius="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="80"/>

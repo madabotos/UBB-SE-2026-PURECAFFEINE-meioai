@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Property_and_Management.src.DTO;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;
@@ -20,33 +15,33 @@ namespace Property_and_Management.src.Mapper
             _userMapper = userMapper;
         }
 
-        public RentalDTO ToDTO(Rental entity)
+        public RentalDTO ToDTO(Rental rental)
         {
-            if (entity == null) return null;
+            if (rental == null) return null;
 
             return new RentalDTO
             {
-                Id = entity.Id,
-                Game = _gameMapper.ToDTO(entity.Game),
-                Renter = _userMapper.ToDTO(entity.Renter),
-                Owner = _userMapper.ToDTO(entity.Owner),
-                StartDate = entity.StartDate,
-                EndDate = entity.EndDate
+                Id = rental.Id,
+                Game = _gameMapper.ToDTO(rental.Game),
+                Renter = _userMapper.ToDTO(rental.Renter),
+                Owner = _userMapper.ToDTO(rental.Owner),
+                StartDate = rental.StartDate,
+                EndDate = rental.EndDate
             };
         }
 
-        public Rental ToModel(RentalDTO dto)
+        public Rental ToModel(RentalDTO rentalDto)
         {
-            if (dto == null) return null;
+            if (rentalDto == null) return null;
 
             return new Rental
             {
-                Id = dto.Id,
-                Game = _gameMapper.ToModel(dto.Game),
-                Renter = _userMapper.ToModel(dto.Renter),
-                Owner = _userMapper.ToModel(dto.Owner),
-                StartDate = dto.StartDate,
-                EndDate = dto.EndDate
+                Id = rentalDto.Id,
+                Game = _gameMapper.ToModel(rentalDto.Game),
+                Renter = _userMapper.ToModel(rentalDto.Renter),
+                Owner = _userMapper.ToModel(rentalDto.Owner),
+                StartDate = rentalDto.StartDate,
+                EndDate = rentalDto.EndDate
             };
         }
     }

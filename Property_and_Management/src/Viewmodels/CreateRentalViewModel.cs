@@ -95,9 +95,9 @@ namespace Property_and_Management.src.Viewmodels
                     EndDate.Value.DateTime);
                 return null;
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                return ex.Message;
+                return exception.Message;
             }
         }
 

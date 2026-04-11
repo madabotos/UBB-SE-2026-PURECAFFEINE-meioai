@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Configuration;
-using System.Linq;
 using Microsoft.Data.SqlClient;
 using Property_and_Management.src.Interface;
 using Property_and_Management.src.Model;

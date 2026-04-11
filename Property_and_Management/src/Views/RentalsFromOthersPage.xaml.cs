@@ -20,9 +20,9 @@ namespace Property_and_Management.src.Views
         {
             base.OnNavigatedTo(e);
 
-            if (e.Parameter is RentalsFromOthersViewModel vm)
+            if (e.Parameter is RentalsFromOthersViewModel rentalsFromOthersViewModel)
             {
-                DataContext = vm;
+                DataContext = rentalsFromOthersViewModel;
                 return;
             }
 
@@ -39,10 +39,10 @@ namespace Property_and_Management.src.Views
             
         private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
         {
-            if (sender is not Image img)
+            if (sender is not Image failedImage)
                 return;
 
-            if (img.Source is BitmapImage current &&
+            if (failedImage.Source is BitmapImage current &&
                 current.UriSource != null &&
                 current.UriSource.AbsoluteUri.EndsWith("/Assets/default-game-placeholder.jpg", StringComparison.OrdinalIgnoreCase))
             {
@@ -51,17 +51,17 @@ namespace Property_and_Management.src.Views
 
             if (Resources.TryGetValue("DefaultGameImage", out var localResource) && localResource is BitmapImage localImage)
             {
-                img.Source = localImage;
+                failedImage.Source = localImage;
                 return;
             }
 
             if (Application.Current.Resources.TryGetValue("DefaultGameImage", out var appResource) && appResource is BitmapImage appImage)
             {
-                img.Source = appImage;
+                failedImage.Source = appImage;
                 return;
             }
 
-            img.Source = new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.jpg"));
+            failedImage.Source = new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.jpg"));
         }
 
         private void NextButton_Click(object sender, RoutedEventArgs e)

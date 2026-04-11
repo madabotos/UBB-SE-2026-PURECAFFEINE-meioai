@@ -2,13 +2,17 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Property_and_Management;
 using Property_and_Management.src.DTO;
+using Property_and_Management.src.Service;
 using Property_and_Management.src.Viewmodels;
 
 namespace Property_and_Management.src.Views
 {
     public sealed partial class CreateRequestView : Page
     {
+        private const int MinimumSuccessfulEntityId = 1;
+
         public CreateRequestViewModel ViewModel { get; }
 
         public CreateRequestView()
@@ -34,25 +38,25 @@ namespace Property_and_Management.src.Views
             if (ViewModel.ValidateInputs())
             {
                 var result = ViewModel.SaveRequest();
-                if (result > 0)
+                if (result >= MinimumSuccessfulEntityId)
                 {
                     if (Frame.CanGoBack)
                         Frame.GoBack();
                 }
                 else
                 {
-                    string message = result switch
+                    string message = ((CreateRequestError)result) switch
                     {
-                        -1 => "You cannot rent your own game.",
-                        -2 => "The selected dates are not available.",
-                        -3 => "The selected game no longer exists.",
-                        _ => "An unexpected error occurred."
+                        CreateRequestError.OWNER_CANNOT_RENT_ERROR => "You cannot rent your own game.",
+                        CreateRequestError.DATES_UNAVAILABLE_ERROR => "The selected dates are not available.",
+                        CreateRequestError.GAMEID_DOES_NOT_EXIST_ERROR => "The selected game no longer exists.",
+                        _ => Constants.DialogMessages.UnexpectedErrorOccurred
                     };
                     var dialog = new ContentDialog
                     {
-                        Title = "Request Failed",
+                        Title = Constants.DialogTitles.RequestFailed,
                         Content = message,
-                        CloseButtonText = "OK",
+                        CloseButtonText = Constants.DialogButtons.Ok,
                         XamlRoot = this.XamlRoot
                     };
                     await dialog.ShowAsync();
@@ -62,9 +66,9 @@ namespace Property_and_Management.src.Views
             {
                 var dialog = new ContentDialog
                 {
-                    Title = "Validation Error",
-                    Content = "Please select a game and valid date range (start date must be before end date and not in the past).",
-                    CloseButtonText = "OK",
+                    Title = Constants.DialogTitles.ValidationError,
+                    Content = Constants.DialogMessages.CreateRequestValidationError,
+                    CloseButtonText = Constants.DialogButtons.Ok,
                     XamlRoot = this.XamlRoot
                 };
                 await dialog.ShowAsync();

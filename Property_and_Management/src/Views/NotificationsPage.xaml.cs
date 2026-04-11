@@ -26,20 +26,21 @@ namespace Property_and_Management.src.Views
     /// </summary>
     public sealed partial class NotificationsPage : Page
     {
-        private readonly DispatcherTimer _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+        private const int NotificationsRefreshIntervalSeconds = 10;
+        private readonly DispatcherTimer _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(NotificationsRefreshIntervalSeconds) };
 
         public NotificationsPage()
         {
             InitializeComponent();
 
             // Grab the ViewModel straight from the App!
-            var app = (Property_and_Management.App)Application.Current;
-            this.DataContext = app.NotificationsViewModel;
+            var applicationInstance = (Property_and_Management.App)Application.Current;
+            this.DataContext = applicationInstance.NotificationsViewModel;
 
-            _refreshTimer.Tick += (_, _) =>
+            _refreshTimer.Tick += (timerSender, tickEventArgs) =>
             {
-                if (DataContext is NotificationsViewModel vm)
-                    vm.LoadNotificationsForUser(vm.CurrentUserId);
+                if (DataContext is NotificationsViewModel notificationsViewModel)
+                    notificationsViewModel.LoadNotificationsForUser(notificationsViewModel.CurrentUserId);
             };
         }
 
@@ -47,17 +48,17 @@ namespace Property_and_Management.src.Views
         {
             base.OnNavigatedTo(e);
 
-            if (e.Parameter is NotificationsViewModel vm)
+            if (e.Parameter is NotificationsViewModel notificationsViewModel)
             {
-                DataContext = vm;
-                vm.LoadNotificationsForUser(vm.CurrentUserId);
+                DataContext = notificationsViewModel;
+                notificationsViewModel.LoadNotificationsForUser(notificationsViewModel.CurrentUserId);
 
                 if (this.FindName("ItemsListView") is ItemsControl items)
-                    items.ItemsSource = vm.Notifications;
+                    items.ItemsSource = notificationsViewModel.Notifications;
             }
-            else if (DataContext is NotificationsViewModel defaultVm)
+            else if (DataContext is NotificationsViewModel defaultNotificationsViewModel)
             {
-                defaultVm.LoadNotificationsForUser(defaultVm.CurrentUserId);
+                defaultNotificationsViewModel.LoadNotificationsForUser(defaultNotificationsViewModel.CurrentUserId);
             }
 
             _refreshTimer.Start();
@@ -73,43 +74,43 @@ namespace Property_and_Management.src.Views
         {
             try
             {
-                var btn = sender as Button;
+                var clickedButton = sender as Button;
                 // In ItemsControl the DataContext for the button is the NotificationDTO
-                var note = btn?.DataContext as NotificationDTO;
-                if (note == null)
+                var notification = clickedButton?.DataContext as NotificationDTO;
+                if (notification == null)
                 {
                     Debug.WriteLine("DeleteButton_Click: notification DTO not found");
                     return;
                 }
 
                 var root = this.Content as FrameworkElement;
-                var vm = root?.DataContext as NotificationsViewModel;
-                if (vm == null)
+                var notificationsViewModel = root?.DataContext as NotificationsViewModel;
+                if (notificationsViewModel == null)
                 {
                     Debug.WriteLine("NotificationsPage: viewmodel not found on DeleteButton_Click");
                     return;
                 }
 
-                vm.DeleteNotificationById(note.Id);
+                notificationsViewModel.DeleteNotificationById(notification.Id);
             }
-            catch (Exception ex)
+            catch (Exception caughtException)
             {
-                Debug.WriteLine($"DeleteButton_Click error: {ex}");
+                Debug.WriteLine($"DeleteButton_Click error: {caughtException}");
             }
         }
 
         private void NextButton_Click(object sender, RoutedEventArgs e)
         {
             var root = this.Content as FrameworkElement;
-            var vm = root?.DataContext as NotificationsViewModel;
-            vm?.NextPage();
+            var notificationsViewModel = root?.DataContext as NotificationsViewModel;
+            notificationsViewModel?.NextPage();
         }
 
         private void PrevButton_Click(object sender, RoutedEventArgs e)
         {
             var root = this.Content as FrameworkElement;
-            var vm = root?.DataContext as NotificationsViewModel;
-            vm?.PrevPage();
+            var notificationsViewModel = root?.DataContext as NotificationsViewModel;
+            notificationsViewModel?.PrevPage();
         }
     }
 }
