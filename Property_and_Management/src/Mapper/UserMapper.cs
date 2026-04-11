@@ -1,14 +1,17 @@
-using Property_and_Management.src.DataTransferObjects;
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.Mapper
+namespace Property_and_Management.Src.Mapper
 {
     public class UserMapper : IMapper<User, UserDataTransferObject>
     {
         public UserDataTransferObject ToDataTransferObject(User user)
         {
-            if (user == null) return null;
+            if (user == null)
+            {
+                return null;
+            }
 
             return new UserDataTransferObject
             {
@@ -19,7 +22,10 @@ namespace Property_and_Management.src.Mapper
 
         public User ToModel(UserDataTransferObject userDataTransferObject)
         {
-            if (userDataTransferObject == null) return null;
+            if (userDataTransferObject == null)
+            {
+                return null;
+            }
 
             return new User
             {

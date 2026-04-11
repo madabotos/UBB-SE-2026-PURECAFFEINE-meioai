@@ -18,7 +18,6 @@ using WinRT.Interop;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
-
 namespace Property_and_Management
 {
     /// <summary>
@@ -26,7 +25,6 @@ namespace Property_and_Management
     /// </summary>
     public sealed partial class MainWindow : Window
     {
-
         public new AppWindow AppWindow { get; }
 
         public MainWindow()
@@ -48,7 +46,6 @@ namespace Property_and_Management
 
         private AppWindow GetAppWindow()
         {
-
             var hwnd = WindowNative.GetWindowHandle(this);
             var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
             return AppWindow.GetFromWindowId(windowId);

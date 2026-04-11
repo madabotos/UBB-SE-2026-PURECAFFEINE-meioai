@@ -8,7 +8,7 @@ namespace Property_and_Management
 {
     internal static class Constants
     {
-        public const string APP_TRAY_ICON_URI = "ms-appx:///Assets/tray_icon.ico";
+        public const string AppTrayIconUri = "ms-appx:///Assets/tray_icon.ico";
 
         internal static class NotificationTitles
         {
@@ -17,6 +17,7 @@ namespace Property_and_Management
             public const string RentalRequestDeclined = "Rental request declined";
             public const string RentalRequestCancelled = "Rental request cancelled";
             public const string RentalRequestApproved = "Rental request approved";
+            public const string OfferReceived = "Game Offer Received";
             public const string OfferAccepted = "Offer Accepted";
             public const string RentalConfirmed = "Rental Confirmed";
             public const string OfferDenied = "Offer Denied";
@@ -30,6 +31,8 @@ namespace Property_and_Management
             public const string RentalFailed = "Rental Failed";
             public const string ApproveFailed = "Approve Failed";
             public const string DeclineFailed = "Decline Failed";
+            public const string OfferFailed = "Offer Failed";
+            public const string OfferGameConfirmation = "Offer Game?";
             public const string ApproveRequestConfirmation = "Approve Request?";
             public const string DeclineRequestConfirmation = "Decline Request?";
             public const string CancelRequestConfirmation = "Cancel Request?";
@@ -47,6 +50,7 @@ namespace Property_and_Management
             public const string Decline = "Decline";
             public const string Delete = "Delete";
             public const string CancelRequest = "Cancel Request";
+            public const string Offer = "Offer";
         }
 
         internal static class DialogMessages
@@ -75,6 +79,18 @@ namespace Property_and_Management
 
             public static string DescriptionLengthRange(int minimumLength, int maximumLength) =>
                 $"Description must be between {minimumLength} and {maximumLength} characters.";
+        }
+
+        internal static class GameValidation
+        {
+            public const int MinimumNameLength = 5;
+            public const int MaximumNameLength = 30;
+            public const decimal MinimumAllowedPrice = 1m;
+            public const int MinimumPlayerCount = 1;
+            public const int MinimumDescriptionLength = 10;
+            public const int MaximumDescriptionLength = 500;
+            public const int DefaultMinimumPlayers = 1;
+            public const int DefaultMaximumPlayers = 4;
         }
     }
 }

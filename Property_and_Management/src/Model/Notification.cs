@@ -1,7 +1,7 @@
 using System;
-using Property_and_Management.src.Interface;
+using Property_and_Management.Src.Interface;
 
-namespace Property_and_Management.src.Model
+namespace Property_and_Management.Src.Model
 {
     public class Notification : IEntity
     {
@@ -13,9 +13,11 @@ namespace Property_and_Management.src.Model
         public NotificationType Type { get; set; } = NotificationType.Informational;
         public int? RelatedRequestIdentifier { get; set; }
 
-        public Notification() { }
+        public Notification()
+        {
+        }
         public Notification(int identifier, User user, DateTime timestamp, string title, string body,
-                            NotificationType type = NotificationType.Informational, int? RelatedRequestIdentifier = null)
+                            NotificationType type = NotificationType.Informational, int? relatedRequestIdentifier = null)
         {
             Identifier = identifier;
             User = user;
@@ -23,7 +25,7 @@ namespace Property_and_Management.src.Model
             Title = title;
             Body = body;
             Type = type;
-            RelatedRequestIdentifier = RelatedRequestIdentifier;
+            RelatedRequestIdentifier = relatedRequestIdentifier;
         }
     }
 }

@@ -1,7 +1,7 @@
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.DataTransferObjects
+namespace Property_and_Management.Src.DataTransferObjects
 {
     public class GameDataTransferObject : IDataTransferObject<Game>
     {
@@ -15,6 +15,8 @@ namespace Property_and_Management.src.DataTransferObjects
         public byte[] Image { get; set; }
         public bool IsActive { get; set; }
 
-        public GameDataTransferObject() { }
+        public GameDataTransferObject()
+        {
+        }
     }
 }

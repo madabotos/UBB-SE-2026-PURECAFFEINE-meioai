@@ -4,7 +4,7 @@ using System.Data;
 using System.Diagnostics;
 using Microsoft.Data.SqlClient;
 
-namespace Property_and_Management.src.Repository
+namespace Property_and_Management.Src.Repository
 {
     /// <summary>
     /// Ensures the BoardRent database exists with the expected schema,
@@ -122,13 +122,16 @@ namespace Property_and_Management.src.Repository
         private static void ExecuteBatch(SqlConnection connection, string sql, SqlTransaction? transaction = null)
         {
             using var command = connection.CreateCommand();
-            if (transaction != null) command.Transaction = transaction;
+            if (transaction != null)
+            {
+                command.Transaction = transaction;
+            }
+
             command.CommandText = sql;
             command.ExecuteNonQuery();
         }
 
         // --- Schema creation SQL ---
-
         private const string CreateUsersTableSql = @"
 IF OBJECT_ID(N'[dbo].[Users]', 'U') IS NULL
 BEGIN
@@ -217,7 +220,6 @@ BEGIN
 END;";
 
         // --- Offer-system column migration SQL (mirrors Scripts/migrate_offer_system.sql) ---
-
         private const string AddRequestsStatusColumnSql = @"
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Requests') AND name = 'status')
 BEGIN
@@ -247,7 +249,6 @@ BEGIN
 END;";
 
         // --- Seed data SQL (mirrors Scripts/reset_and_insert_test_data.sql) ---
-
         private const string SeedUsersSql = @"
 SET IDENTITY_INSERT Users ON;
 INSERT INTO Users (id, display_name) VALUES (1, 'Darius Turcu'), (2, 'Mihai Tira');

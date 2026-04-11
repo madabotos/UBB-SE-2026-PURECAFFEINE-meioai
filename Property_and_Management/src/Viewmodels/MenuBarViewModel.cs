@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace Property_and_Management.src.Viewmodels
+namespace Property_and_Management.Src.Viewmodels
 {
     public class MenuBarViewModel : INotifyPropertyChanged
     {
@@ -13,7 +13,7 @@ namespace Property_and_Management.src.Viewmodels
 
         public Dictionary<string, Action> NavigationActions { get; }
 
-        private string _selectedPageName;
+        private string selectedPageName;
 
         public MenuBarViewModel()
         {
@@ -30,12 +30,12 @@ namespace Property_and_Management.src.Viewmodels
 
         public string SelectedPageName
         {
-            get => _selectedPageName;
+            get => selectedPageName;
             set
             {
-                if (_selectedPageName != value)
+                if (selectedPageName != value)
                 {
-                    _selectedPageName = value;
+                    selectedPageName = value;
                     OnPropertyChanged();
                     HandleNavigation(value);
                 }
@@ -46,7 +46,9 @@ namespace Property_and_Management.src.Viewmodels
         {
             OnPropertyChanged();
             if (!string.IsNullOrEmpty(pageName) && NavigationActions.TryGetValue(pageName, out var action))
+            {
                 action.Invoke();
+            }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

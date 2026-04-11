@@ -1,26 +1,26 @@
 using System.Collections.Immutable;
 using System.Linq;
-using Property_and_Management.src.DataTransferObjects;
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.Service
+namespace Property_and_Management.Src.Service
 {
     public class UserService : IUserService
     {
-        private readonly IUserRepository _userRepository;
-        private readonly IMapper<User, UserDataTransferObject> _userMapper;
+        private readonly IUserRepository userRepository;
+        private readonly IMapper<User, UserDataTransferObject> userMapper;
 
         public UserService(IUserRepository userRepository, IMapper<User, UserDataTransferObject> userMapper)
         {
-            _userRepository = userRepository;
-            _userMapper = userMapper;
+            this.userRepository = userRepository;
+            this.userMapper = userMapper;
         }
 
         public ImmutableList<UserDataTransferObject> GetUsersExcept(int excludeUserIdentifier) =>
-            _userRepository.GetAll()
+            userRepository.GetAll()
                 .Where(user => user.Identifier != excludeUserIdentifier)
-                .Select(user => _userMapper.ToDataTransferObject(user))
+                .Select(user => userMapper.ToDataTransferObject(user))
                 .ToImmutableList();
     }
 }

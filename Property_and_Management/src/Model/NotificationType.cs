@@ -1,4 +1,4 @@
-namespace Property_and_Management.src.Model
+namespace Property_and_Management.Src.Model
 {
     public enum NotificationType
     {

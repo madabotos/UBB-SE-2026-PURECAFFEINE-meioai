@@ -1,9 +1,14 @@
 using System;
 using System.Collections.Immutable;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.Interface
+namespace Property_and_Management.Src.Interface
 {
+    /// <summary>
+    /// Persistence-layer contract for the Requests table. Methods are intentionally
+    /// narrow and stateless; all business decisions (what counts as "overlap",
+    /// which notifications to send, etc.) belong in <see cref="IRequestService"/>.
+    /// </summary>
     public interface IRequestRepository : IRepository<Request>
     {
         /// <summary>
@@ -27,13 +32,26 @@ namespace Property_and_Management.src.Interface
         ImmutableList<Request> GetRequestsByGame(int gameIdentifier);
 
         /// <summary>
-        /// Atomically approves a request: inserts a rental, finds and deletes all overlapping
-        /// open requests (and their notifications), then deletes the approved request itself.
-        /// Returns the new rental id and the list of cancelled overlapping requests so the
-        /// caller can send notifications to their renters.
+        /// Returns every request on <paramref name="gameIdentifier"/> whose date window
+        /// overlaps <c>[bufferedStart, bufferedEnd)</c>, excluding the request identified
+        /// by <paramref name="excludeRequestIdentifier"/>. Used by the service to decide
+        /// which requests get cascade-cancelled when a rental is created.
         /// </summary>
-        (int rentalIdentifier, ImmutableList<Request> OverlappingRequests) ApproveAtomically(
-            Request approvedRequest, DateTime bufferedStart, DateTime bufferedEnd);
+        ImmutableList<Request> GetOverlappingRequests(
+            int gameIdentifier,
+            int excludeRequestIdentifier,
+            DateTime bufferedStart,
+            DateTime bufferedEnd);
+
+        /// <summary>
+        /// Commits the rental-creation cascade inside a single serializable transaction:
+        /// delete notifications for the approved request and all pre-computed overlapping
+        /// requests, insert the rental, then delete the affected requests. Returns the
+        /// new rental identifier. The caller is responsible for deciding which requests
+        /// are actually overlapping — this method just applies their fate atomically.
+        /// </summary>
+        int ApproveAtomically(
+            Request approvedRequest,
+            ImmutableList<Request> overlappingRequests);
     }
 }
-

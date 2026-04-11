@@ -9,20 +9,13 @@ namespace Property_and_Management
 {
     internal class NotificationManager
     {
-        // F Microslop
-
         public event EventHandler<AppNotificationActivatedEventArgs> NotificationClicked;
 
-        private bool _isRegistered;
+        private bool isRegistered;
 
         public NotificationManager()
         {
-            _isRegistered = false;
-        }
-
-        ~NotificationManager()
-        {
-            Unregister();
+            isRegistered = false;
         }
 
         public void Init()
@@ -37,11 +30,11 @@ namespace Property_and_Management
             try
             {
                 notificationManager.Register();
-                _isRegistered = true;
+                isRegistered = true;
             }
             catch (Exception registrationException)
             {
-                // This prevents crashes if the app restarts during debugging 
+                // This prevents crashes if the app restarts during debugging
                 // and Windows thinks it's already registered.
                 System.Diagnostics.Debug.WriteLine($"Toast manager failed to register: {registrationException.Message}");
             }
@@ -49,11 +42,11 @@ namespace Property_and_Management
 
         public void Unregister()
         {
-            if (_isRegistered)
+            if (isRegistered)
             {
                 AppNotificationManager.Default.NotificationInvoked -= OnNotificationInvoked;
                 AppNotificationManager.Default.Unregister();
-                _isRegistered = false;
+                isRegistered = false;
             }
         }
 
@@ -67,6 +60,5 @@ namespace Property_and_Management
         {
             NotificationClicked?.Invoke(this, args);
         }
-
     }
 }

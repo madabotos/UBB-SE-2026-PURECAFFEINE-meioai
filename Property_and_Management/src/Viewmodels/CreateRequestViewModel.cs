@@ -1,80 +1,116 @@
-using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Property_and_Management.src.DataTransferObjects;
-using Property_and_Management.src.Interface;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Interface;
 
-namespace Property_and_Management.src.Viewmodels
+namespace Property_and_Management.Src.Viewmodels
 {
     public class CreateRequestViewModel : INotifyPropertyChanged
     {
-        private const int InvalidRequestResult = -1;
+        private readonly IGameService gameService;
+        private readonly IRequestService requestService;
+        private readonly ICurrentUserContext currentUserContext;
 
-        private readonly IGameService _gameService;
-        private readonly IRequestService _requestService;
-        private readonly ICurrentUserContext _currentUserContext;
-
-        public int CurrentUserIdentifier => _currentUserContext.CurrentUserIdentifier;
+        public int CurrentUserIdentifier => currentUserContext.CurrentUserIdentifier;
 
         public ObservableCollection<GameDataTransferObject> AvailableGames { get; set; } = new();
 
-        private GameDataTransferObject _selectedGame;
+        private GameDataTransferObject selectedGame;
         public GameDataTransferObject SelectedGame
         {
-            get => _selectedGame;
-            set { _selectedGame = value; OnPropertyChanged(); }
+            get => selectedGame;
+            set
+            {
+                selectedGame = value;
+                OnPropertyChanged();
+            }
         }
 
-        private DateTimeOffset? _startDate;
-        public DateTimeOffset? StartDate
+        private System.DateTimeOffset? startDate;
+        public System.DateTimeOffset? StartDate
         {
-            get => _startDate;
-            set { _startDate = value; OnPropertyChanged(); }
+            get => startDate;
+            set
+            {
+                startDate = value;
+                OnPropertyChanged();
+            }
         }
 
-        private DateTimeOffset? _endDate;
-        public DateTimeOffset? EndDate
+        private System.DateTimeOffset? endDate;
+        public System.DateTimeOffset? EndDate
         {
-            get => _endDate;
-            set { _endDate = value; OnPropertyChanged(); }
+            get => endDate;
+            set
+            {
+                endDate = value;
+                OnPropertyChanged();
+            }
         }
 
         public CreateRequestViewModel(IGameService gameService, IRequestService requestService,
                                       ICurrentUserContext currentUserContext)
         {
-            _gameService = gameService;
-            _requestService = requestService;
-            _currentUserContext = currentUserContext;
+            this.gameService = gameService;
+            this.requestService = requestService;
+            this.currentUserContext = currentUserContext;
             LoadGames();
         }
 
         public void LoadGames()
         {
             AvailableGames.Clear();
-            var games = _gameService.GetAllGames()
+            var games = gameService.GetAllGames()
                 .Where(game => game.IsActive && game.Owner?.Identifier != CurrentUserIdentifier);
             foreach (var game in games)
+            {
                 AvailableGames.Add(game);
+            }
         }
 
         public bool ValidateInputs()
         {
-            if (SelectedGame == null) return false;
+            if (SelectedGame == null)
+            {
+                return false;
+            }
+
             return DateRangeValidationHelper.HasValidFutureDateRange(StartDate, EndDate);
         }
 
-        public int SaveRequest()
+        /// <summary>
+        /// Submit the request using the currently selected game and dates.
+        /// Returns a user-friendly error message, or <c>null</c> on success.
+        /// Keeps the service-namespace error enums out of the view layer.
+        /// </summary>
+        public string? TrySubmitRequest()
         {
-            if (!ValidateInputs()) return InvalidRequestResult;
+            if (!ValidateInputs())
+            {
+                return Constants.DialogMessages.CreateRequestValidationError;
+            }
 
-            return _requestService.CreateRequest(
+            var result = requestService.CreateRequest(
                 SelectedGame.Identifier,
                 CurrentUserIdentifier,
                 SelectedGame.Owner.Identifier,
                 StartDate.Value.DateTime,
                 EndDate.Value.DateTime);
+
+            if (result.IsSuccess)
+            {
+                return null;
+            }
+
+            return result.Error switch
+            {
+                CreateRequestError.OwnerCannotRent => "You cannot rent your own game.",
+                CreateRequestError.DatesUnavailable => "The selected dates are not available.",
+                CreateRequestError.GameDoesNotExist => "The selected game no longer exists.",
+                _ => Constants.DialogMessages.UnexpectedErrorOccurred
+            };
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -84,5 +120,3 @@ namespace Property_and_Management.src.Viewmodels
         }
     }
 }
-
-

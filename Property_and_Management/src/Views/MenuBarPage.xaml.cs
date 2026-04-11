@@ -4,10 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Viewmodels;
+using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Viewmodels;
 
-namespace Property_and_Management.src.Views
+namespace Property_and_Management.Src.Views
 {
     public sealed partial class MenuBarView : Page
     {
@@ -26,7 +26,7 @@ namespace Property_and_Management.src.Views
         };
 
         // The Menu keeps a reference to IGameService so it can pass it to pages that need it.
-        private IGameService _passedGameService;
+        private IGameService passedGameService;
 
         public MenuBarView()
         {
@@ -42,21 +42,27 @@ namespace Property_and_Management.src.Views
             base.OnNavigatedTo(e);
 
             if (e.Parameter is IGameService gameService)
-                _passedGameService = gameService;
+            {
+                passedGameService = gameService;
+            }
         }
 
         private void OnViewModelRequestedNavigation(AppPage page)
         {
             if (!PageTypeMap.TryGetValue(page, out var pageType))
+            {
                 return;
+            }
 
-            ContentFrame.Navigate(pageType, _passedGameService);
+            ContentFrame.Navigate(pageType, passedGameService);
         }
 
         public void NavigateToNotifications()
         {
-            var applicationInstance = Application.Current as Property_and_Management.App;
-            ContentFrame.Navigate(typeof(NotificationsPage), applicationInstance?.NotificationsViewModel);
+            // Composition root: fetch the singleton NotificationsViewModel from
+            // the DI container instead of reaching into Application.Current.
+            var notificationsViewModel = App.Services.GetRequiredService<NotificationsViewModel>();
+            ContentFrame.Navigate(typeof(NotificationsPage), notificationsViewModel);
             ViewModel.SelectedPageName = "Notifications";
         }
     }

@@ -1,145 +1,113 @@
-using System;
 using System.Collections.Immutable;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using Property_and_Management.src.DataTransferObjects;
-using Property_and_Management.src.Interface;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.Viewmodels
+namespace Property_and_Management.Src.Viewmodels
 {
-    public class RequestsFromOthersViewModel : INotifyPropertyChanged, IObserver<RequestDataTransferObject>
+    public class RequestsFromOthersViewModel : PagedViewModel<RequestDataTransferObject>
     {
-        private const int DefaultPageSize = 3;
-        private const int FirstPageNumber = 1;
-        private const int PageStep = 1;
-        private const int NoItemsCount = 0;
-        private const int MinimumSuccessfulOperationResult = 1;
+        private readonly IRequestService requestService;
+        private readonly ICurrentUserContext currentUserContext;
 
-        private readonly IRequestService _requestService;
-        private readonly ICurrentUserContext _currentUserContext;
-        private ObservableCollection<RequestDataTransferObject> _requests = new();
-        private ObservableCollection<RequestDataTransferObject> _pagedRequests = new();
-        private ImmutableList<RequestDataTransferObject> _allRequests = ImmutableList<RequestDataTransferObject>.Empty;
-
-        public int ownerIdentifier { get; private set; }
-
-        public static int PageSize => DefaultPageSize;
-
-        private int _currentPage = FirstPageNumber;
-        public int CurrentPage
-        {
-            get => _currentPage;
-            set
-            {
-                if (_currentPage != value)
-                {
-                    _currentPage = value;
-                    OnPropertyChanged();
-                    UpdatePaging();
-                }
-            }
-        }
-
-        public int TotalCount => _allRequests?.Count ?? NoItemsCount;
-        public int PageCount => Math.Max(FirstPageNumber, (int)Math.Ceiling((double)TotalCount / PageSize));
-        public int DisplayedCount => _pagedRequests?.Count ?? NoItemsCount;
-
-        public ObservableCollection<RequestDataTransferObject> Requests
-        {
-            get => _requests;
-            set
-            {
-                if (_requests != value)
-                {
-                    _requests = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        public ObservableCollection<RequestDataTransferObject> PagedRequests
-        {
-            get => _pagedRequests;
-            set
-            {
-                if (_pagedRequests != value)
-                {
-                    _pagedRequests = value;
-                    OnPropertyChanged();
-                    OnPropertyChanged(nameof(DisplayedCount));
-                    OnPropertyChanged(nameof(TotalCount));
-                    OnPropertyChanged(nameof(PageCount));
-                    OnPropertyChanged(nameof(ShowingText));
-                }
-            }
-        }
-
-        public string ShowingText => $"Showing {DisplayedCount} of {TotalCount} requests";
+        public int OwnerIdentifier { get; private set; }
 
         public RequestsFromOthersViewModel(IRequestService requestService, ICurrentUserContext currentUserContext)
         {
-            _requestService = requestService;
-            _currentUserContext = currentUserContext;
-            ownerIdentifier = _currentUserContext.CurrentUserIdentifier;
-            LoadRequests(FirstPageNumber, PageSize);
+            this.requestService = requestService;
+            this.currentUserContext = currentUserContext;
+            Reload();
         }
 
-        public void LoadRequests(int page, int pageSize)
+        public override string ShowingText => $"Showing {DisplayedCount} of {TotalCount} requests";
+
+        public void LoadRequests() => Reload();
+
+        protected override void Reload()
         {
-            ownerIdentifier = _currentUserContext.CurrentUserIdentifier;
-            var allRequests = _requestService.GetRequestsForOwner(ownerIdentifier)
+            OwnerIdentifier = currentUserContext.CurrentUserIdentifier;
+            // Owners only see Open requests here. OfferPending requests have
+            // already been offered to the renter and are awaiting their decision,
+            // so showing an Offer button on them would just error out.
+            var allRequests = requestService
+                .GetRequestsForOwner(OwnerIdentifier)
+                .Where(request => request.Status == RequestStatus.Open)
                 .OrderByDescending(request => request.StartDate)
                 .ToImmutableList();
-
-            _allRequests = allRequests;
-            Requests = new ObservableCollection<RequestDataTransferObject>(allRequests);
-
-            CurrentPage = page;
-            UpdatePaging();
+            SetAllItems(allRequests);
         }
 
-        private void UpdatePaging()
+        /// <summary>
+        /// Approve a pending request directly (creates a rental atomically).
+        /// Returns null on success or a user-friendly error message on failure.
+        /// </summary>
+        public string? TryApproveRequest(int requestIdentifier)
         {
-            var skip = (CurrentPage - FirstPageNumber) * PageSize;
-            var pageItems = _allRequests.Skip(skip).Take(PageSize).ToList();
-            PagedRequests = new ObservableCollection<RequestDataTransferObject>(pageItems);
+            var result = requestService.ApproveRequest(requestIdentifier, OwnerIdentifier);
+            if (result.IsSuccess)
+            {
+                Reload();
+                return null;
+            }
+
+            return result.Error switch
+            {
+                ApproveRequestError.Unauthorized => "You are not authorized to approve this request.",
+                ApproveRequestError.NotFound => "Request not found.",
+                ApproveRequestError.TransactionFailed => "Could not approve the request. Please try again.",
+                _ => Constants.DialogMessages.UnexpectedErrorOccurred
+            };
         }
 
-        public void NextPage() => CurrentPage = Math.Min(CurrentPage + PageStep, PageCount);
-        public void PrevPage() => CurrentPage = Math.Max(CurrentPage - FirstPageNumber, FirstPageNumber);
-
-        public void ApproveRequest(int requestIdentifier)
+        /// <summary>
+        /// Decline a pending request. The view is free to pass a raw user string;
+        /// we trim and substitute the "no reason provided" placeholder here so
+        /// code-behind stays UI-only.
+        /// </summary>
+        public string? TryDenyRequest(int requestIdentifier, string? rawReason)
         {
-            var result = _requestService.ApproveRequest(requestIdentifier, ownerIdentifier);
-            if (result >= MinimumSuccessfulOperationResult) LoadRequests(CurrentPage, PageSize);
+            var trimmedReason = (rawReason ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(trimmedReason))
+            {
+                trimmedReason = Constants.DialogMessages.NoReasonProvided;
+            }
+
+            var result = requestService.DenyRequest(requestIdentifier, OwnerIdentifier, trimmedReason);
+            if (result.IsSuccess)
+            {
+                Reload();
+                return null;
+            }
+
+            return result.Error switch
+            {
+                DenyRequestError.NotFound => "Request not found.",
+                DenyRequestError.Unauthorized => "You are not authorized to deny this request.",
+                _ => Constants.DialogMessages.UnexpectedErrorOccurred
+            };
         }
 
-        public int DenyRequest(int requestIdentifier, string reason)
+        /// <summary>
+        /// Offer the game to the renter. Flips the request into OfferPending and
+        /// notifies the renter. Returns null on success or a user-friendly error.
+        /// </summary>
+        public string? TryOfferGame(int requestIdentifier)
         {
-            var result = _requestService.DenyRequest(requestIdentifier, ownerIdentifier, reason);
-            if (result >= MinimumSuccessfulOperationResult) LoadRequests(CurrentPage, PageSize);
-            return result;
-        }
+            var result = requestService.OfferGame(requestIdentifier, OwnerIdentifier);
+            if (result.IsSuccess)
+            {
+                Reload();
+                return null;
+            }
 
-        public int OfferGame(int requestIdentifier)
-        {
-            var result = _requestService.OfferGame(requestIdentifier, ownerIdentifier);
-            if (result >= MinimumSuccessfulOperationResult) LoadRequests(CurrentPage, PageSize);
-            return result;
+            return result.Error switch
+            {
+                OfferError.NotFound => "Request not found.",
+                OfferError.NotOwner => "You are not the owner of this game.",
+                OfferError.RequestNotOpen => "This request is no longer open.",
+                _ => Constants.DialogMessages.UnexpectedErrorOccurred
+            };
         }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string propertyName = "")
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-        public void OnCompleted() => LoadRequests(CurrentPage, PageSize);
-        public void OnError(Exception error) => System.Diagnostics.Debug.WriteLine(error.Message);
-        public void OnNext(RequestDataTransferObject value) => LoadRequests(CurrentPage, PageSize);
     }
 }
-
-

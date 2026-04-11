@@ -11,5 +11,4 @@ namespace NotificationServer
         SERVER_NO_ERROR = 0,
         SERVER_FAILED_INIT = -1,
     }
-
 }

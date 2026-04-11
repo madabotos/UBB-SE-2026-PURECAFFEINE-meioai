@@ -16,24 +16,24 @@ namespace NotificationServer
     {
         private const int DEFAULT_PORT = 4544;
 
-        private static UdpClient? _udpClient;
+        private static UdpClient? udpClient;
 
-        private static Dictionary<int, IPEndPoint> _userIpMap = [];
+        private static Dictionary<int, IPEndPoint> userIpMap = [];
 
         private static async Task SendMessage(int userIdentifier, MessageBase unwrappedMessageToSend)
         {
-            if (_udpClient == null)
+            if (udpClient == null)
             {
-                throw new NullReferenceException(nameof(_udpClient));
+                throw new NullReferenceException(nameof(udpClient));
             }
 
-            if (!_userIpMap.TryGetValue(userIdentifier, out var endpoint))
+            if (!userIpMap.TryGetValue(userIdentifier, out var endpoint))
             {
                 throw new InvalidDataException("UserIdentifier was not present in the map");
             }
 
             byte[] data = CommunicationHelper.SerializeMessage(unwrappedMessageToSend);
-            await _udpClient.SendAsync(data, data.Length, endpoint);
+            await udpClient.SendAsync(data, data.Length, endpoint);
         }
 
         private static void HandleSubscribeToServerMessage(IPEndPoint recivedEndPoint, MessageWrapper recivedMessage)
@@ -45,7 +45,7 @@ namespace NotificationServer
                 throw new InvalidCastException("Expected message was not " + nameof(SubscribeToServerMessage));
             }
 
-            _userIpMap[message.UserIdentifier] = recivedEndPoint;
+            userIpMap[message.UserIdentifier] = recivedEndPoint;
             Console.WriteLine($"{message.UserIdentifier} -> {recivedEndPoint.Address}:{recivedEndPoint.Port}");
         }
 
@@ -58,7 +58,7 @@ namespace NotificationServer
                 throw new InvalidCastException("Expected message was not " + nameof(SendNotificationMessage));
             }
 
-            var endpoint = _userIpMap.TryGetValue(unwrappedMessage.UserIdentifier, out var ep) ? ep.ToString() : "not subscribed";
+            var endpoint = userIpMap.TryGetValue(unwrappedMessage.UserIdentifier, out var ep) ? ep.ToString() : "not subscribed";
             Console.WriteLine($"Sending notification to user: {unwrappedMessage.UserIdentifier}({endpoint}) [{unwrappedMessage.Title} - {unwrappedMessage.Body}]");
 
             // Resend the UDP packet to the user id
@@ -81,14 +81,13 @@ namespace NotificationServer
             {
                 Console.WriteLine($"Recived exception while handling message: {exception.Message}");
             }
-
         }
 
         public static async Task ListenAsync(CancellationToken cancellationToken, int port = DEFAULT_PORT)
         {
             try
             {
-                _udpClient = new UdpClient(port);
+                udpClient = new UdpClient(port);
                 Console.WriteLine($"UDP Server listening on  port {port}");
             }
             catch (Exception e)
@@ -104,7 +103,7 @@ namespace NotificationServer
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     // Recive the serialized object
-                    UdpReceiveResult result = await _udpClient.ReceiveAsync(cancellationToken);
+                    UdpReceiveResult result = await udpClient.ReceiveAsync(cancellationToken);
 
                     // Deserialize
                     MessageWrapper? recivedObject = CommunicationHelper.GetMessageWrapper(result.Buffer);
@@ -129,15 +128,14 @@ namespace NotificationServer
             }
             finally
             {
-                _udpClient?.Close();
+                udpClient?.Close();
             }
         }
 
         public static void Stop()
         {
-            _udpClient?.Close();
-            _udpClient = null;
+            udpClient?.Close();
+            udpClient = null;
         }
-
     }
 }

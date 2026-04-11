@@ -1,4 +1,4 @@
-namespace Property_and_Management.src.Interface
+namespace Property_and_Management.Src.Interface
 {
     public interface IMapper<TEntity, TDataTransferObject>
         where TEntity : IEntity

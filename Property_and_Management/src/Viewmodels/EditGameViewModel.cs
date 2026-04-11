@@ -1,32 +1,24 @@
 using System;
 using System.Collections.Generic;
-using Property_and_Management;
-using Property_and_Management.src.DataTransferObjects;
-using Property_and_Management.src.Interface;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Interface;
 
-namespace Property_and_Management.src.Viewmodels
+namespace Property_and_Management.Src.Viewmodels
 {
     public class EditGameViewModel
     {
-        private const int DefaultMinimumPlayers = 1;
-        private const int DefaultMaximumPlayers = 4;
-        private const int MinimumNameLength = 5;
-        private const int MaximumNameLength = 30;
-        private const decimal MinimumAllowedPrice = 1m;
-        private const int MinimumPlayerCount = 1;
-        private const int MinimumDescriptionLength = 10;
-        private const int MaximumDescriptionLength = 500;
         private const int MissingOwnerIdentifier = 0;
         private const int NoValidationErrors = 0;
-        private const int EmptyImageLength = 0;
+        private const decimal InvalidOrEmptyPriceValue = 0m;
 
-        private readonly IGameService _gameService;
+        private readonly IGameService gameService;
 
-        // Read-only identifiers (per requirement UI-EDG-03)
-        public int gameIdentifier { get; private set; }
-        public int ownerIdentifier { get; private set; }
+        /// <summary>Identifier of the loaded game. Read-only (per UI-EDG-03).</summary>
+        public int GameIdentifier { get; private set; }
 
-        // UI Binding Properties
+        /// <summary>Identifier of the game's owner. Read-only (per UI-EDG-03).</summary>
+        public int OwnerIdentifier { get; private set; }
+
         public string Name { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public double PriceDouble
@@ -34,33 +26,38 @@ namespace Property_and_Management.src.Viewmodels
             get => (double)Price;
             set => Price = (decimal)value;
         }
-        public int MinPlayers { get; set; } = DefaultMinimumPlayers;
-        public int MaxPlayers { get; set; } = DefaultMaximumPlayers;
+        public int MinimumPlayers { get; set; } = Constants.GameValidation.DefaultMinimumPlayers;
+        public int MaximumPlayers { get; set; } = Constants.GameValidation.DefaultMaximumPlayers;
         public string Description { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
         public byte[] Image { get; set; } = null;
 
         public EditGameViewModel(IGameService gameService)
         {
-            _gameService = gameService;
+            this.gameService = gameService;
         }
 
-        public void LoadGame(int gameIdentifier)
+        public void LoadGame(int incomingGameIdentifier)
         {
-            var existingGame = _gameService.GetGameByIdentifier(gameIdentifier);
-            if (existingGame != null)
+            // Parameter is intentionally named 'incomingGameIdentifier' so it
+            // does not shadow the GameIdentifier property. The old parameter
+            // name silently caused every save to target game_id = 0.
+            var existingGame = gameService.GetGameByIdentifier(incomingGameIdentifier);
+            if (existingGame == null)
             {
-                gameIdentifier = existingGame.Identifier;
-                ownerIdentifier = existingGame.Owner?.Identifier ?? MissingOwnerIdentifier;
-
-                Name = existingGame.Name;
-                Price = existingGame.Price;
-                MinPlayers = existingGame.MinimumPlayerNumber;
-                MaxPlayers = existingGame.MaximumPlayerNumber;
-                Description = existingGame.Description;
-                IsActive = existingGame.IsActive;
-                Image = existingGame.Image;
+                return;
             }
+
+            GameIdentifier = existingGame.Identifier;
+            OwnerIdentifier = existingGame.Owner?.Identifier ?? MissingOwnerIdentifier;
+
+            Name = existingGame.Name;
+            Price = existingGame.Price;
+            MinimumPlayers = existingGame.MinimumPlayerNumber;
+            MaximumPlayers = existingGame.MaximumPlayerNumber;
+            Description = existingGame.Description;
+            IsActive = existingGame.IsActive;
+            Image = existingGame.Image;
         }
 
         public List<string> ValidateInputs()
@@ -68,41 +65,58 @@ namespace Property_and_Management.src.Viewmodels
             return GameInputHelper.BuildValidationErrors(
                 Name,
                 Price,
-                MinPlayers,
-                MaxPlayers,
+                MinimumPlayers,
+                MaximumPlayers,
                 Description,
-                MinimumNameLength,
-                MaximumNameLength,
-                MinimumAllowedPrice,
-                MinimumPlayerCount,
-                MinimumDescriptionLength,
-                MaximumDescriptionLength);
+                Constants.GameValidation.MinimumNameLength,
+                Constants.GameValidation.MaximumNameLength,
+                Constants.GameValidation.MinimumAllowedPrice,
+                Constants.GameValidation.MinimumPlayerCount,
+                Constants.GameValidation.MinimumDescriptionLength,
+                Constants.GameValidation.MaximumDescriptionLength);
+        }
+
+        /// <summary>
+        /// Parse a raw price string from the view's NumberBox and update the
+        /// bound <see cref="Price"/> / <see cref="PriceDouble"/>. Falls back
+        /// to zero when the input cannot be parsed so downstream validation
+        /// reports it as an invalid price rather than a stale value.
+        /// </summary>
+        public void SetPriceFromText(string priceText)
+        {
+            if (PriceInputParser.TryParsePriceInput(priceText, out var parsedPrice))
+            {
+                PriceDouble = parsedPrice;
+                return;
+            }
+
+            Price = InvalidOrEmptyPriceValue;
         }
 
         public GameDataTransferObject UpdateGame()
         {
-            if (ValidateInputs().Count > NoValidationErrors) return null;
+            if (ValidateInputs().Count > NoValidationErrors)
+            {
+                return null;
+            }
 
             Image = GameInputHelper.EnsureImageOrDefault(Image, AppDomain.CurrentDomain.BaseDirectory);
 
-            // ✅ Object initializer — no constructors, no entity references
             var updatedGameDataTransferObject = new GameDataTransferObject
             {
-                Identifier = gameIdentifier,
-                Owner = new UserDataTransferObject { Identifier = ownerIdentifier },
+                Identifier = GameIdentifier,
+                Owner = new UserDataTransferObject { Identifier = OwnerIdentifier },
                 Name = Name,
                 Price = Price,
-                MinimumPlayerNumber = MinPlayers,
-                MaximumPlayerNumber = MaxPlayers,
+                MinimumPlayerNumber = MinimumPlayers,
+                MaximumPlayerNumber = MaximumPlayers,
                 Description = Description,
                 Image = Image,
                 IsActive = IsActive
             };
 
-            _gameService.UpdateGameByIdentifier(gameIdentifier, updatedGameDataTransferObject);
+            gameService.UpdateGameByIdentifier(GameIdentifier, updatedGameDataTransferObject);
             return updatedGameDataTransferObject;
         }
     }
 }
-
-

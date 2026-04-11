@@ -1,9 +1,10 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
-namespace Property_and_Management.src.Interface
+namespace Property_and_Management.Src.Interface
 {
-    public interface IRepository<TEntity> where TEntity : notnull, IEntity
+    public interface IRepository<TEntity>
+        where TEntity : notnull, IEntity
     {
         /// <summary>
         /// Retrieves all items in the collection as an immutable list.

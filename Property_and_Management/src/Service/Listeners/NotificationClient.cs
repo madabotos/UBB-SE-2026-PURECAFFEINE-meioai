@@ -5,11 +5,11 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Property_and_Management.src.DataTransferObjects;
-using Property_and_Management.src.Interface;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Interface;
 using ServerCommunication;
 
-namespace Property_and_Management.src.Service.Listeners
+namespace Property_and_Management.Src.Service.Listeners
 {
     public class NotificationClient : IServerClient, IDisposable
     {
@@ -17,13 +17,13 @@ namespace Property_and_Management.src.Service.Listeners
         private const int AutoAssignLocalUdpPort = 0;
         private const int InitialRetryCount = 0;
         private const int RetryBackoffMultiplier = 2;
-        private bool _disposed;
+        private bool disposed;
 
-        private readonly List<IObserver<IncomingNotification>> _subscribers = new();
-        private readonly UdpClient _udpClient;
+        private readonly List<IObserver<IncomingNotification>> subscribers = new();
+        private readonly UdpClient udpClient;
 
-        private readonly CancellationTokenSource _cancellationTokenSource = new();
-        private CancellationToken CancellationToken => _cancellationTokenSource.Token;
+        private readonly CancellationTokenSource cancellationTokenSource = new();
+        private CancellationToken CancellationToken => cancellationTokenSource.Token;
 
         private const int MaxRetries = 5;
         private static readonly TimeSpan InitialRetryDelay = TimeSpan.FromSeconds(1);
@@ -33,7 +33,7 @@ namespace Property_and_Management.src.Service.Listeners
 
         public NotificationClient()
         {
-            _udpClient = new UdpClient(AutoAssignLocalUdpPort); // OS will auto-assign
+            udpClient = new UdpClient(AutoAssignLocalUdpPort); // OS will auto-assign
         }
 
         private void HandleMessagePacket(MessageWrapper wrappedMessage)
@@ -61,7 +61,9 @@ namespace Property_and_Management.src.Service.Listeners
             SendNotificationMessage? message = wrappedMessage.Deserialize<SendNotificationMessage>();
 
             if (message == null)
+            {
                 throw new ArgumentNullException(nameof(message));
+            }
 
             // Translate infrastructure message to domain Data Transfer Object before notifying subscribers,
             // so callers never need to know about ServerCommunication types.
@@ -73,11 +75,13 @@ namespace Property_and_Management.src.Service.Listeners
                 Body = message.Body
             };
 
-            foreach (var subscriber in _subscribers)
+            foreach (var subscriber in subscribers)
+            {
                 subscriber.OnNext(incoming);
+            }
         }
 
-        public void StopListening() => _cancellationTokenSource.Cancel();
+        public void StopListening() => cancellationTokenSource.Cancel();
 
         public async Task ListenAsync()
         {
@@ -88,7 +92,7 @@ namespace Property_and_Management.src.Service.Listeners
             {
                 try
                 {
-                    var result = await _udpClient.ReceiveAsync(CancellationToken);
+                    var result = await udpClient.ReceiveAsync(CancellationToken);
                     retryCount = InitialRetryCount;
                     retryDelay = InitialRetryDelay;
 
@@ -111,19 +115,31 @@ namespace Property_and_Management.src.Service.Listeners
                         break;
                     }
                     Console.WriteLine($"UDP client: SocketException ({socketException.Message}), retry {retryCount}/{MaxRetries} in {retryDelay.TotalSeconds}s");
-                    try { await Task.Delay(retryDelay, CancellationToken); }
-                    catch (OperationCanceledException) { break; }
+                    try
+                    {
+                        await Task.Delay(retryDelay, CancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
                     retryDelay = TimeSpan.FromTicks(Math.Min(retryDelay.Ticks * RetryBackoffMultiplier, MaxRetryDelay.Ticks));
                 }
-                catch (OperationCanceledException) { break; }
-                catch (ObjectDisposedException) { break; }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (ObjectDisposedException)
+                {
+                    break;
+                }
             }
         }
 
         public IDisposable Subscribe(IObserver<IncomingNotification> observer)
         {
-            _subscribers.Add(observer);
-            return new Unsubscriber(_subscribers, observer);
+            subscribers.Add(observer);
+            return new Unsubscriber(subscribers, observer);
         }
 
         public void SendNotification(int userIdentifier, string title, string body)
@@ -137,38 +153,42 @@ namespace Property_and_Management.src.Service.Listeners
             };
 
             byte[] data = CommunicationHelper.SerializeMessage(message);
-            _udpClient.Send(data, data.Length, ServerEndpoint);
+            udpClient.Send(data, data.Length, ServerEndpoint);
         }
 
         public void SubscribeToServer(int userIdentifier)
         {
             var message = new SubscribeToServerMessage { UserIdentifier = userIdentifier };
             byte[] data = CommunicationHelper.SerializeMessage(message);
-            _udpClient.Send(data, data.Length, ServerEndpoint);
+            udpClient.Send(data, data.Length, ServerEndpoint);
         }
 
         public void Dispose()
         {
-            if (_disposed) return;
-            _disposed = true;
+            if (disposed)
+            {
+                return;
+            }
 
-            _cancellationTokenSource.Cancel();
-            _udpClient.Close();
-            _cancellationTokenSource.Dispose();
+            disposed = true;
+
+            cancellationTokenSource.Cancel();
+            udpClient.Close();
+            cancellationTokenSource.Dispose();
         }
 
         private sealed class Unsubscriber : IDisposable
         {
-            private readonly List<IObserver<IncomingNotification>> _subscribers;
-            private readonly IObserver<IncomingNotification> _observer;
+            private readonly List<IObserver<IncomingNotification>> subscribers;
+            private readonly IObserver<IncomingNotification> observer;
 
             public Unsubscriber(List<IObserver<IncomingNotification>> subscribers, IObserver<IncomingNotification> observer)
             {
-                _subscribers = subscribers;
-                _observer = observer;
+                this.subscribers = subscribers;
+                this.observer = observer;
             }
 
-            public void Dispose() => _subscribers.Remove(_observer);
+            public void Dispose() => subscribers.Remove(observer);
         }
     }
 }

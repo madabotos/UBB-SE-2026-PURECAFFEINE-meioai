@@ -1,18 +1,18 @@
 using System;
 using System.Collections.Immutable;
 using System.Linq;
-using Property_and_Management.src.DataTransferObjects;
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.Service
+namespace Property_and_Management.Src.Service
 {
     public class GameService : IGameService
     {
-        private readonly IGameRepository _gameRepository;
-        private readonly IRentalRepository _rentalRepository;
-        private readonly IMapper<Game, GameDataTransferObject> _gameMapper;
-        private readonly IRequestService _requestService;
+        private readonly IGameRepository gameRepository;
+        private readonly IRentalRepository rentalRepository;
+        private readonly IMapper<Game, GameDataTransferObject> gameMapper;
+        private readonly IRequestService requestService;
         private const int NoActiveOrUpcomingRentals = 0;
         private const int SingularRentalCount = 1;
 
@@ -22,25 +22,25 @@ namespace Property_and_Management.src.Service
             IMapper<Game, GameDataTransferObject> gameMapper,
             IRequestService requestService)
         {
-            _gameRepository = gameRepository;
-            _rentalRepository = rentalRepository;
-            _gameMapper = gameMapper;
-            _requestService = requestService;
+            this.gameRepository = gameRepository;
+            this.rentalRepository = rentalRepository;
+            this.gameMapper = gameMapper;
+            this.requestService = requestService;
         }
 
         public void AddGame(GameDataTransferObject game)
         {
-            _gameRepository.Add(_gameMapper.ToModel(game));
+            gameRepository.Add(gameMapper.ToModel(game));
         }
 
         public void UpdateGameByIdentifier(int gameIdentifier, GameDataTransferObject game)
         {
-            _gameRepository.Update(gameIdentifier, _gameMapper.ToModel(game));
+            gameRepository.Update(gameIdentifier, gameMapper.ToModel(game));
         }
 
         public GameDataTransferObject DeleteGameByIdentifier(int gameIdentifier)
         {
-            var rentals = _rentalRepository.GetRentalsByGame(gameIdentifier);
+            var rentals = rentalRepository.GetRentalsByGame(gameIdentifier);
             var now = DateTime.Now;
             var activeOrUpcomingRentalsCount = rentals.Count(rental => rental.EndDate >= now);
             if (activeOrUpcomingRentalsCount > NoActiveOrUpcomingRentals)
@@ -52,33 +52,33 @@ namespace Property_and_Management.src.Service
 
             foreach (var rental in rentals)
             {
-                _rentalRepository.Delete(rental.Identifier);
+                rentalRepository.Delete(rental.Identifier);
             }
 
             // Deleting a game invalidates pending requests for that game.
             // Reuse the existing deactivation flow to notify renters and clean requests first.
-            _requestService.OnGameDeactivated(gameIdentifier);
-            return _gameMapper.ToDataTransferObject(_gameRepository.Delete(gameIdentifier));
+            requestService.OnGameDeactivated(gameIdentifier);
+            return gameMapper.ToDataTransferObject(gameRepository.Delete(gameIdentifier));
         }
 
         public GameDataTransferObject GetGameByIdentifier(int gameIdentifier)
         {
-            return _gameMapper.ToDataTransferObject(_gameRepository.Get(gameIdentifier));
+            return gameMapper.ToDataTransferObject(gameRepository.Get(gameIdentifier));
         }
 
         public ImmutableList<GameDataTransferObject> GetGamesForOwner(int ownerIdentifier)
         {
-            return _gameRepository
+            return gameRepository
                 .GetGamesByOwner(ownerIdentifier)
-                .Select(game => _gameMapper.ToDataTransferObject(game))
+                .Select(game => gameMapper.ToDataTransferObject(game))
                 .ToImmutableList();
         }
 
         public ImmutableList<GameDataTransferObject> GetAllGames()
         {
-            return _gameRepository
+            return gameRepository
                 .GetAll()
-                .Select(game => _gameMapper.ToDataTransferObject(game))
+                .Select(game => gameMapper.ToDataTransferObject(game))
                 .ToImmutableList();
         }
     }

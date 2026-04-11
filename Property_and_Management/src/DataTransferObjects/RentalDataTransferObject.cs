@@ -1,8 +1,8 @@
 using System;
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.DataTransferObjects
+namespace Property_and_Management.Src.DataTransferObjects
 {
     public class RentalDataTransferObject : IDataTransferObject<Rental>
     {
@@ -19,6 +19,8 @@ namespace Property_and_Management.src.DataTransferObjects
         public string EndDateDisplayLong => $"End: {EndDate:dd/MM/yyyy}";
         public bool IsExpired => EndDate < DateTime.UtcNow;
 
-        public RentalDataTransferObject() { }
+        public RentalDataTransferObject()
+        {
+        }
     }
 }

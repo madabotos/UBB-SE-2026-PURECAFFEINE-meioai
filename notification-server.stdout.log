@@ -1,6 +1,0 @@
-UDP Server listening on  port 4544
-Starting listener...
-Got: SubscribeToServerMessage
-42 -> 127.0.0.1:63088
-Got: SendNotificationMessage
-Sending notification to user: 42(127.0.0.1:63088) [Runtime Test - UDP forwarding works]

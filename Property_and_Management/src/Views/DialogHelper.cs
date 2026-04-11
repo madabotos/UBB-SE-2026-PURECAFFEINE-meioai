@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace Property_and_Management.src.Views
+namespace Property_and_Management.Src.Views
 {
     internal static class DialogHelper
     {

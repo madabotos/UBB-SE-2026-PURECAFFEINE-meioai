@@ -1,120 +1,40 @@
-using System;
 using System.Collections.Immutable;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using Property_and_Management.src.DataTransferObjects;
-using Property_and_Management.src.Interface;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Interface;
 
-namespace Property_and_Management.src.Viewmodels
+namespace Property_and_Management.Src.Viewmodels
 {
-    public class RentalsFromOthersViewModel : INotifyPropertyChanged
+    public class RentalsFromOthersViewModel : PagedViewModel<RentalDataTransferObject>
     {
-        private const int DefaultPageSize = 3;
-        private const int FirstPageNumber = 1;
-        private const int PageStep = 1;
-        private const int NoItemsCount = 0;
+        private readonly IRentalService rentalService;
+        private readonly ICurrentUserContext currentUserContext;
 
-        private readonly IRentalService _rentalService;
-        private readonly ICurrentUserContext _currentUserContext;
-        private ObservableCollection<RentalDataTransferObject> _rentals = new();
-        private ObservableCollection<RentalDataTransferObject> _pagedRentals = new();
-        private ImmutableList<RentalDataTransferObject> _allRentals = ImmutableList<RentalDataTransferObject>.Empty;
-
-        public int renterIdentifier { get; private set; }
-
-        public static int PageSize => DefaultPageSize;
-
-        private int _currentPage = FirstPageNumber;
-        public int CurrentPage
-        {
-            get => _currentPage;
-            set
-            {
-                if (_currentPage != value)
-                {
-                    _currentPage = value;
-                    OnPropertyChanged();
-                    UpdatePaging();
-                }
-            }
-        }
-
-        public int TotalCount => _allRentals?.Count ?? NoItemsCount;
-        public int PageCount => Math.Max(FirstPageNumber, (int)Math.Ceiling((double)TotalCount / PageSize));
-        public int DisplayedCount => _pagedRentals?.Count ?? NoItemsCount;
-
-        public ObservableCollection<RentalDataTransferObject> Rentals
-        {
-            get => _rentals;
-            set
-            {
-                if (_rentals != value)
-                {
-                    _rentals = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-
-        public ObservableCollection<RentalDataTransferObject> PagedRentals
-        {
-            get => _pagedRentals;
-            set
-            {
-                if (_pagedRentals != value)
-                {
-                    _pagedRentals = value;
-                    OnPropertyChanged();
-                    OnPropertyChanged(nameof(DisplayedCount));
-                    OnPropertyChanged(nameof(TotalCount));
-                    OnPropertyChanged(nameof(PageCount));
-                    OnPropertyChanged(nameof(ShowingText));
-                }
-            }
-        }
-
-        public string ShowingText => $"Showing {DisplayedCount} of {TotalCount} rentals";
+        public int RenterIdentifier { get; private set; }
 
         public RentalsFromOthersViewModel(IRentalService rentalService, ICurrentUserContext currentUserContext)
         {
-            _rentalService = rentalService;
-            _currentUserContext = currentUserContext;
-            renterIdentifier = _currentUserContext.CurrentUserIdentifier;
-            LoadRentals(FirstPageNumber, PageSize);
+            this.rentalService = rentalService;
+            this.currentUserContext = currentUserContext;
+            Reload();
         }
 
-        public void LoadRentals(int page, int pageSize)
+        public override string ShowingText => $"Showing {DisplayedCount} of {TotalCount} rentals";
+
+        /// <summary>
+        /// Public alias retained so navigation can request a full refresh
+        /// without reaching into the base class.
+        /// </summary>
+        public void LoadRentals() => Reload();
+
+        protected override void Reload()
         {
-            renterIdentifier = _currentUserContext.CurrentUserIdentifier;
-            var allRentals = _rentalService.GetRentalsForRenter(renterIdentifier)
+            RenterIdentifier = currentUserContext.CurrentUserIdentifier;
+            var allRentals = rentalService
+                .GetRentalsForRenter(RenterIdentifier)
                 .OrderByDescending(rental => rental.StartDate)
                 .ToImmutableList();
-
-            _allRentals = allRentals;
-            Rentals = new ObservableCollection<RentalDataTransferObject>(allRentals);
-
-            CurrentPage = page;
-            UpdatePaging();
-        }
-
-        private void UpdatePaging()
-        {
-            var skip = (CurrentPage - FirstPageNumber) * PageSize;
-            var pageItems = _allRentals.Skip(skip).Take(PageSize).ToList();
-            PagedRentals = new ObservableCollection<RentalDataTransferObject>(pageItems);
-        }
-
-        public void NextPage() => CurrentPage = Math.Min(CurrentPage + PageStep, PageCount);
-        public void PrevPage() => CurrentPage = Math.Max(CurrentPage - FirstPageNumber, FirstPageNumber);
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string propertyName = "")
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            SetAllItems(allRentals);
         }
     }
 }
-
-

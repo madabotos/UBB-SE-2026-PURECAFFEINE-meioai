@@ -1,8 +1,8 @@
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
-using Property_and_Management.src.Interface;
+using Property_and_Management.Src.Interface;
 
-namespace Property_and_Management.src.Service
+namespace Property_and_Management.Src.Service
 {
     public class ToastNotificationService : IToastNotificationService
     {

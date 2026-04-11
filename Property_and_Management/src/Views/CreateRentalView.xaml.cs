@@ -3,10 +3,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Property_and_Management;
-using Property_and_Management.src.DataTransferObjects;
-using Property_and_Management.src.Viewmodels;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Viewmodels;
 
-namespace Property_and_Management.src.Views
+namespace Property_and_Management.Src.Views
 {
     public sealed partial class CreateRentalView : Page
     {
@@ -44,7 +44,9 @@ namespace Property_and_Management.src.Views
                 if (error == null)
                 {
                     if (Frame.CanGoBack)
+                    {
                         Frame.GoBack();
+                    }
                 }
                 else
                 {

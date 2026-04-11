@@ -2,21 +2,19 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Property_and_Management;
-using Property_and_Management.src.DataTransferObjects;
-using Property_and_Management.src.Service;
-using Property_and_Management.src.Viewmodels;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Viewmodels;
 
-namespace Property_and_Management.src.Views
+namespace Property_and_Management.Src.Views
 {
     public sealed partial class CreateRequestView : Page
     {
-        private const int MinimumSuccessfulEntityIdentifier = 1;
-
         public CreateRequestViewModel ViewModel { get; }
 
         public CreateRequestView()
         {
+            // Composition root: pull the view model from the DI container. This
+            // is the only place the view knows about <c>App.Services</c>.
             ViewModel = App.Services.GetRequiredService<CreateRequestViewModel>();
             this.InitializeComponent();
 
@@ -35,34 +33,21 @@ namespace Property_and_Management.src.Views
             ViewModel.StartDate = StartDatePicker.Date;
             ViewModel.EndDate = EndDatePicker.Date;
 
-            if (ViewModel.ValidateInputs())
+            var error = ViewModel.TrySubmitRequest();
+            if (error == null)
             {
-                var result = ViewModel.SaveRequest();
-                if (result >= MinimumSuccessfulEntityIdentifier)
+                if (Frame.CanGoBack)
                 {
-                    if (Frame.CanGoBack)
-                        Frame.GoBack();
+                    Frame.GoBack();
                 }
-                else
-                {
-                    string message = ((CreateRequestError)result) switch
-                    {
-                        CreateRequestError.OWNER_CANNOT_RENT_ERROR => "You cannot rent your own game.",
-                        CreateRequestError.DATES_UNAVAILABLE_ERROR => "The selected dates are not available.",
-                        CreateRequestError.GAME_ID_DOES_NOT_EXIST_ERROR => "The selected game no longer exists.",
-                        _ => Constants.DialogMessages.UnexpectedErrorOccurred
-                    };
-                    await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.RequestFailed, message);
-                }
+                return;
             }
-            else
-            {
-                await DialogHelper.ShowMessageAsync(
-                    this.XamlRoot,
-                    Constants.DialogTitles.ValidationError,
-                    Constants.DialogMessages.CreateRequestValidationError);
-            }
+
+            var dialogTitle = error == Constants.DialogMessages.CreateRequestValidationError
+                ? Constants.DialogTitles.ValidationError
+                : Constants.DialogTitles.RequestFailed;
+
+            await DialogHelper.ShowMessageAsync(this.XamlRoot, dialogTitle, error);
         }
     }
 }
-

@@ -2,23 +2,23 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.Data.SqlClient;
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.Repository
+namespace Property_and_Management.Src.Repository
 {
     public class GameRepository : IGameRepository
     {
         private const int MissingForeignKeyId = 0;
         private const int VarBinaryMaxLength = -1;
 
-        private readonly string _connectionString =
+        private readonly string connectionString =
             System.Configuration.ConfigurationManager.ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
 
         public ImmutableList<Game> GetAll()
         {
             var list = new List<Game>();
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -41,7 +41,7 @@ namespace Property_and_Management.src.Repository
 
         public void Add(Game newEntity)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -59,7 +59,8 @@ namespace Property_and_Management.src.Repository
                     });
                     command.Parameters.AddWithValue("@is_active", newEntity.IsActive);
 
-                    command.ExecuteNonQuery();
+                    // Capture SCOPE_IDENTITY so callers can navigate straight to the new game.
+                    newEntity.Identifier = Convert.ToInt32(command.ExecuteScalar());
                 }
             }
         }
@@ -67,7 +68,7 @@ namespace Property_and_Management.src.Repository
         public ImmutableList<Game> GetGamesByOwner(int ownerIdentifier)
         {
             var list = new List<Game>();
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -91,7 +92,7 @@ namespace Property_and_Management.src.Repository
 
         public void Update(int updatedEntityIdentifier, Game newEntity)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -116,7 +117,7 @@ namespace Property_and_Management.src.Repository
 
         public Game Get(int identifier)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -139,7 +140,7 @@ namespace Property_and_Management.src.Repository
 
         public Game Delete(int removedEntityIdentifier)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())

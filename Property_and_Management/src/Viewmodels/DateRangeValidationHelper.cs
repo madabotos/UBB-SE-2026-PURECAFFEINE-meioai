@@ -1,6 +1,6 @@
 using System;
 
-namespace Property_and_Management.src.Viewmodels
+namespace Property_and_Management.Src.Viewmodels
 {
     internal static class DateRangeValidationHelper
     {

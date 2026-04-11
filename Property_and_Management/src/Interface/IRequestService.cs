@@ -1,93 +1,92 @@
-using System.Collections.Immutable;
 using System;
-using Property_and_Management.src.DataTransferObjects;
+using System.Collections.Immutable;
+using Property_and_Management.Src.DataTransferObjects;
 
-namespace Property_and_Management.src.Interface
+namespace Property_and_Management.Src.Interface
 {
+    /// <summary>
+    /// Application-layer API for creating, approving, denying, offering and
+    /// cancelling rental requests. Fallible operations return
+    /// <see cref="Result{TSuccess, TError}"/> with a domain-specific error enum
+    /// so callers don't have to check sentinel-int return codes.
+    /// </summary>
     public interface IRequestService
     {
         /// <summary>
-        /// Returns ImmutableList<RequestDataTransferObject> of all requests made by a specific renter.
+        /// Returns all requests created by the specified renter.
         /// </summary>
-        /// <param name="renterIdentifier"></param>
-        /// <returns></returns>
         ImmutableList<RequestDataTransferObject> GetRequestsForRenter(int renterIdentifier);
 
         /// <summary>
-        /// Returns owner's incoming rental requests as immutable list.
+        /// Returns all requests addressed to the specified owner.
         /// </summary>
-        /// <param name="ownerIdentifier"></param>
-        /// <returns></returns>
         ImmutableList<RequestDataTransferObject> GetRequestsForOwner(int ownerIdentifier);
 
         /// <summary>
-        /// Creates new request with game ID, renter/owner IDs, and date range; returns new request ID.
+        /// Creates a new pending request. On success returns the new request id.
         /// </summary>
-        /// <param name="gameIdentifier"></param>
-        /// <param name="renterIdentifier"></param>
-        /// <param name="ownerIdentifier"></param>
-        /// <param name="startDate"></param>
-        /// <param name="endDate"></param>
-        /// <returns></returns>
-        int CreateRequest(int gameIdentifier, int renterIdentifier, int ownerIdentifier, DateTime startDate, DateTime endDate);
+        Result<int, CreateRequestError> CreateRequest(
+            int gameIdentifier,
+            int renterIdentifier,
+            int ownerIdentifier,
+            DateTime startDate,
+            DateTime endDate);
 
         /// <summary>
-        /// Owner approves specific request; returns status code.
+        /// Owner approves a pending request directly, creating the rental atomically.
+        /// Returns the new rental id on success.
         /// </summary>
-        /// <param name="requestIdentifier"></param>
-        /// <param name="ownerIdentifier"></param>
-        /// <returns></returns>
-        int ApproveRequest(int requestIdentifier, int ownerIdentifier);
+        Result<int, ApproveRequestError> ApproveRequest(int requestIdentifier, int ownerIdentifier);
 
         /// <summary>
-        /// Owner rejects with reason.
+        /// Owner declines a pending request with a reason. Returns the request id on success.
         /// </summary>
-        /// <param name="requestIdentifier"></param>
-        /// <param name="ownerIdentifier"></param>
-        /// <param name="reason"></param>
-        /// <returns></returns>
-        int DenyRequest(int requestIdentifier, int ownerIdentifier, string reason);
+        Result<int, DenyRequestError> DenyRequest(int requestIdentifier, int ownerIdentifier, string reason);
 
         /// <summary>
-        /// Any party cancels existing request (void).
+        /// Renter cancels their own pending request. Returns the cancelled request
+        /// identifier on success, or a negative <see cref="CancelRequestError"/>
+        /// code on failure (legacy sentinel-int contract preserved).
         /// </summary>
-        /// <param name="requestIdentifier"></param>
-        void CancelRequest(int requestIdentifier);
+        int CancelRequest(int requestIdentifier, int cancellingUserIdentifier);
 
         /// <summary>
-        /// Handles cleanup when game/property is deactivated (void).
+        /// Cleanup hook: when a game is deactivated/deleted, declines every pending
+        /// request referencing it and notifies the renters.
         /// </summary>
-        /// <param name="gameIdentifier"></param>
         void OnGameDeactivated(int gameIdentifier);
 
         /// <summary>
-        /// Returns bool if dates are free for game.
+        /// Checks whether the given date window is free for the given game, enforcing
+        /// the 48 hour symmetric buffer around existing rentals and requests.
         /// </summary>
-        /// <param name="gameIdentifier"></param>
-        /// <param name="startDate"></param>
-        /// <param name="endDate"></param>
-        /// <returns></returns>
         bool CheckAvailability(int gameIdentifier, DateTime startDate, DateTime endDate);
 
         /// <summary>
-        /// Returns ImmutableList<(DateTime, DateTime)> of booked date ranges for calendar/month view.
+        /// Returns the list of booked date ranges for a game within a given month/year,
+        /// suitable for rendering a calendar. Defaults to the current month.
         /// </summary>
-        ImmutableList<(DateTime, DateTime)> GetBookedDates(int gameIdentifier, int month, int year);
+        ImmutableList<(DateTime StartDate, DateTime EndDate)> GetBookedDates(
+            int gameIdentifier,
+            int month,
+            int year);
 
         /// <summary>
-        /// Owner offers their game to fulfill a request. Sets status to OfferPending and notifies the requester.
+        /// Owner offers their game against a pending request. Sets the request status
+        /// to OfferPending and notifies the renter. Returns the request id on success.
         /// </summary>
-        int OfferGame(int requestIdentifier, int offeringUserIdentifier);
+        Result<int, OfferError> OfferGame(int requestIdentifier, int offeringUserIdentifier);
 
         /// <summary>
-        /// Requester approves a pending offer. Creates a rental, cleans up the request, and notifies both parties.
+        /// Renter approves a pending offer, creating the rental atomically. Returns
+        /// the new rental id on success.
         /// </summary>
-        int ApproveOffer(int requestIdentifier, int renterIdentifier);
+        Result<int, ApproveOfferError> ApproveOffer(int requestIdentifier, int renterIdentifier);
 
         /// <summary>
-        /// Requester denies a pending offer. Resets request to Open and notifies the owner.
+        /// Renter denies a pending offer, reverting the request to Open and notifying
+        /// the owner. Returns the request id on success.
         /// </summary>
-        int DenyOffer(int requestIdentifier, int renterIdentifier);
+        Result<int, DenyOfferError> DenyOffer(int requestIdentifier, int renterIdentifier);
     }
 }
-

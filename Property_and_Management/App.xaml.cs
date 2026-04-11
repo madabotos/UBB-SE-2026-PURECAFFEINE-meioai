@@ -21,16 +21,16 @@ using Microsoft.UI.Xaml.Navigation;
 using Microsoft.UI.Xaml.Shapes;
 using Microsoft.Windows.AppLifecycle;
 using Microsoft.Windows.AppNotifications;
-using Property_and_Management.src.DataTransferObjects;
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Mapper;
-using Property_and_Management.src.Model;
-using Property_and_Management.src.Repository;
-using Property_and_Management.src;
-using Property_and_Management.src.Service;
-using Property_and_Management.src.Service.Listeners;
-using Property_and_Management.src.Viewmodels;
-using Property_and_Management.src.Views;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Mapper;
+using Property_and_Management.Src.Model;
+using Property_and_Management.Src.Repository;
+using Property_and_Management.Src;
+using Property_and_Management.Src.Service;
+using Property_and_Management.Src.Service.Listeners;
+using Property_and_Management.Src.Viewmodels;
+using Property_and_Management.Src.Views;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
@@ -66,24 +66,22 @@ namespace Property_and_Management
         public int CurrentUserIdentifier { get; }
         public NotificationsViewModel NotificationsViewModel { get; private set; }
 
-
         // Tray icon
-        private TaskbarIcon _trayIcon;
+        private TaskbarIcon trayIcon;
 
         // Handles for processes spawned by two-window dev mode. Retained so the
         // ProcessExit cleanup handler can kill them; otherwise closing user 1's
         // window leaves the NotificationServer and user 2 client as orphans.
-        private static Process? _notificationServerProcess;
-        private static Process? _secondClientProcess;
-
+        private static Process? notificationServerProcess;
+        private static Process? secondClientProcess;
 
         // Private dependencies and state
-        private Window? _mainWindow;
-        private INotificationRepository _notificationRepository;
-        private INotificationService _notification_service;
-        private IGameRepository _gameRepository;
-        private IGameService _gameService;
-        private readonly NotificationManager _notificationManager;
+        private Window? mainWindow;
+        private INotificationRepository notificationRepository;
+        private INotificationService notificationService;
+        private IGameRepository gameRepository;
+        private IGameService gameService;
+        private readonly NotificationManager notificationManager;
 
         /// <summary>
         /// Initializes the singleton application object.
@@ -106,7 +104,7 @@ namespace Property_and_Management
             AppUserModelId = $"BoardRent -- user-{CurrentUserIdentifier}";
 
             // Create manager and wire its generic handlers (handlers may reference fields initialized later)
-            _notificationManager = new NotificationManager();
+            notificationManager = new NotificationManager();
 
             SetupNotificationManager();
 
@@ -128,11 +126,14 @@ namespace Property_and_Management
             serviceCollection.AddSingleton<IMapper<Rental, RentalDataTransferObject>, RentalMapper>();
             serviceCollection.AddSingleton<IMapper<Request, RequestDataTransferObject>, RequestMapper>();
 
-
             // Infrastructure
             serviceCollection.AddSingleton<ICurrentUserContext>(new CurrentUserContext(CurrentUserIdentifier));
             serviceCollection.AddSingleton<IToastNotificationService, ToastNotificationService>();
             serviceCollection.AddSingleton<IServerClient, NotificationClient>();
+            // FileDismissedNotificationStore is provided by Agent 1 under the
+            // Service layer; registering it here replaces the file I/O that
+            // previously lived inside NotificationsViewModel.
+            serviceCollection.AddSingleton<IDismissedNotificationStore, FileDismissedNotificationStore>();
 
             // Repositories
             serviceCollection.AddSingleton<IUserRepository, UserRepository>();
@@ -185,7 +186,10 @@ namespace Property_and_Management
             while (dir != null)
             {
                 if (Directory.Exists(System.IO.Path.Combine(dir.FullName, ".git")))
+                {
                     return dir.FullName;
+                }
+
                 dir = dir.Parent;
             }
             return null;
@@ -196,21 +200,35 @@ namespace Property_and_Management
             try
             {
                 var repoRoot = FindRepoRoot();
-                if (repoRoot == null) return false;
+                if (repoRoot == null)
+                {
+                    return false;
+                }
 
                 var envPath = System.IO.Path.Combine(repoRoot, ".env");
-                if (!File.Exists(envPath)) return false;
+                if (!File.Exists(envPath))
+                {
+                    return false;
+                }
 
                 foreach (var line in File.ReadAllLines(envPath))
                 {
                     var trimmed = line.Trim();
-                    if (trimmed.StartsWith('#') || !trimmed.Contains('=')) continue;
+                    if (trimmed.StartsWith('#') || !trimmed.Contains('='))
+                    {
+                        continue;
+                    }
+
                     var parts = trimmed.Split('=', SplitKeyValuePartsCount);
                     if (parts[KeyPartIndex].Trim() == TwoWindowsEnvironmentKey)
+                    {
                         return parts[ValuePartIndex].Trim().Equals(EnabledEnvironmentValue, StringComparison.OrdinalIgnoreCase);
+                    }
                 }
             }
-            catch { }
+            catch
+            {
+            }
             return false;
         }
 
@@ -218,26 +236,40 @@ namespace Property_and_Management
         {
             try
             {
-                if (Process.GetProcessesByName("NotificationServer").Length > NoRunningProcessCount) return;
+                if (Process.GetProcessesByName("NotificationServer").Length > NoRunningProcessCount)
+                {
+                    return;
+                }
 
                 var repoRoot = FindRepoRoot();
-                if (repoRoot == null) return;
+                if (repoRoot == null)
+                {
+                    return;
+                }
 
                 var serverBinDir = System.IO.Path.Combine(repoRoot, "NotificationServer", "bin");
-                if (!Directory.Exists(serverBinDir)) return;
+                if (!Directory.Exists(serverBinDir))
+                {
+                    return;
+                }
 
                 var serverExe = Directory.GetFiles(serverBinDir, "NotificationServer.exe", SearchOption.AllDirectories)
                     .FirstOrDefault();
-                if (serverExe == null) return;
+                if (serverExe == null)
+                {
+                    return;
+                }
 
-                _notificationServerProcess = Process.Start(new ProcessStartInfo
+                notificationServerProcess = Process.Start(new ProcessStartInfo
                 {
                     FileName = serverExe,
                     UseShellExecute = true,
                     WindowStyle = ProcessWindowStyle.Minimized
                 });
             }
-            catch { }
+            catch
+            {
+            }
         }
 
         private static void LaunchSecondClient()
@@ -245,9 +277,12 @@ namespace Property_and_Management
             try
             {
                 var currentExe = Environment.ProcessPath;
-                if (currentExe == null) return;
+                if (currentExe == null)
+                {
+                    return;
+                }
 
-                _secondClientProcess = Process.Start(new ProcessStartInfo
+                secondClientProcess = Process.Start(new ProcessStartInfo
                 {
                     FileName = currentExe,
                     Arguments = DevModeSecondaryUserIdentifier.ToString(),
@@ -255,28 +290,34 @@ namespace Property_and_Management
                     WorkingDirectory = System.IO.Path.GetDirectoryName(currentExe)
                 });
             }
-            catch { }
+            catch
+            {
+            }
         }
 
         private static void KillSpawnedChildProcesses()
         {
             try
             {
-                if (_secondClientProcess != null && !_secondClientProcess.HasExited)
+                if (secondClientProcess != null && !secondClientProcess.HasExited)
                 {
-                    _secondClientProcess.Kill(entireProcessTree: true);
+                    secondClientProcess.Kill(entireProcessTree: true);
                 }
             }
-            catch { }
+            catch
+            {
+            }
 
             try
             {
-                if (_notificationServerProcess != null && !_notificationServerProcess.HasExited)
+                if (notificationServerProcess != null && !notificationServerProcess.HasExited)
                 {
-                    _notificationServerProcess.Kill(entireProcessTree: true);
+                    notificationServerProcess.Kill(entireProcessTree: true);
                 }
             }
-            catch { }
+            catch
+            {
+            }
         }
 
         #endregion
@@ -286,17 +327,17 @@ namespace Property_and_Management
             // Ensure the manager is unregistered when the process exits
             AppDomain.CurrentDomain.ProcessExit += (sender, eventArgs) =>
             {
-                _notificationManager.Unregister();
-                (_notification_service as IDisposable)?.Dispose();
+                notificationManager.Unregister();
+                (notificationService as IDisposable)?.Dispose();
                 KillSpawnedChildProcesses();
             };
 
             // When a notification is clicked, bring the window to foreground and optionally navigate
-            _notificationManager.NotificationClicked += (sender, eventArguments) =>
+            notificationManager.NotificationClicked += (sender, eventArguments) =>
             {
-                _mainWindow?.DispatcherQueue.TryEnqueue(() =>
+                mainWindow?.DispatcherQueue.TryEnqueue(() =>
                 {
-                    _mainWindow?.Activate();
+                    mainWindow?.Activate();
 
                     if (eventArguments.Arguments.ContainsKey(NotificationNavigationArgumentKey) &&
                         eventArguments.Arguments[NotificationNavigationArgumentKey] == nameof(NotificationsPage))
@@ -307,7 +348,7 @@ namespace Property_and_Management
                 });
             };
 
-            _notificationManager.Init();
+            notificationManager.Init();
         }
 
         private void NavigateToNotificationsWithinShell()
@@ -328,7 +369,7 @@ namespace Property_and_Management
             }
 
             RootFrame.Navigated += OnShellLoaded;
-            RootFrame.Navigate(typeof(MenuBarView), _gameService);
+            RootFrame.Navigate(typeof(MenuBarView), gameService);
         }
 
         private void EnsureSingleInstance(string appUserModelId)
@@ -353,15 +394,15 @@ namespace Property_and_Management
             RootFrame = new Frame();
 
             // Resolve repository/service/viewmodel from DI container
-            _notificationRepository = Services.GetRequiredService<INotificationRepository>();
-            _notification_service = Services.GetRequiredService<INotificationService>();
-            _gameRepository = Services.GetRequiredService<IGameRepository>();
-            _gameService = Services.GetRequiredService<IGameService>();
+            notificationRepository = Services.GetRequiredService<INotificationRepository>();
+            notificationService = Services.GetRequiredService<INotificationService>();
+            gameRepository = Services.GetRequiredService<IGameRepository>();
+            gameService = Services.GetRequiredService<IGameService>();
             NotificationsViewModel = Services.GetRequiredService<NotificationsViewModel>();
 
             // Start listening and subscribe for the configured user
-            _notification_service.StartListening();
-            _notification_service.SubscribeToServer(userIdentifier);
+            notificationService.StartListening();
+            notificationService.SubscribeToServer(userIdentifier);
         }
 
         /// <summary>
@@ -372,47 +413,44 @@ namespace Property_and_Management
         {
             CreateAndShowMainWindow();
 
-
             // Wrap your Frame in a Grid so the tray icon can be added later
             Grid rootGrid = new Grid();
             rootGrid.Children.Add(RootFrame);  // Your navigation frame
             MainWindow.Content = rootGrid;            // Set Grid as window content
 
-            RootFrame.Navigate(typeof(MenuBarView), _gameService);
+            RootFrame.Navigate(typeof(MenuBarView), gameService);
 
             CreateTrayIcon();
-
-            // debug:
         }
 
         private void CreateAndShowMainWindow()
         {
-            MainWindow = _mainWindow = new MainWindow();
-            _mainWindow.Content = RootFrame;
-            _mainWindow.Activate();
+            MainWindow = mainWindow = new MainWindow();
+            mainWindow.Content = RootFrame;
+            mainWindow.Activate();
 
             // Display the AppUserModelId in the window title for debugging / identification
-            _mainWindow.Title = AppUserModelId;
+            mainWindow.Title = AppUserModelId;
         }
 
         private void ActivateWindow()
         {
-            _mainWindow?.DispatcherQueue.TryEnqueue(() =>
+            mainWindow?.DispatcherQueue.TryEnqueue(() =>
             {
-                if (_mainWindow is MainWindow win)
+                if (mainWindow is MainWindow win)
                 {
                     win.AppWindow.Show();
                 }
-                _mainWindow.Activate();
+                mainWindow.Activate();
             });
         }
 
         private void CreateTrayIcon()
         {
-            _trayIcon = new TaskbarIcon
+            trayIcon = new TaskbarIcon
             {
                 ToolTipText = $"{AppUserModelId}",
-                IconSource = new BitmapImage(new Uri(Constants.APP_TRAY_ICON_URI)),
+                IconSource = new BitmapImage(new Uri(Constants.AppTrayIconUri)),
             };
 
             // 1. Create a Command for Open
@@ -432,7 +470,7 @@ namespace Property_and_Management
             var exitCommand = new XamlUICommand();
             exitCommand.ExecuteRequested += (commandSender, executeRequestedEventArgs) =>
             {
-                _trayIcon.Dispose();
+                trayIcon.Dispose();
                 Environment.Exit(SuccessExitCode);
             };
 
@@ -442,7 +480,7 @@ namespace Property_and_Management
                 Command = exitCommand // Bind to Command instead of Click
             };
 
-            _trayIcon.ContextFlyout = new MenuFlyout
+            trayIcon.ContextFlyout = new MenuFlyout
             {
                 Items =
                 {
@@ -450,11 +488,10 @@ namespace Property_and_Management
                 }
             };
 
-            if (_mainWindow.Content is Grid rootGrid)
+            if (mainWindow.Content is Grid rootGrid)
             {
-                rootGrid.Children.Add(_trayIcon);
+                rootGrid.Children.Add(trayIcon);
             }
-
         }
     }
 }

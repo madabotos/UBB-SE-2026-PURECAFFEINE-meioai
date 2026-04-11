@@ -4,7 +4,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media.Imaging;
 
-namespace Property_and_Management.src.Utilities
+namespace Property_and_Management.Src.Utilities
 {
     public class ByteArrayToImageConverter : IValueConverter
     {

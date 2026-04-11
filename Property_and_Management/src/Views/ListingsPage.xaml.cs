@@ -2,13 +2,11 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
-using Property_and_Management;
-using Property_and_Management.src.DataTransferObjects;
-using Property_and_Management.src.Viewmodels;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Viewmodels;
 
-namespace Property_and_Management.src.Views
+namespace Property_and_Management.Src.Views
 {
     public sealed partial class ListingsPage : Page
     {
@@ -45,7 +43,10 @@ namespace Property_and_Management.src.Views
             var clickedButton = sender as Button;
             var gameToDelete = clickedButton?.Tag as GameDataTransferObject;
 
-            if (gameToDelete == null) return;
+            if (gameToDelete == null)
+            {
+                return;
+            }
 
             var result = await DialogHelper.ShowConfirmationAsync(
                 this.XamlRoot,
@@ -81,6 +82,8 @@ namespace Property_and_Management.src.Views
         {
             base.OnNavigatedTo(e);
 
+            // Composition root: pull the ViewModel from the DI container
+            // whenever the page is navigated to so data is fresh.
             ViewModel = App.Services.GetRequiredService<ListingsViewModel>();
             this.DataContext = ViewModel;
         }
@@ -97,31 +100,7 @@ namespace Property_and_Management.src.Views
 
         private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
         {
-            if (sender is not Image failedImage)
-            {
-                return;
-            }
-
-            if (failedImage.Source is BitmapImage current &&
-                current.UriSource != null &&
-                current.UriSource.AbsoluteUri.EndsWith("/Assets/default-game-placeholder.jpg", StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            if (Resources.TryGetValue("DefaultGameImage", out var localResource) && localResource is BitmapImage localImage)
-            {
-                failedImage.Source = localImage;
-                return;
-            }
-
-            if (Application.Current.Resources.TryGetValue("DefaultGameImage", out var appResource) && appResource is BitmapImage appImage)
-            {
-                failedImage.Source = appImage;
-                return;
-            }
-
-            failedImage.Source = new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.jpg"));
+            ImageFailureHandler.HandleFailure(sender as Image, Resources);
         }
     }
 }

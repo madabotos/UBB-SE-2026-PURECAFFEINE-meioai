@@ -34,7 +34,7 @@ class Program
             // 2) Send SendNotificationMessage (server should forward to the registered endpoint)
             MessageBase notification = new SendNotificationMessage
             {
-                UserId = userId,
+                UserIdentifier = userId,
                 Timestamp = DateTime.UtcNow,
                 Title = "Test",
                 Body = "This is a test notification"

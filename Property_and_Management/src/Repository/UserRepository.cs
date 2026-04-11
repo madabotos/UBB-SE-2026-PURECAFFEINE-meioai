@@ -2,20 +2,20 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.Data.SqlClient;
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.Repository
+namespace Property_and_Management.Src.Repository
 {
     public class UserRepository : IUserRepository
     {
-        private readonly string _connectionString =
+        private readonly string connectionString =
             System.Configuration.ConfigurationManager.ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
 
         public ImmutableList<User> GetAll()
         {
             var list = new List<User>();
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -37,7 +37,7 @@ namespace Property_and_Management.src.Repository
 
         public void Add(User newEntity)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -52,7 +52,7 @@ namespace Property_and_Management.src.Repository
 
         public User Delete(int removedEntityIdentifier)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -62,7 +62,9 @@ namespace Property_and_Management.src.Repository
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
+                        {
                             return new User((int)reader["id"], reader["display_name"] as string ?? string.Empty);
+                        }
                     }
                 }
             }
@@ -72,9 +74,11 @@ namespace Property_and_Management.src.Repository
         public void Update(int updatedEntityIdentifier, User newEntity)
         {
             if (updatedEntityIdentifier != newEntity.Identifier)
+            {
                 throw new ArgumentException("Id mismatch");
+            }
 
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -89,7 +93,7 @@ namespace Property_and_Management.src.Repository
 
         public User Get(int identifier)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())

@@ -2,16 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.Data.SqlClient;
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.Repository
+namespace Property_and_Management.Src.Repository
 {
     public class NotificationRepository : INotificationRepository
     {
         private const int MissingUserIdentifier = 0;
 
-        private readonly string _connectionString =
+        private readonly string connectionString =
             System.Configuration.ConfigurationManager.ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
 
         private const string BaseSelectQuery =
@@ -21,17 +21,17 @@ namespace Property_and_Management.src.Repository
         {
             var user = new User((int)reader["user_id"], reader["user_display_name"] as string ?? string.Empty);
             var type = (NotificationType)(int)reader["type"];
-            var RelatedRequestIdentifier = reader["related_request_id"];
+            var relatedRequestIdentifier = reader["related_request_id"];
             return new Notification(
                 (int)reader["notification_id"], user,
                 (DateTime)reader["timestamp"], (string)reader["title"], (string)reader["body"],
-                type, RelatedRequestIdentifier == DBNull.Value ? null : (int)RelatedRequestIdentifier);
+                type, relatedRequestIdentifier == DBNull.Value ? null : (int)relatedRequestIdentifier);
         }
 
         public ImmutableList<Notification> GetAll()
         {
             var list = new List<Notification>();
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -51,7 +51,7 @@ namespace Property_and_Management.src.Repository
 
         public void Add(Notification newEntity)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -71,7 +71,7 @@ namespace Property_and_Management.src.Repository
 
         public Notification Delete(int removedEntityIdentifier)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -97,7 +97,7 @@ namespace Property_and_Management.src.Repository
 
         public void Update(int updatedEntityIdentifier, Notification newEntity)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -117,7 +117,7 @@ namespace Property_and_Management.src.Repository
 
         public Notification Get(int identifier)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -139,7 +139,7 @@ namespace Property_and_Management.src.Repository
         public ImmutableList<Notification> GetNotificationsByUser(int userIdentifier)
         {
             var list = new List<Notification>();
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -161,7 +161,7 @@ namespace Property_and_Management.src.Repository
         public ImmutableList<Notification> GetActionableByRequestId(int requestIdentifier)
         {
             var list = new List<Notification>();
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -183,7 +183,7 @@ namespace Property_and_Management.src.Repository
 
         public void DeleteByRequestId(int requestIdentifier)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())

@@ -1,24 +1,17 @@
-using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
-using Property_and_Management;
-using Property_and_Management.src.DataTransferObjects;
-using Property_and_Management.src.Service;
-using Property_and_Management.src.Viewmodels;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Viewmodels;
 
-namespace Property_and_Management.src.Views
+namespace Property_and_Management.Src.Views
 {
     public sealed partial class RequestsFromOthersPage : Page
     {
         private const double DenyReasonInputMinimumWidth = 360;
         private const double DenyDialogContentSpacing = 8;
-        private const int UnknownOperationResult = -1;
-        private const int MinimumSuccessfulEntityIdentifier = 1;
-        private const int ErrorResultUpperBoundExclusive = 0;
 
         public RequestsFromOthersPage()
         {
@@ -37,6 +30,8 @@ namespace Property_and_Management.src.Views
 
             if (DataContext is not RequestsFromOthersViewModel)
             {
+                // Composition root: fall back to the DI container when no
+                // navigation parameter was passed.
                 DataContext = App.Services.GetRequiredService<RequestsFromOthersViewModel>();
             }
         }
@@ -54,7 +49,9 @@ namespace Property_and_Management.src.Views
         private async void OfferButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button clickedButton || clickedButton.Tag is not int requestIdentifier)
+            {
                 return;
+            }
 
             var request = clickedButton.DataContext as RequestDataTransferObject;
             var gameName = request?.Game?.Name ?? "this game";
@@ -62,38 +59,31 @@ namespace Property_and_Management.src.Views
 
             var result = await DialogHelper.ShowConfirmationAsync(
                 this.XamlRoot,
-                Constants.DialogTitles.ApproveRequestConfirmation,
-                $"Approve request for {gameName} from {renterName} for {request?.StartDateDisplayLong} - {request?.EndDateDisplayLong}? A rental will be created immediately.",
-                Constants.DialogButtons.Approve,
+                Constants.DialogTitles.OfferGameConfirmation,
+                $"Offer {gameName} to {renterName} for {request?.StartDateDisplayLong} - {request?.EndDateDisplayLong}? They will be notified and can approve or deny the offer.",
+                Constants.DialogButtons.Offer,
                 Constants.DialogButtons.Cancel,
                 ContentDialogButton.Primary);
 
-            if (result == ContentDialogResult.Primary)
+            if (result != ContentDialogResult.Primary)
             {
-                var requestsFromOthersViewModel = DataContext as RequestsFromOthersViewModel;
-                var offerResult = requestsFromOthersViewModel?.OfferGame(requestIdentifier) ?? UnknownOperationResult;
+                return;
+            }
 
-                if (offerResult < MinimumSuccessfulEntityIdentifier)
-                {
-                    string message = offerResult < ErrorResultUpperBoundExclusive
-                        ? ((OfferError)offerResult) switch
-                        {
-                            OfferError.NOT_FOUND => "Request not found.",
-                            OfferError.NOT_OWNER => "You are not the owner of this game.",
-                            OfferError.REQUEST_NOT_OPEN => "This request is no longer open.",
-                            _ => Constants.DialogMessages.UnexpectedErrorOccurred
-                        }
-                        : Constants.DialogMessages.UnexpectedErrorOccurred;
-
-                    await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.ApproveFailed, message);
-                }
+            var requestsFromOthersViewModel = DataContext as RequestsFromOthersViewModel;
+            var error = requestsFromOthersViewModel?.TryOfferGame(requestIdentifier);
+            if (error != null)
+            {
+                await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.OfferFailed, error);
             }
         }
 
         private async void DenyButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button clickedButton || clickedButton.Tag is not int requestIdentifier)
+            {
                 return;
+            }
 
             var request = clickedButton.DataContext as RequestDataTransferObject;
             var gameName = request?.Game?.Name ?? "this game";
@@ -122,59 +112,24 @@ namespace Property_and_Management.src.Views
                 Constants.DialogButtons.Cancel,
                 ContentDialogButton.Primary);
             if (dialogResult != ContentDialogResult.Primary)
-                return;
-
-            var reason = (reasonBox.Text ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(reason))
             {
-                reason = Constants.DialogMessages.NoReasonProvided;
+                return;
             }
 
+            // Raw reason is handed straight to the ViewModel; trimming and the
+            // "no reason provided" fallback live there so the code-behind stays
+            // UI-only.
             var requestsFromOthersViewModel = DataContext as RequestsFromOthersViewModel;
-            var denyResult = requestsFromOthersViewModel?.DenyRequest(requestIdentifier, reason) ?? UnknownOperationResult;
-
-            if (denyResult < MinimumSuccessfulEntityIdentifier)
+            var error = requestsFromOthersViewModel?.TryDenyRequest(requestIdentifier, reasonBox.Text);
+            if (error != null)
             {
-                string message = denyResult < ErrorResultUpperBoundExclusive
-                    ? ((DenyRequestError)denyResult) switch
-                    {
-                        DenyRequestError.NOT_FOUND_ERROR => "Request not found.",
-                        DenyRequestError.UNAUTHORIZED_ERROR => "You are not authorized to deny this request.",
-                        _ => Constants.DialogMessages.UnexpectedErrorOccurred
-                    }
-                    : Constants.DialogMessages.UnexpectedErrorOccurred;
-
-                await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.DeclineFailed, message);
+                await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.DeclineFailed, error);
             }
         }
 
         private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
         {
-            if (sender is not Image failedImage)
-            {
-                return;
-            }
-
-            if (failedImage.Source is BitmapImage current &&
-                current.UriSource != null &&
-                current.UriSource.AbsoluteUri.EndsWith("/Assets/default-game-placeholder.jpg", StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            if (Resources.TryGetValue("DefaultGameImage", out var localResource) && localResource is BitmapImage localImage)
-            {
-                failedImage.Source = localImage;
-                return;
-            }
-
-            if (Application.Current.Resources.TryGetValue("DefaultGameImage", out var appResource) && appResource is BitmapImage appImage)
-            {
-                failedImage.Source = appImage;
-                return;
-            }
-
-            failedImage.Source = new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.jpg"));
+            ImageFailureHandler.HandleFailure(sender as Image, Resources);
         }
 
         private void NextButton_Click(object sender, RoutedEventArgs e)
@@ -190,4 +145,3 @@ namespace Property_and_Management.src.Views
         }
     }
 }
-

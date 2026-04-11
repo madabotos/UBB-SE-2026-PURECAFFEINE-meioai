@@ -1,4 +1,4 @@
-namespace Property_and_Management.src.Viewmodels
+namespace Property_and_Management.Src.Viewmodels
 {
     public enum AppPage
     {

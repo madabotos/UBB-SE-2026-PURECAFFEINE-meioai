@@ -2,89 +2,120 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using Property_and_Management.src.DataTransferObjects;
-using Property_and_Management.src.Interface;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Interface;
 
-namespace Property_and_Management.src.Viewmodels
+namespace Property_and_Management.Src.Viewmodels
 {
     public class CreateRentalViewModel : INotifyPropertyChanged
     {
-        private readonly IGameService _gameService;
-        private readonly IRentalService _rentalService;
-        private readonly IUserService _userService;
-        private readonly ICurrentUserContext _currentUserContext;
+        private readonly IGameService gameService;
+        private readonly IRentalService rentalService;
+        private readonly IUserService userService;
+        private readonly ICurrentUserContext currentUserContext;
 
-        public int CurrentUserIdentifier => _currentUserContext.CurrentUserIdentifier;
+        public int CurrentUserIdentifier => currentUserContext.CurrentUserIdentifier;
 
         public ObservableCollection<GameDataTransferObject> MyGames { get; set; } = new();
         public ObservableCollection<UserDataTransferObject> AvailableRenters { get; set; } = new();
 
-        private GameDataTransferObject _selectedGame;
+        private GameDataTransferObject selectedGame;
         public GameDataTransferObject SelectedGame
         {
-            get => _selectedGame;
-            set { _selectedGame = value; OnPropertyChanged(); }
+            get => selectedGame;
+            set
+            {
+                selectedGame = value;
+                OnPropertyChanged();
+            }
         }
 
-        private UserDataTransferObject _selectedRenter;
+        private UserDataTransferObject selectedRenter;
         public UserDataTransferObject SelectedRenter
         {
-            get => _selectedRenter;
-            set { _selectedRenter = value; OnPropertyChanged(); }
+            get => selectedRenter;
+            set
+            {
+                selectedRenter = value;
+                OnPropertyChanged();
+            }
         }
 
-        private DateTimeOffset? _startDate;
+        private DateTimeOffset? startDate;
         public DateTimeOffset? StartDate
         {
-            get => _startDate;
-            set { _startDate = value; OnPropertyChanged(); }
+            get => startDate;
+            set
+            {
+                startDate = value;
+                OnPropertyChanged();
+            }
         }
 
-        private DateTimeOffset? _endDate;
+        private DateTimeOffset? endDate;
         public DateTimeOffset? EndDate
         {
-            get => _endDate;
-            set { _endDate = value; OnPropertyChanged(); }
+            get => endDate;
+            set
+            {
+                endDate = value;
+                OnPropertyChanged();
+            }
         }
 
         public CreateRentalViewModel(IGameService gameService, IRentalService rentalService,
                                      IUserService userService, ICurrentUserContext currentUserContext)
         {
-            _gameService = gameService;
-            _rentalService = rentalService;
-            _userService = userService;
-            _currentUserContext = currentUserContext;
+            this.gameService = gameService;
+            this.rentalService = rentalService;
+            this.userService = userService;
+            this.currentUserContext = currentUserContext;
             LoadData();
         }
 
         public void LoadData()
         {
             MyGames.Clear();
-            foreach (var game in _gameService.GetGamesForOwner(CurrentUserIdentifier))
+            foreach (var game in gameService.GetGamesForOwner(CurrentUserIdentifier))
             {
                 if (game.IsActive)
+                {
                     MyGames.Add(game);
+                }
             }
 
             AvailableRenters.Clear();
-            foreach (var user in _userService.GetUsersExcept(CurrentUserIdentifier))
+            foreach (var user in userService.GetUsersExcept(CurrentUserIdentifier))
+            {
                 AvailableRenters.Add(user);
+            }
         }
 
         public bool ValidateInputs()
         {
-            if (SelectedGame == null) return false;
-            if (SelectedRenter == null) return false;
+            if (SelectedGame == null)
+            {
+                return false;
+            }
+
+            if (SelectedRenter == null)
+            {
+                return false;
+            }
+
             return DateRangeValidationHelper.HasValidFutureDateRange(StartDate, EndDate);
         }
 
         public string SaveRental()
         {
-            if (!ValidateInputs()) return "Validation failed.";
+            if (!ValidateInputs())
+            {
+                return "Validation failed.";
+            }
 
             try
             {
-                _rentalService.CreateConfirmedRental(
+                rentalService.CreateConfirmedRental(
                     SelectedGame.Identifier,
                     SelectedRenter.Identifier,
                     CurrentUserIdentifier,

@@ -1,6 +1,7 @@
-namespace Property_and_Management.src.Interface
+namespace Property_and_Management.Src.Interface
 {
-    public interface IDataTransferObject<TEntity> where TEntity : IEntity
+    public interface IDataTransferObject<TEntity>
+        where TEntity : IEntity
     {
         /// <summary>
         /// Gets or sets the unique identifier for the entity.

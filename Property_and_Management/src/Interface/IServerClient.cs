@@ -1,8 +1,8 @@
 using System;
 using System.Threading.Tasks;
-using Property_and_Management.src.DataTransferObjects;
+using Property_and_Management.Src.DataTransferObjects;
 
-namespace Property_and_Management.src.Interface
+namespace Property_and_Management.Src.Interface
 {
     public interface IServerClient : IObservable<IncomingNotification>
     {

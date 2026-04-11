@@ -2,7 +2,7 @@ using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 
-namespace Property_and_Management.src.Utilities
+namespace Property_and_Management.Src.Utilities
 {
     public class BooleanToVisibilityConverter : IValueConverter
     {

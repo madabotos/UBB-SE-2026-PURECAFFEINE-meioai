@@ -5,11 +5,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Property_and_Management;
-using Property_and_Management.src.DataTransferObjects;
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.Service
+namespace Property_and_Management.Src.Service
 {
     public class NotificationService : INotificationService, IObserver<IncomingNotification>, IObservable<NotificationDataTransferObject>, IDisposable
     {
@@ -17,14 +17,19 @@ namespace Property_and_Management.src.Service
         private const int NewEntityIdentifier = 0;
         private const int MissingUserIdentifier = 0;
 
-        private bool _disposed;
-        private readonly CancellationTokenSource _scheduleCancellationTokenSource = new();
-        private readonly INotificationRepository _notificationRepository;
-        private readonly IMapper<Notification, NotificationDataTransferObject> _notificationMapper;
-        private readonly IServerClient _serverClient;
-        private readonly ICurrentUserContext _currentUserContext;
-        private readonly IToastNotificationService _toastNotificationService;
-        private List<IObserver<NotificationDataTransferObject>> _subscribers = [];
+        private bool disposed;
+        private readonly CancellationTokenSource scheduleCancellationTokenSource = new();
+        private readonly INotificationRepository notificationRepository;
+        private readonly IMapper<Notification, NotificationDataTransferObject> notificationMapper;
+        private readonly IServerClient serverClient;
+        private readonly ICurrentUserContext currentUserContext;
+        private readonly IToastNotificationService toastNotificationService;
+
+        // subscribers is mutated from the UI thread (Subscribe/Unsubscriber.Dispose)
+        // and published to from the UDP listener thread (OnNext → NotifySubscribers).
+        // All access goes through subscribersLock so iteration snapshots are stable.
+        private readonly List<IObserver<NotificationDataTransferObject>> subscribers = new();
+        private readonly object subscribersLock = new();
 
         public NotificationService(
             INotificationRepository notificationRepository,
@@ -33,29 +38,32 @@ namespace Property_and_Management.src.Service
             ICurrentUserContext currentUserContext,
             IToastNotificationService toastNotificationService)
         {
-            _notificationRepository = notificationRepository;
-            _notificationMapper = notificationMapper;
-            _serverClient = serverClient;
-            _currentUserContext = currentUserContext;
-            _toastNotificationService = toastNotificationService;
-            _serverClient.Subscribe(this);
+            this.notificationRepository = notificationRepository;
+            this.notificationMapper = notificationMapper;
+            this.serverClient = serverClient;
+            this.currentUserContext = currentUserContext;
+            this.toastNotificationService = toastNotificationService;
+            serverClient.Subscribe(this);
         }
 
         public NotificationDataTransferObject DeleteNotificationByIdentifier(int notificationIdentifier) =>
-            _notificationMapper.ToDataTransferObject(_notificationRepository.Delete(notificationIdentifier));
+            notificationMapper.ToDataTransferObject(notificationRepository.Delete(notificationIdentifier));
 
         public NotificationDataTransferObject GetNotificationByIdentifier(int notificationIdentifier) =>
-            _notificationMapper.ToDataTransferObject(_notificationRepository.Get(notificationIdentifier));
+            notificationMapper.ToDataTransferObject(notificationRepository.Get(notificationIdentifier));
 
         public ImmutableList<NotificationDataTransferObject> GetNotificationsForUser(int userIdentifier) =>
-            _notificationRepository
+            notificationRepository
                 .GetNotificationsByUser(userIdentifier)
-                .Select(notification => _notificationMapper.ToDataTransferObject(notification))
+                .Select(notification => notificationMapper.ToDataTransferObject(notification))
                 .ToImmutableList();
 
         public void SendNotificationToUser(int userIdentifier, NotificationDataTransferObject notification)
         {
-            if (notification == null) throw new ArgumentNullException(nameof(notification));
+            if (notification == null)
+            {
+                throw new ArgumentNullException(nameof(notification));
+            }
 
             DateTime timestamp = notification.Timestamp == default ? DateTime.UtcNow : notification.Timestamp;
 
@@ -67,9 +75,9 @@ namespace Property_and_Management.src.Service
                 notification.Type,
                 notification.RelatedRequestIdentifier);
 
-            _notificationRepository.Add(notificationModel);
+            notificationRepository.Add(notificationModel);
 
-            if (_currentUserContext.CurrentUserIdentifier == userIdentifier)
+            if (currentUserContext.CurrentUserIdentifier == userIdentifier)
             {
                 NotifySubscribers(BuildNotificationDataTransferObject(
                     notificationModel.Identifier,
@@ -81,23 +89,45 @@ namespace Property_and_Management.src.Service
                     notification.RelatedRequestIdentifier));
             }
 
-            _serverClient.SendNotification(userIdentifier, notification.Title, notification.Body);
+            serverClient.SendNotification(userIdentifier, notification.Title, notification.Body);
         }
 
         public void DeleteNotificationsByRequestId(int requestIdentifier)
         {
-            _notificationRepository.DeleteByRequestId(requestIdentifier);
+            notificationRepository.DeleteByRequestId(requestIdentifier);
         }
 
         public void UpdateNotificationByIdentifier(int notificationIdentifier, NotificationDataTransferObject notification)
         {
-            _notificationRepository.Update(notificationIdentifier, _notificationMapper.ToModel(notification));
+            notificationRepository.Update(notificationIdentifier, notificationMapper.ToModel(notification));
         }
 
-        public void StartListening() => _serverClient.ListenAsync();
-        public void StopListening() => _serverClient.StopListening();
-        public void OnCompleted() { }
-        public void OnError(Exception error) { }
+        public void StartListening()
+        {
+            // Fire-and-forget, but observe any failure so it doesn't become a silent
+            // unobserved task exception. The listen loop runs for the lifetime of the
+            // process, so we only ever expect to get here on a hard fault.
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await serverClient.ListenAsync();
+                }
+                catch (Exception listenException)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"NotificationService: listen loop terminated — {listenException}");
+                }
+            });
+        }
+
+        public void StopListening() => serverClient.StopListening();
+        public void OnCompleted()
+        {
+        }
+        public void OnError(Exception error)
+        {
+        }
 
         public void OnNext(IncomingNotification incomingNotification)
         {
@@ -111,46 +141,76 @@ namespace Property_and_Management.src.Service
                 null);
 
             NotifySubscribers(notificationDataTransferObject);
-            _toastNotificationService.Show(incomingNotification.Title, incomingNotification.Body);
+            toastNotificationService.Show(incomingNotification.Title, incomingNotification.Body);
         }
 
         private void NotifySubscribers(NotificationDataTransferObject notificationDataTransferObject)
         {
-            foreach (var subscriber in _subscribers.ToArray())
+            // Snapshot under the lock so a concurrent Subscribe/Unsubscribe can't tear
+            // the enumeration, then publish outside the lock so a slow observer can't
+            // stall incoming subscriptions.
+            IObserver<NotificationDataTransferObject>[] snapshot;
+            lock (subscribersLock)
+            {
+                snapshot = subscribers.ToArray();
+            }
+
+            foreach (var subscriber in snapshot)
+            {
                 subscriber.OnNext(notificationDataTransferObject);
+            }
         }
 
         public IDisposable Subscribe(IObserver<NotificationDataTransferObject> observer)
         {
-            _subscribers.Add(observer);
-            return new Unsubscriber(_subscribers, observer);
+            lock (subscribersLock)
+            {
+                subscribers.Add(observer);
+            }
+
+            return new Unsubscriber(subscribers, subscribersLock, observer);
         }
 
         private sealed class Unsubscriber : IDisposable
         {
-            private readonly List<IObserver<NotificationDataTransferObject>> _subscribers;
-            private readonly IObserver<NotificationDataTransferObject> _observer;
+            private readonly List<IObserver<NotificationDataTransferObject>> subscribers;
+            private readonly object subscribersLock;
+            private readonly IObserver<NotificationDataTransferObject> observer;
 
-            public Unsubscriber(List<IObserver<NotificationDataTransferObject>> subscribers, IObserver<NotificationDataTransferObject> observer)
+            public Unsubscriber(
+                List<IObserver<NotificationDataTransferObject>> subscribers,
+                object subscribersLock,
+                IObserver<NotificationDataTransferObject> observer)
             {
-                _subscribers = subscribers;
-                _observer = observer;
+                this.subscribers = subscribers;
+                this.subscribersLock = subscribersLock;
+                this.observer = observer;
             }
 
-            public void Dispose() => _subscribers.Remove(_observer);
+            public void Dispose()
+            {
+                lock (subscribersLock)
+                {
+                    subscribers.Remove(observer);
+                }
+            }
         }
 
-        public void SubscribeToServer(int userIdentifier) => _serverClient.SubscribeToServer(userIdentifier);
+        public void SubscribeToServer(int userIdentifier) => serverClient.SubscribeToServer(userIdentifier);
 
         public void Dispose()
         {
-            if (_disposed) return;
-            _disposed = true;
+            if (disposed)
+            {
+                return;
+            }
 
-            _scheduleCancellationTokenSource.Cancel();
-            _scheduleCancellationTokenSource.Dispose();
+            disposed = true;
+
+            scheduleCancellationTokenSource.Cancel();
+            scheduleCancellationTokenSource.Dispose();
             StopListening();
-            (_serverClient as IDisposable)?.Dispose();
+            (serverClient as IDisposable)?.Dispose();
         }
 
         public void ScheduleUpcomingRentalReminder(int renterIdentifier, int ownerIdentifier, string gameName, DateTime startDate)
@@ -171,7 +231,10 @@ namespace Property_and_Management.src.Service
 
         private void ScheduleOrSendUserNotification(int userIdentifier, string title, string body, DateTime scheduledTime)
         {
-            if (userIdentifier == MissingUserIdentifier) return;
+            if (userIdentifier == MissingUserIdentifier)
+            {
+                return;
+            }
 
             TimeSpan delay = scheduledTime.ToUniversalTime() - DateTime.UtcNow;
 
@@ -190,18 +253,25 @@ namespace Property_and_Management.src.Service
                 return;
             }
 
-            _notificationRepository.Add(BuildNotificationModel(userIdentifier, scheduledTime, title, body));
+            notificationRepository.Add(BuildNotificationModel(userIdentifier, scheduledTime, title, body));
 
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    await Task.Delay(delay, _scheduleCancellationTokenSource.Token);
-                    _serverClient.SendNotification(userIdentifier, title, body);
-                    _toastNotificationService.Show(title, body);
+                    await Task.Delay(delay, scheduleCancellationTokenSource.Token);
+                    serverClient.SendNotification(userIdentifier, title, body);
+                    toastNotificationService.Show(title, body);
                 }
-                catch (OperationCanceledException) { }
-                catch { }
+                catch (OperationCanceledException)
+                {
+                    // Disposal/shutdown raced the scheduled send — ignore.
+                }
+                catch (Exception scheduledNotificationException)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"NotificationService: scheduled reminder failed — {scheduledNotificationException}");
+                }
             });
         }
 
