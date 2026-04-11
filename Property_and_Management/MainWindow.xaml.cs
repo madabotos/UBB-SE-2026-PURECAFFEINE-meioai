@@ -35,11 +35,14 @@ namespace Property_and_Management
 
             AppWindow = GetAppWindow();
 
-            // override closing
+            // Clicking X truly exits the process (previously this hid the window to the
+            // tray, which left orphan processes alive that had to be killed manually).
+            // Environment.Exit fires AppDomain.ProcessExit, which runs the cleanup handler
+            // in App.xaml.cs that disposes the notification service and kills any child
+            // processes spawned by two-window dev mode.
             AppWindow.Closing += (sender, args) =>
             {
-                args.Cancel = true;
-                AppWindow.Hide();
+                Environment.Exit(0);
             };
         }
 

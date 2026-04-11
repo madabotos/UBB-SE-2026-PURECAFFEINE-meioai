@@ -71,7 +71,7 @@
                         <!-- Cancel button [REQ-REQ-06] -->
                         <Button Grid.Column="2"
                                 Content="Cancel"
-                                Tag="{Binding Id}"
+                                Tag="{Binding Identifier}"
                                 Click="CancelButton_Click"
                                 Tapped="CancelButton_Tapped"
                                 Margin="8,0,0,0"

@@ -70,6 +70,12 @@ namespace Property_and_Management
         // Tray icon
         private TaskbarIcon _trayIcon;
 
+        // Handles for processes spawned by two-window dev mode. Retained so the
+        // ProcessExit cleanup handler can kill them; otherwise closing user 1's
+        // window leaves the NotificationServer and user 2 client as orphans.
+        private static Process? _notificationServerProcess;
+        private static Process? _secondClientProcess;
+
 
         // Private dependencies and state
         private Window? _mainWindow;
@@ -85,6 +91,10 @@ namespace Property_and_Management
         public App()
         {
             CurrentUserIdentifier = GetUserIdFromArgs();
+
+            // Ensure the database, tables, and demo data exist before anything
+            // else (DI resolution, ViewModel constructors) touches the DB.
+            DatabaseInitializer.EnsureDatabaseInitialized();
 
             // Two-window dev mode: user 1 spawns the notification server + a second client
             if (CurrentUserIdentifier == DevModePrimaryUserIdentifier && IsTwoWindowsEnabled())
@@ -220,7 +230,7 @@ namespace Property_and_Management
                     .FirstOrDefault();
                 if (serverExe == null) return;
 
-                Process.Start(new ProcessStartInfo
+                _notificationServerProcess = Process.Start(new ProcessStartInfo
                 {
                     FileName = serverExe,
                     UseShellExecute = true,
@@ -237,13 +247,34 @@ namespace Property_and_Management
                 var currentExe = Environment.ProcessPath;
                 if (currentExe == null) return;
 
-                Process.Start(new ProcessStartInfo
+                _secondClientProcess = Process.Start(new ProcessStartInfo
                 {
                     FileName = currentExe,
                     Arguments = DevModeSecondaryUserIdentifier.ToString(),
                     UseShellExecute = true,
                     WorkingDirectory = System.IO.Path.GetDirectoryName(currentExe)
                 });
+            }
+            catch { }
+        }
+
+        private static void KillSpawnedChildProcesses()
+        {
+            try
+            {
+                if (_secondClientProcess != null && !_secondClientProcess.HasExited)
+                {
+                    _secondClientProcess.Kill(entireProcessTree: true);
+                }
+            }
+            catch { }
+
+            try
+            {
+                if (_notificationServerProcess != null && !_notificationServerProcess.HasExited)
+                {
+                    _notificationServerProcess.Kill(entireProcessTree: true);
+                }
             }
             catch { }
         }
@@ -257,6 +288,7 @@ namespace Property_and_Management
             {
                 _notificationManager.Unregister();
                 (_notification_service as IDisposable)?.Dispose();
+                KillSpawnedChildProcesses();
             };
 
             // When a notification is clicked, bring the window to foreground and optionally navigate
