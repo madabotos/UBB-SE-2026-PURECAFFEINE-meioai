@@ -41,7 +41,7 @@ namespace Property_and_Management.src.Views
 
         private async void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not Button clickedButton || clickedButton.Tag is not int requestId)
+            if (sender is not Button clickedButton || clickedButton.Tag is not int requestIdentifier)
                 return;
 
             var result = await DialogHelper.ShowConfirmationAsync(
@@ -55,7 +55,7 @@ namespace Property_and_Management.src.Views
             if (result == ContentDialogResult.Primary)
             {
                 var requestsToOthersViewModel = DataContext as RequestsToOthersViewModel;
-                requestsToOthersViewModel?.CancelRequest(requestId);
+                requestsToOthersViewModel?.CancelRequest(requestIdentifier);
             }
         }
 
@@ -101,3 +101,4 @@ namespace Property_and_Management.src.Views
         }
     }
 }
+

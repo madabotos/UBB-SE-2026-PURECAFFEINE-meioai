@@ -35,7 +35,7 @@ namespace Property_and_Management.src.Views
 
             if (gameToEdit != null)
             {
-                this.Frame.Navigate(typeof(EditGameView), gameToEdit.Id);
+                this.Frame.Navigate(typeof(EditGameView), gameToEdit.Identifier);
             }
         }
 
@@ -125,3 +125,4 @@ namespace Property_and_Management.src.Views
         }
     }
 }
+

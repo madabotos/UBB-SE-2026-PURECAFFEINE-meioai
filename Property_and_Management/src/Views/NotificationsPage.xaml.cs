@@ -40,7 +40,7 @@ namespace Property_and_Management.src.Views
             _refreshTimer.Tick += (timerSender, tickEventArgs) =>
             {
                 if (DataContext is NotificationsViewModel notificationsViewModel)
-                    notificationsViewModel.LoadNotificationsForUser(notificationsViewModel.CurrentUserId);
+                    notificationsViewModel.LoadNotificationsForUser(notificationsViewModel.CurrentUserIdentifier);
             };
         }
 
@@ -51,14 +51,14 @@ namespace Property_and_Management.src.Views
             if (e.Parameter is NotificationsViewModel notificationsViewModel)
             {
                 DataContext = notificationsViewModel;
-                notificationsViewModel.LoadNotificationsForUser(notificationsViewModel.CurrentUserId);
+                notificationsViewModel.LoadNotificationsForUser(notificationsViewModel.CurrentUserIdentifier);
 
                 if (this.FindName("ItemsListView") is ItemsControl items)
                     items.ItemsSource = notificationsViewModel.Notifications;
             }
             else if (DataContext is NotificationsViewModel defaultNotificationsViewModel)
             {
-                defaultNotificationsViewModel.LoadNotificationsForUser(defaultNotificationsViewModel.CurrentUserId);
+                defaultNotificationsViewModel.LoadNotificationsForUser(defaultNotificationsViewModel.CurrentUserIdentifier);
             }
 
             _refreshTimer.Start();
@@ -91,7 +91,7 @@ namespace Property_and_Management.src.Views
                     return;
                 }
 
-                notificationsViewModel.DeleteNotificationById(notification.Id);
+                notificationsViewModel.DeleteNotificationByIdentifier(notification.Identifier);
             }
             catch (Exception caughtException)
             {
@@ -114,3 +114,5 @@ namespace Property_and_Management.src.Views
         }
     }
 }
+
+

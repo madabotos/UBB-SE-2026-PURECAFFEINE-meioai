@@ -7,8 +7,9 @@ namespace Property_and_Management.src.Interface
     public interface IServerClient : IObservable<IncomingNotification>
     {
         Task ListenAsync();
-        void SubscribeToServer(int userId);
-        void SendNotification(int userId, string title, string body);
+        void SubscribeToServer(int userIdentifier);
+        void SendNotification(int userIdentifier, string title, string body);
         void StopListening();
     }
 }
+

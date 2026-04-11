@@ -6,7 +6,7 @@ namespace Property_and_Management.src.DataTransferObjects
 {
     public class RentalDataTransferObject : IDataTransferObject<Rental>
     {
-        public int Id { get; set; }
+        public int Identifier { get; set; }
         public GameDataTransferObject Game { get; set; }
         public UserDataTransferObject Renter { get; set; }
         public UserDataTransferObject Owner { get; set; }

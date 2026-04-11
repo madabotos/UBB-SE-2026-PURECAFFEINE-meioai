@@ -22,7 +22,7 @@ namespace Property_and_Management.src.Viewmodels
         private ObservableCollection<RequestDataTransferObject> _pagedRequests = new();
         private ImmutableList<RequestDataTransferObject> _allRequests = ImmutableList<RequestDataTransferObject>.Empty;
 
-        public int RenterId { get; private set; }
+        public int renterIdentifier { get; private set; }
 
         public static int PageSize => DefaultPageSize;
 
@@ -81,14 +81,14 @@ namespace Property_and_Management.src.Viewmodels
         {
             _requestService = requestService;
             _currentUserContext = currentUserContext;
-            RenterId = _currentUserContext.CurrentUserId;
+            renterIdentifier = _currentUserContext.CurrentUserIdentifier;
             LoadRequests(FirstPageNumber, PageSize);
         }
 
         public void LoadRequests(int page, int pageSize)
         {
-            RenterId = _currentUserContext.CurrentUserId;
-            var allRequests = _requestService.GetRequestsForRenter(RenterId)
+            renterIdentifier = _currentUserContext.CurrentUserIdentifier;
+            var allRequests = _requestService.GetRequestsForRenter(renterIdentifier)
                 .OrderByDescending(request => request.StartDate)
                 .ToImmutableList();
 
@@ -109,9 +109,9 @@ namespace Property_and_Management.src.Viewmodels
         public void NextPage() => CurrentPage = Math.Min(CurrentPage + PageStep, PageCount);
         public void PrevPage() => CurrentPage = Math.Max(CurrentPage - FirstPageNumber, FirstPageNumber);
 
-        public void CancelRequest(int requestId)
+        public void CancelRequest(int requestIdentifier)
         {
-            _requestService.CancelRequest(requestId);
+            _requestService.CancelRequest(requestIdentifier);
             LoadRequests(CurrentPage, PageSize);
         }
 
@@ -126,3 +126,5 @@ namespace Property_and_Management.src.Viewmodels
         public void OnNext(RequestDataTransferObject value) => LoadRequests(CurrentPage, PageSize);
     }
 }
+
+

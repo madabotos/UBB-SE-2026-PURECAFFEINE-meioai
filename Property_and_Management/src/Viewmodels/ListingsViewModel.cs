@@ -15,7 +15,7 @@ namespace Property_and_Management.src.Viewmodels
         private const int PageStep = 1;
 
         private readonly IGameService _gameService;
-        private readonly int _currentUserId;
+        private readonly int _currentUserIdentifier;
 
         // We keep a hidden list of all games in memory
         private ObservableCollection<GameDataTransferObject> _allListings = new ObservableCollection<GameDataTransferObject>();
@@ -37,17 +37,17 @@ namespace Property_and_Management.src.Viewmodels
 
         public string ShowingText => $"Showing {PagedListings.Count} of {_allListings.Count} games";
 
-        public ListingsViewModel(IGameService gameService, int currentUserId)
+        public ListingsViewModel(IGameService gameService, int currentUserIdentifier)
         {
             _gameService = gameService;
-            _currentUserId = currentUserId;
+            _currentUserIdentifier = currentUserIdentifier;
             LoadGames();
         }
 
         public void LoadGames()
         {
             _allListings.Clear();
-            var games = _gameService.GetGamesForOwner(_currentUserId);
+            var games = _gameService.GetGamesForOwner(_currentUserIdentifier);
 
             foreach (var game in games)
             {
@@ -86,7 +86,7 @@ namespace Property_and_Management.src.Viewmodels
 
         public void DeleteGame(GameDataTransferObject game)
         {
-            _gameService.DeleteGameByIdentifier(game.Id);
+            _gameService.DeleteGameByIdentifier(game.Identifier);
             _allListings.Remove(game);
 
             // If deleting the last item on a page leaves it empty, step back a page
@@ -102,3 +102,4 @@ namespace Property_and_Management.src.Viewmodels
         }
     }
 }
+

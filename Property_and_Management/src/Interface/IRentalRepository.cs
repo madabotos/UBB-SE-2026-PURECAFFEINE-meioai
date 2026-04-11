@@ -15,16 +15,17 @@ namespace Property_and_Management.src.Interface
         /// <summary>
         /// Gets rentals for which the specified user is the owner.
         /// </summary>
-        ImmutableList<Rental> GetRentalsByOwner(int ownerId);
+        ImmutableList<Rental> GetRentalsByOwner(int ownerIdentifier);
 
         /// <summary>
         /// Gets rentals created by the specified renter.
         /// </summary>
-        ImmutableList<Rental> GetRentalsByRenter(int renterId);
+        ImmutableList<Rental> GetRentalsByRenter(int renterIdentifier);
 
         /// <summary>
         /// Gets rentals for the specified game.
         /// </summary>
-        ImmutableList<Rental> GetRentalsByGame(int gameId);
+        ImmutableList<Rental> GetRentalsByGame(int gameIdentifier);
     }
 }
+

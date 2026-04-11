@@ -16,15 +16,15 @@ namespace Property_and_Management.src.Viewmodels
         private const int MinimumPlayerCount = 1;
         private const int MinimumDescriptionLength = 10;
         private const int MaximumDescriptionLength = 500;
-        private const int MissingOwnerId = 0;
+        private const int MissingOwnerIdentifier = 0;
         private const int NoValidationErrors = 0;
         private const int EmptyImageLength = 0;
 
         private readonly IGameService _gameService;
 
         // Read-only identifiers (per requirement UI-EDG-03)
-        public int GameId { get; private set; }
-        public int OwnerId { get; private set; }
+        public int gameIdentifier { get; private set; }
+        public int ownerIdentifier { get; private set; }
 
         // UI Binding Properties
         public string Name { get; set; } = string.Empty;
@@ -45,13 +45,13 @@ namespace Property_and_Management.src.Viewmodels
             _gameService = gameService;
         }
 
-        public void LoadGame(int gameId)
+        public void LoadGame(int gameIdentifier)
         {
-            var existingGame = _gameService.GetGameByIdentifier(gameId);
+            var existingGame = _gameService.GetGameByIdentifier(gameIdentifier);
             if (existingGame != null)
             {
-                GameId = existingGame.Id;
-                OwnerId = existingGame.Owner?.Id ?? MissingOwnerId;
+                gameIdentifier = existingGame.Identifier;
+                ownerIdentifier = existingGame.Owner?.Identifier ?? MissingOwnerIdentifier;
 
                 Name = existingGame.Name;
                 Price = existingGame.Price;
@@ -88,8 +88,8 @@ namespace Property_and_Management.src.Viewmodels
             // ✅ Object initializer — no constructors, no entity references
             var updatedGameDataTransferObject = new GameDataTransferObject
             {
-                Id = GameId,
-                Owner = new UserDataTransferObject { Id = OwnerId },
+                Identifier = gameIdentifier,
+                Owner = new UserDataTransferObject { Identifier = ownerIdentifier },
                 Name = Name,
                 Price = Price,
                 MinimumPlayerNumber = MinPlayers,
@@ -99,8 +99,10 @@ namespace Property_and_Management.src.Viewmodels
                 IsActive = IsActive
             };
 
-            _gameService.UpdateGameByIdentifier(GameId, updatedGameDataTransferObject);
+            _gameService.UpdateGameByIdentifier(gameIdentifier, updatedGameDataTransferObject);
             return updatedGameDataTransferObject;
         }
     }
 }
+
+

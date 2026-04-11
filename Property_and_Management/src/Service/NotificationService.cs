@@ -14,8 +14,8 @@ namespace Property_and_Management.src.Service
     public class NotificationService : INotificationService, IObserver<IncomingNotification>, IObservable<NotificationDataTransferObject>, IDisposable
     {
         private const int ReminderLeadDays = 1;
-        private const int NewEntityId = 0;
-        private const int MissingUserId = 0;
+        private const int NewEntityIdentifier = 0;
+        private const int MissingUserIdentifier = 0;
 
         private bool _disposed;
         private readonly CancellationTokenSource _scheduleCancellationTokenSource = new();
@@ -41,57 +41,57 @@ namespace Property_and_Management.src.Service
             _serverClient.Subscribe(this);
         }
 
-        public NotificationDataTransferObject DeleteNotificationById(int id) =>
-            _notificationMapper.ToDataTransferObject(_notificationRepository.Delete(id));
+        public NotificationDataTransferObject DeleteNotificationByIdentifier(int notificationIdentifier) =>
+            _notificationMapper.ToDataTransferObject(_notificationRepository.Delete(notificationIdentifier));
 
-        public NotificationDataTransferObject GetNotificationById(int id) =>
-            _notificationMapper.ToDataTransferObject(_notificationRepository.Get(id));
+        public NotificationDataTransferObject GetNotificationByIdentifier(int notificationIdentifier) =>
+            _notificationMapper.ToDataTransferObject(_notificationRepository.Get(notificationIdentifier));
 
-        public ImmutableList<NotificationDataTransferObject> GetNotificationsForUser(int userId) =>
+        public ImmutableList<NotificationDataTransferObject> GetNotificationsForUser(int userIdentifier) =>
             _notificationRepository
-                .GetNotificationsByUser(userId)
+                .GetNotificationsByUser(userIdentifier)
                 .Select(notification => _notificationMapper.ToDataTransferObject(notification))
                 .ToImmutableList();
 
-        public void SendNotificationToUser(int userId, NotificationDataTransferObject notification)
+        public void SendNotificationToUser(int userIdentifier, NotificationDataTransferObject notification)
         {
             if (notification == null) throw new ArgumentNullException(nameof(notification));
 
             DateTime timestamp = notification.Timestamp == default ? DateTime.UtcNow : notification.Timestamp;
 
             var notificationModel = BuildNotificationModel(
-                userId,
+                userIdentifier,
                 timestamp,
                 notification.Title,
                 notification.Body,
                 notification.Type,
-                notification.RelatedRequestId);
+                notification.RelatedRequestIdentifier);
 
             _notificationRepository.Add(notificationModel);
 
-            if (_currentUserContext.CurrentUserId == userId)
+            if (_currentUserContext.CurrentUserIdentifier == userIdentifier)
             {
                 NotifySubscribers(BuildNotificationDataTransferObject(
-                    notificationModel.Id,
-                    userId,
+                    notificationModel.Identifier,
+                    userIdentifier,
                     timestamp,
                     notification.Title,
                     notification.Body,
                     notification.Type,
-                    notification.RelatedRequestId));
+                    notification.RelatedRequestIdentifier));
             }
 
-            _serverClient.SendNotification(userId, notification.Title, notification.Body);
+            _serverClient.SendNotification(userIdentifier, notification.Title, notification.Body);
         }
 
-        public void DeleteNotificationsByRequestId(int requestId)
+        public void DeleteNotificationsByRequestId(int requestIdentifier)
         {
-            _notificationRepository.DeleteByRequestId(requestId);
+            _notificationRepository.DeleteByRequestId(requestIdentifier);
         }
 
-        public void UpdateNotificationById(int id, NotificationDataTransferObject notification)
+        public void UpdateNotificationByIdentifier(int notificationIdentifier, NotificationDataTransferObject notification)
         {
-            _notificationRepository.Update(id, _notificationMapper.ToModel(notification));
+            _notificationRepository.Update(notificationIdentifier, _notificationMapper.ToModel(notification));
         }
 
         public void StartListening() => _serverClient.ListenAsync();
@@ -102,8 +102,8 @@ namespace Property_and_Management.src.Service
         public void OnNext(IncomingNotification incomingNotification)
         {
             var notificationDataTransferObject = BuildNotificationDataTransferObject(
-                NewEntityId,
-                incomingNotification.UserId,
+                NewEntityIdentifier,
+                incomingNotification.UserIdentifier,
                 incomingNotification.Timestamp,
                 incomingNotification.Title,
                 incomingNotification.Body,
@@ -140,7 +140,7 @@ namespace Property_and_Management.src.Service
             public void Dispose() => _subscribers.Remove(_observer);
         }
 
-        public void SubscribeToServer(int userId) => _serverClient.SubscribeToServer(userId);
+        public void SubscribeToServer(int userIdentifier) => _serverClient.SubscribeToServer(userIdentifier);
 
         public void Dispose()
         {
@@ -153,14 +153,14 @@ namespace Property_and_Management.src.Service
             (_serverClient as IDisposable)?.Dispose();
         }
 
-        public void ScheduleUpcomingRentalReminder(int renterId, int ownerId, string gameName, DateTime startDate)
+        public void ScheduleUpcomingRentalReminder(int renterIdentifier, int ownerIdentifier, string gameName, DateTime startDate)
         {
             DateTime scheduledTime = startDate.AddDays(-ReminderLeadDays);
             string title = Constants.NotificationTitles.UpcomingRentalReminder;
             string body = CreateReminderBody(gameName, startDate);
 
-            ScheduleOrSendUserNotification(renterId, title, body, scheduledTime);
-            ScheduleOrSendUserNotification(ownerId, title, body, scheduledTime);
+            ScheduleOrSendUserNotification(renterIdentifier, title, body, scheduledTime);
+            ScheduleOrSendUserNotification(ownerIdentifier, title, body, scheduledTime);
         }
 
         private static string CreateReminderBody(string gameName, DateTime startDate)
@@ -169,15 +169,15 @@ namespace Property_and_Management.src.Service
                    "Delivery/Pick-up: Coordinate delivery/pick-up directly with the other party.";
         }
 
-        private void ScheduleOrSendUserNotification(int userId, string title, string body, DateTime scheduledTime)
+        private void ScheduleOrSendUserNotification(int userIdentifier, string title, string body, DateTime scheduledTime)
         {
-            if (userId == MissingUserId) return;
+            if (userIdentifier == MissingUserIdentifier) return;
 
             TimeSpan delay = scheduledTime.ToUniversalTime() - DateTime.UtcNow;
 
             var notificationDataTransferObject = BuildNotificationDataTransferObject(
-                NewEntityId,
-                userId,
+                NewEntityIdentifier,
+                userIdentifier,
                 scheduledTime,
                 title,
                 body,
@@ -186,18 +186,18 @@ namespace Property_and_Management.src.Service
 
             if (delay <= TimeSpan.Zero)
             {
-                SendNotificationToUser(userId, notificationDataTransferObject);
+                SendNotificationToUser(userIdentifier, notificationDataTransferObject);
                 return;
             }
 
-            _notificationRepository.Add(BuildNotificationModel(userId, scheduledTime, title, body));
+            _notificationRepository.Add(BuildNotificationModel(userIdentifier, scheduledTime, title, body));
 
             _ = Task.Run(async () =>
             {
                 try
                 {
                     await Task.Delay(delay, _scheduleCancellationTokenSource.Token);
-                    _serverClient.SendNotification(userId, title, body);
+                    _serverClient.SendNotification(userIdentifier, title, body);
                     _toastNotificationService.Show(title, body);
                 }
                 catch (OperationCanceledException) { }
@@ -206,44 +206,47 @@ namespace Property_and_Management.src.Service
         }
 
         private static NotificationDataTransferObject BuildNotificationDataTransferObject(
-            int id,
-            int userId,
+            int notificationIdentifier,
+            int userIdentifier,
             DateTime timestamp,
             string title,
             string body,
             NotificationType type,
-            int? relatedRequestId)
+            int? relatedRequestIdentifier)
         {
             return new NotificationDataTransferObject
             {
-                Id = id,
-                User = new UserDataTransferObject { Id = userId },
+                Identifier = notificationIdentifier,
+                User = new UserDataTransferObject { Identifier = userIdentifier },
                 Timestamp = timestamp,
                 Title = title,
                 Body = body,
                 Type = type,
-                RelatedRequestId = relatedRequestId
+                RelatedRequestIdentifier = relatedRequestIdentifier
             };
         }
 
         private static Notification BuildNotificationModel(
-            int userId,
+            int userIdentifier,
             DateTime timestamp,
             string title,
             string body,
             NotificationType type = default,
-            int? relatedRequestId = null)
+            int? relatedRequestIdentifier = null)
         {
             return new Notification
             {
-                Id = NewEntityId,
-                User = new User { Id = userId },
+                Identifier = NewEntityIdentifier,
+                User = new User { Identifier = userIdentifier },
                 Timestamp = timestamp,
                 Title = title,
                 Body = body,
                 Type = type,
-                RelatedRequestId = relatedRequestId
+                RelatedRequestIdentifier = relatedRequestIdentifier
             };
         }
     }
 }
+
+
+

@@ -4,20 +4,21 @@ namespace Property_and_Management.src.Model
 {
     public class User : IEntity
     {
-        public int Id { get; set; }
+        public int Identifier { get; set; }
         public string DisplayName { get; set; }
 
         public User() { }
 
-        public User(int id)
+        public User(int identifier)
         {
-            Id = id;
+            Identifier = identifier;
         }
 
-        public User(int id, string displayName)
+        public User(int identifier, string displayName)
         {
-            Id = id;
+            Identifier = identifier;
             DisplayName = displayName;
         }
     }
 }
+

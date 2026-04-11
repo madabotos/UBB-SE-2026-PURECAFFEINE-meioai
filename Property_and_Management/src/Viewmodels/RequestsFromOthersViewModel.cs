@@ -23,7 +23,7 @@ namespace Property_and_Management.src.Viewmodels
         private ObservableCollection<RequestDataTransferObject> _pagedRequests = new();
         private ImmutableList<RequestDataTransferObject> _allRequests = ImmutableList<RequestDataTransferObject>.Empty;
 
-        public int OwnerId { get; private set; }
+        public int ownerIdentifier { get; private set; }
 
         public static int PageSize => DefaultPageSize;
 
@@ -82,14 +82,14 @@ namespace Property_and_Management.src.Viewmodels
         {
             _requestService = requestService;
             _currentUserContext = currentUserContext;
-            OwnerId = _currentUserContext.CurrentUserId;
+            ownerIdentifier = _currentUserContext.CurrentUserIdentifier;
             LoadRequests(FirstPageNumber, PageSize);
         }
 
         public void LoadRequests(int page, int pageSize)
         {
-            OwnerId = _currentUserContext.CurrentUserId;
-            var allRequests = _requestService.GetRequestsForOwner(OwnerId)
+            ownerIdentifier = _currentUserContext.CurrentUserIdentifier;
+            var allRequests = _requestService.GetRequestsForOwner(ownerIdentifier)
                 .OrderByDescending(request => request.StartDate)
                 .ToImmutableList();
 
@@ -110,22 +110,22 @@ namespace Property_and_Management.src.Viewmodels
         public void NextPage() => CurrentPage = Math.Min(CurrentPage + PageStep, PageCount);
         public void PrevPage() => CurrentPage = Math.Max(CurrentPage - FirstPageNumber, FirstPageNumber);
 
-        public void ApproveRequest(int requestId)
+        public void ApproveRequest(int requestIdentifier)
         {
-            var result = _requestService.ApproveRequest(requestId, OwnerId);
+            var result = _requestService.ApproveRequest(requestIdentifier, ownerIdentifier);
             if (result >= MinimumSuccessfulOperationResult) LoadRequests(CurrentPage, PageSize);
         }
 
-        public int DenyRequest(int requestId, string reason)
+        public int DenyRequest(int requestIdentifier, string reason)
         {
-            var result = _requestService.DenyRequest(requestId, OwnerId, reason);
+            var result = _requestService.DenyRequest(requestIdentifier, ownerIdentifier, reason);
             if (result >= MinimumSuccessfulOperationResult) LoadRequests(CurrentPage, PageSize);
             return result;
         }
 
-        public int OfferGame(int requestId)
+        public int OfferGame(int requestIdentifier)
         {
-            var result = _requestService.OfferGame(requestId, OwnerId);
+            var result = _requestService.OfferGame(requestIdentifier, ownerIdentifier);
             if (result >= MinimumSuccessfulOperationResult) LoadRequests(CurrentPage, PageSize);
             return result;
         }
@@ -141,3 +141,5 @@ namespace Property_and_Management.src.Viewmodels
         public void OnNext(RequestDataTransferObject value) => LoadRequests(CurrentPage, PageSize);
     }
 }
+
+

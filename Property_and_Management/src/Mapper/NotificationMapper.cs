@@ -19,13 +19,13 @@ namespace Property_and_Management.src.Mapper
 
             return new NotificationDataTransferObject
             {
-                Id = notification.Id,
+                Identifier = notification.Identifier,
                 User = _userMapper.ToDataTransferObject(notification.User),
                 Timestamp = notification.Timestamp,
                 Title = notification.Title,
                 Body = notification.Body,
                 Type = notification.Type,
-                RelatedRequestId = notification.RelatedRequestId
+                RelatedRequestIdentifier = notification.RelatedRequestIdentifier
             };
         }
 
@@ -35,14 +35,16 @@ namespace Property_and_Management.src.Mapper
 
             return new Notification
             {
-                Id = notificationDataTransferObject.Id,
+                Identifier = notificationDataTransferObject.Identifier,
                 User = _userMapper.ToModel(notificationDataTransferObject.User),
                 Timestamp = notificationDataTransferObject.Timestamp,
                 Title = notificationDataTransferObject.Title,
                 Body = notificationDataTransferObject.Body,
                 Type = notificationDataTransferObject.Type,
-                RelatedRequestId = notificationDataTransferObject.RelatedRequestId
+                RelatedRequestIdentifier = notificationDataTransferObject.RelatedRequestIdentifier
             };
         }
     }
 }
+
+

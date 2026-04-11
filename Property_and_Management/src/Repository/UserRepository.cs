@@ -44,13 +44,13 @@ namespace Property_and_Management.src.Repository
                 {
                     command.CommandText = "INSERT INTO Users (display_name) VALUES (@display_name); SELECT SCOPE_IDENTITY();";
                     command.Parameters.AddWithValue("@display_name", newEntity.DisplayName ?? (object)DBNull.Value);
-                    var newId = Convert.ToInt32(command.ExecuteScalar());
-                    newEntity.Id = newId;
+                    var newIdentifier = Convert.ToInt32(command.ExecuteScalar());
+                    newEntity.Identifier = newIdentifier;
                 }
             }
         }
 
-        public User Delete(int removedEntityId)
+        public User Delete(int removedEntityIdentifier)
         {
             using (var connection = new SqlConnection(_connectionString))
             {
@@ -58,7 +58,7 @@ namespace Property_and_Management.src.Repository
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "DELETE FROM Users OUTPUT deleted.id, deleted.display_name WHERE id = @id";
-                    command.Parameters.AddWithValue("@id", removedEntityId);
+                    command.Parameters.AddWithValue("@id", removedEntityIdentifier);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
@@ -69,9 +69,9 @@ namespace Property_and_Management.src.Repository
             throw new KeyNotFoundException();
         }
 
-        public void Update(int updatedEntityId, User newEntity)
+        public void Update(int updatedEntityIdentifier, User newEntity)
         {
-            if (updatedEntityId != newEntity.Id)
+            if (updatedEntityIdentifier != newEntity.Identifier)
                 throw new ArgumentException("Id mismatch");
 
             using (var connection = new SqlConnection(_connectionString))
@@ -81,13 +81,13 @@ namespace Property_and_Management.src.Repository
                 {
                     command.CommandText = "UPDATE Users SET display_name = @display_name WHERE id = @id";
                     command.Parameters.AddWithValue("@display_name", newEntity.DisplayName ?? (object)DBNull.Value);
-                    command.Parameters.AddWithValue("@id", updatedEntityId);
+                    command.Parameters.AddWithValue("@id", updatedEntityIdentifier);
                     command.ExecuteNonQuery();
                 }
             }
         }
 
-        public User Get(int id)
+        public User Get(int identifier)
         {
             using (var connection = new SqlConnection(_connectionString))
             {
@@ -95,14 +95,14 @@ namespace Property_and_Management.src.Repository
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "SELECT * FROM Users WHERE id = @id";
-                    command.Parameters.AddWithValue("@id", id);
+                    command.Parameters.AddWithValue("@id", identifier);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
                         {
-                            var userId = (int)reader["id"];
+                            var userIdentifier = (int)reader["id"];
                             var displayName = reader["display_name"] as string ?? string.Empty;
-                            return new User(userId, displayName);
+                            return new User(userIdentifier, displayName);
                         }
                     }
                 }
@@ -112,3 +112,6 @@ namespace Property_and_Management.src.Repository
         }
     }
 }
+
+
+

@@ -17,7 +17,7 @@ namespace Property_and_Management.src.Views
         private const double DenyReasonInputMinimumWidth = 360;
         private const double DenyDialogContentSpacing = 8;
         private const int UnknownOperationResult = -1;
-        private const int MinimumSuccessfulEntityId = 1;
+        private const int MinimumSuccessfulEntityIdentifier = 1;
         private const int ErrorResultUpperBoundExclusive = 0;
 
         public RequestsFromOthersPage()
@@ -53,7 +53,7 @@ namespace Property_and_Management.src.Views
 
         private async void OfferButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not Button clickedButton || clickedButton.Tag is not int requestId)
+            if (sender is not Button clickedButton || clickedButton.Tag is not int requestIdentifier)
                 return;
 
             var request = clickedButton.DataContext as RequestDataTransferObject;
@@ -71,9 +71,9 @@ namespace Property_and_Management.src.Views
             if (result == ContentDialogResult.Primary)
             {
                 var requestsFromOthersViewModel = DataContext as RequestsFromOthersViewModel;
-                var offerResult = requestsFromOthersViewModel?.OfferGame(requestId) ?? UnknownOperationResult;
+                var offerResult = requestsFromOthersViewModel?.OfferGame(requestIdentifier) ?? UnknownOperationResult;
 
-                if (offerResult < MinimumSuccessfulEntityId)
+                if (offerResult < MinimumSuccessfulEntityIdentifier)
                 {
                     string message = offerResult < ErrorResultUpperBoundExclusive
                         ? ((OfferError)offerResult) switch
@@ -92,7 +92,7 @@ namespace Property_and_Management.src.Views
 
         private async void DenyButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not Button clickedButton || clickedButton.Tag is not int requestId)
+            if (sender is not Button clickedButton || clickedButton.Tag is not int requestIdentifier)
                 return;
 
             var request = clickedButton.DataContext as RequestDataTransferObject;
@@ -131,9 +131,9 @@ namespace Property_and_Management.src.Views
             }
 
             var requestsFromOthersViewModel = DataContext as RequestsFromOthersViewModel;
-            var denyResult = requestsFromOthersViewModel?.DenyRequest(requestId, reason) ?? UnknownOperationResult;
+            var denyResult = requestsFromOthersViewModel?.DenyRequest(requestIdentifier, reason) ?? UnknownOperationResult;
 
-            if (denyResult < MinimumSuccessfulEntityId)
+            if (denyResult < MinimumSuccessfulEntityIdentifier)
             {
                 string message = denyResult < ErrorResultUpperBoundExclusive
                     ? ((DenyRequestError)denyResult) switch
@@ -190,3 +190,4 @@ namespace Property_and_Management.src.Views
         }
     }
 }
+

@@ -5,7 +5,7 @@ namespace Property_and_Management.src.DataTransferObjects
 {
     public class UserDataTransferObject : IDataTransferObject<User>
     {
-        public int Id { get; set; }
+        public int Identifier { get; set; }
         public string DisplayName { get; set; }
 
         public UserDataTransferObject() { }

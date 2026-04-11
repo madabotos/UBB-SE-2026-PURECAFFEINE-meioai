@@ -6,14 +6,14 @@ namespace Property_and_Management.src.DataTransferObjects
 {
     public class NotificationDataTransferObject : IDataTransferObject<Notification>
     {
-        public int Id { get; set; }
+        public int Identifier { get; set; }
         public UserDataTransferObject User { get; set; }
         public DateTime Timestamp { get; set; }
         public string Title { get; set; }
         public string Body { get; set; }
 
         public NotificationType Type { get; set; } = NotificationType.Informational;
-        public int? RelatedRequestId { get; set; }
+        public int? RelatedRequestIdentifier { get; set; }
 
         // UI computed properties are fine here — they only use Data Transfer Object data
         public string TimeDisplay => Timestamp.ToString("hh:mm tt");
@@ -22,3 +22,4 @@ namespace Property_and_Management.src.DataTransferObjects
         public NotificationDataTransferObject() { }
     }
 }
+

@@ -11,7 +11,7 @@ namespace Property_and_Management.src.Views
 {
     public sealed partial class CreateRequestView : Page
     {
-        private const int MinimumSuccessfulEntityId = 1;
+        private const int MinimumSuccessfulEntityIdentifier = 1;
 
         public CreateRequestViewModel ViewModel { get; }
 
@@ -38,7 +38,7 @@ namespace Property_and_Management.src.Views
             if (ViewModel.ValidateInputs())
             {
                 var result = ViewModel.SaveRequest();
-                if (result >= MinimumSuccessfulEntityId)
+                if (result >= MinimumSuccessfulEntityIdentifier)
                 {
                     if (Frame.CanGoBack)
                         Frame.GoBack();
@@ -65,3 +65,4 @@ namespace Property_and_Management.src.Views
         }
     }
 }
+

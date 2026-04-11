@@ -12,7 +12,7 @@ namespace Property_and_Management.src.Mapper
 
             return new UserDataTransferObject
             {
-                Id = user.Id,
+                Identifier = user.Identifier,
                 DisplayName = user.DisplayName
             };
         }
@@ -23,9 +23,10 @@ namespace Property_and_Management.src.Mapper
 
             return new User
             {
-                Id = userDataTransferObject.Id,
+                Identifier = userDataTransferObject.Identifier,
                 DisplayName = userDataTransferObject.DisplayName
             };
         }
     }
 }
+

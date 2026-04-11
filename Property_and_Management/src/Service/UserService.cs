@@ -17,10 +17,12 @@ namespace Property_and_Management.src.Service
             _userMapper = userMapper;
         }
 
-        public ImmutableList<UserDataTransferObject> GetUsersExcept(int excludeUserId) =>
+        public ImmutableList<UserDataTransferObject> GetUsersExcept(int excludeUserIdentifier) =>
             _userRepository.GetAll()
-                .Where(user => user.Id != excludeUserId)
+                .Where(user => user.Identifier != excludeUserIdentifier)
                 .Select(user => _userMapper.ToDataTransferObject(user))
                 .ToImmutableList();
     }
 }
+
+

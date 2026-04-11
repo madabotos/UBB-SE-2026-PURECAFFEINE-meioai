@@ -5,7 +5,7 @@ namespace Property_and_Management.src.DataTransferObjects
 {
     public class GameDataTransferObject : IDataTransferObject<Game>
     {
-        public int Id { get; set; }
+        public int Identifier { get; set; }
         public UserDataTransferObject Owner { get; set; }
         public string Name { get; set; }
         public decimal Price { get; set; }

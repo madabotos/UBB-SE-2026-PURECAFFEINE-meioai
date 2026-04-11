@@ -8,8 +8,9 @@ namespace Property_and_Management.src.Interface
         /// <summary>
         /// Gets games owned by the specified user.
         /// </summary>
-        /// <param name="ownerId">Owner user id.</param>
+        /// <param name="ownerIdentifier">Owner user id.</param>
         /// <returns>Immutable list of games.</returns>
-        ImmutableList<Game> GetGamesByOwner(int ownerId);
+        ImmutableList<Game> GetGamesByOwner(int ownerIdentifier);
     }
 }
+

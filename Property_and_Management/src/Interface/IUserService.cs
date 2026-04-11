@@ -5,6 +5,7 @@ namespace Property_and_Management.src.Interface
 {
     public interface IUserService
     {
-        ImmutableList<UserDataTransferObject> GetUsersExcept(int excludeUserId);
+        ImmutableList<UserDataTransferObject> GetUsersExcept(int excludeUserIdentifier);
     }
 }
+

@@ -25,11 +25,12 @@ namespace Property_and_Management.src.Interface
         public GameDataTransferObject GetGameByIdentifier(int gameIdentifier);
 
         /// <summary>Return all games of a given owner.</summary>
-        /// <param name="ownerId">The identifier of the owner.</param>
+        /// <param name="ownerIdentifier">The identifier of the owner.</param>
         /// <returns>A list of <see cref="GameDataTransferObject"/> objects for the specified owner.</returns>
-        public ImmutableList<GameDataTransferObject> GetGamesForOwner(int ownerId);
+        public ImmutableList<GameDataTransferObject> GetGamesForOwner(int ownerIdentifier);
 
         /// <summary>Return all games in the system.</summary>
         ImmutableList<GameDataTransferObject> GetAllGames();
     }
 }
+

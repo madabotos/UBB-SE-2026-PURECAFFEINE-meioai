@@ -24,7 +24,7 @@ namespace Property_and_Management.src.Viewmodels
         private const int MinimumValidNotificationId = 0;
         private const int NoItemsCount = 0;
         private const int MinimumSuccessfulOperationResult = 1;
-        private const int DefaultUserId = 1;
+        private const int DefaultUserIdentifier = 1;
 
         private ObservableCollection<NotificationDataTransferObject> _notifications = new ObservableCollection<NotificationDataTransferObject>();
         private ObservableCollection<NotificationDataTransferObject> _pagedNotifications = new ObservableCollection<NotificationDataTransferObject>();
@@ -36,7 +36,7 @@ namespace Property_and_Management.src.Viewmodels
 
         private ImmutableList<NotificationDataTransferObject> _allNotifications = ImmutableList<NotificationDataTransferObject>.Empty;
 
-        public int CurrentUserId { get; private set; }
+        public int CurrentUserIdentifier { get; private set; }
 
         public static int PageSize => DefaultPageSize;
 
@@ -101,20 +101,20 @@ namespace Property_and_Management.src.Viewmodels
             _requestService = requestService;
             _currentUserContext = currentUserContext;
 
-            LoadNotificationsForUser(_currentUserContext.CurrentUserId);
+            LoadNotificationsForUser(_currentUserContext.CurrentUserIdentifier);
 
             _subscription = notificationService.Subscribe(this);
         }
 
-        public void LoadNotificationsForUser(int userId)
+        public void LoadNotificationsForUser(int userIdentifier)
         {
-            CurrentUserId = userId;
+            CurrentUserIdentifier = userIdentifier;
             LoadDismissedIdsForCurrentUser();
 
             _allNotifications = _notificationService
-                .GetNotificationsForUser(userId)
-                .Where(notification => !_dismissedNotificationIds.Contains(notification.Id))
-                .OrderByDescending(notification => notification.Id)
+                .GetNotificationsForUser(userIdentifier)
+                .Where(notification => !_dismissedNotificationIds.Contains(notification.Identifier))
+                .OrderByDescending(notification => notification.Identifier)
                 .ToImmutableList();
 
             Notifications = new ObservableCollection<NotificationDataTransferObject>(_allNotifications);
@@ -131,7 +131,7 @@ namespace Property_and_Management.src.Viewmodels
         // small internal wrapper to convert repository results -> Data Transfer Object list (keeps call sites short)
         private System.Collections.Immutable.ImmutableList<NotificationDataTransferObject> GetNotificationsForCurrentUser()
         {
-            return _notificationService.GetNotificationsForUser(CurrentUserId);
+            return _notificationService.GetNotificationsForUser(CurrentUserIdentifier);
         }
 
         private void UpdatePaging()
@@ -165,15 +165,15 @@ namespace Property_and_Management.src.Viewmodels
             }
         }
 
-        public void DeleteNotificationById(int id)
+        public void DeleteNotificationByIdentifier(int notificationIdentifier)
         {
             // REQ-NOT-02: dismiss locally from view and persist locally, keep DB history untouched
-            _dismissedNotificationIds.Add(id);
+            _dismissedNotificationIds.Add(notificationIdentifier);
             SaveDismissedIdsForCurrentUser();
 
             _allNotifications = GetNotificationsForCurrentUser()
-                .Where(notification => !_dismissedNotificationIds.Contains(notification.Id))
-                .OrderByDescending(notification => notification.Id)
+                .Where(notification => !_dismissedNotificationIds.Contains(notification.Identifier))
+                .OrderByDescending(notification => notification.Identifier)
                 .ToImmutableList();
             Notifications = new ObservableCollection<NotificationDataTransferObject>(_allNotifications);
 
@@ -190,7 +190,7 @@ namespace Property_and_Management.src.Viewmodels
         {
             var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "BoardRent");
             Directory.CreateDirectory(folder);
-            return Path.Combine(folder, $"dismissed-notifications-user-{CurrentUserId}.txt");
+            return Path.Combine(folder, $"dismissed-notifications-user-{CurrentUserIdentifier}.txt");
         }
 
         private void LoadDismissedIdsForCurrentUser()
@@ -242,23 +242,26 @@ namespace Property_and_Management.src.Viewmodels
         public void OnNext(NotificationDataTransferObject value)
         {
             // Trigger an update from the service
-            LoadNotificationsForUser(CurrentUserId == MinimumValidNotificationId ? DefaultUserId : CurrentUserId);
+            LoadNotificationsForUser(CurrentUserIdentifier == MinimumValidNotificationId ? DefaultUserIdentifier : CurrentUserIdentifier);
         }
 
-        public int ApproveOffer(int requestId)
+        public int ApproveOffer(int requestIdentifier)
         {
-            var result = _requestService.ApproveOffer(requestId, CurrentUserId);
-            if (result >= MinimumSuccessfulOperationResult) LoadNotificationsForUser(CurrentUserId);
+            var result = _requestService.ApproveOffer(requestIdentifier, CurrentUserIdentifier);
+            if (result >= MinimumSuccessfulOperationResult) LoadNotificationsForUser(CurrentUserIdentifier);
             return result;
         }
 
-        public int DenyOffer(int requestId)
+        public int DenyOffer(int requestIdentifier)
         {
-            var result = _requestService.DenyOffer(requestId, CurrentUserId);
-            if (result >= MinimumSuccessfulOperationResult) LoadNotificationsForUser(CurrentUserId);
+            var result = _requestService.DenyOffer(requestIdentifier, CurrentUserIdentifier);
+            if (result >= MinimumSuccessfulOperationResult) LoadNotificationsForUser(CurrentUserIdentifier);
             return result;
         }
 
         public void Dispose() => _subscription?.Dispose();
     }
 }
+
+
+

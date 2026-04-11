@@ -5,6 +5,6 @@ namespace Property_and_Management.src.Interface
         /// <summary>
         /// Gets or sets the unique identifier for the entity.
         /// </summary>
-        int Id { get; set; }
+        int Identifier { get; set; }
     }
 }

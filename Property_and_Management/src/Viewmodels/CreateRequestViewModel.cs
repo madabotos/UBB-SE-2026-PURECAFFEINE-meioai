@@ -16,7 +16,7 @@ namespace Property_and_Management.src.Viewmodels
         private readonly IRequestService _requestService;
         private readonly ICurrentUserContext _currentUserContext;
 
-        public int CurrentUserId => _currentUserContext.CurrentUserId;
+        public int CurrentUserIdentifier => _currentUserContext.CurrentUserIdentifier;
 
         public ObservableCollection<GameDataTransferObject> AvailableGames { get; set; } = new();
 
@@ -54,7 +54,7 @@ namespace Property_and_Management.src.Viewmodels
         {
             AvailableGames.Clear();
             var games = _gameService.GetAllGames()
-                .Where(game => game.IsActive && game.Owner?.Id != CurrentUserId);
+                .Where(game => game.IsActive && game.Owner?.Identifier != CurrentUserIdentifier);
             foreach (var game in games)
                 AvailableGames.Add(game);
         }
@@ -70,9 +70,9 @@ namespace Property_and_Management.src.Viewmodels
             if (!ValidateInputs()) return InvalidRequestResult;
 
             return _requestService.CreateRequest(
-                SelectedGame.Id,
-                CurrentUserId,
-                SelectedGame.Owner.Id,
+                SelectedGame.Identifier,
+                CurrentUserIdentifier,
+                SelectedGame.Owner.Identifier,
                 StartDate.Value.DateTime,
                 EndDate.Value.DateTime);
         }
@@ -84,3 +84,5 @@ namespace Property_and_Management.src.Viewmodels
         }
     }
 }
+
+

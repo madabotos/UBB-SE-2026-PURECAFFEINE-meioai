@@ -21,7 +21,7 @@ namespace Property_and_Management.src.Mapper
 
             return new RentalDataTransferObject
             {
-                Id = rental.Id,
+                Identifier = rental.Identifier,
                 Game = _gameMapper.ToDataTransferObject(rental.Game),
                 Renter = _userMapper.ToDataTransferObject(rental.Renter),
                 Owner = _userMapper.ToDataTransferObject(rental.Owner),
@@ -36,7 +36,7 @@ namespace Property_and_Management.src.Mapper
 
             return new Rental
             {
-                Id = rentalDataTransferObject.Id,
+                Identifier = rentalDataTransferObject.Identifier,
                 Game = _gameMapper.ToModel(rentalDataTransferObject.Game),
                 Renter = _userMapper.ToModel(rentalDataTransferObject.Renter),
                 Owner = _userMapper.ToModel(rentalDataTransferObject.Owner),
@@ -46,3 +46,4 @@ namespace Property_and_Management.src.Mapper
         }
     }
 }
+

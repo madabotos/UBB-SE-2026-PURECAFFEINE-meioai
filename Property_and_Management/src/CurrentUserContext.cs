@@ -4,11 +4,11 @@ namespace Property_and_Management.src
 {
     public sealed class CurrentUserContext : ICurrentUserContext
     {
-        public int CurrentUserId { get; }
+        public int CurrentUserIdentifier { get; }
 
-        public CurrentUserContext(int currentUserId)
+        public CurrentUserContext(int currentUserIdentifier)
         {
-            CurrentUserId = currentUserId;
+            CurrentUserIdentifier = currentUserIdentifier;
         }
     }
 }

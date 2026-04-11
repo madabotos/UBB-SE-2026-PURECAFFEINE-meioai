@@ -14,7 +14,7 @@ namespace Property_and_Management.src.Viewmodels
         private readonly IUserService _userService;
         private readonly ICurrentUserContext _currentUserContext;
 
-        public int CurrentUserId => _currentUserContext.CurrentUserId;
+        public int CurrentUserIdentifier => _currentUserContext.CurrentUserIdentifier;
 
         public ObservableCollection<GameDataTransferObject> MyGames { get; set; } = new();
         public ObservableCollection<UserDataTransferObject> AvailableRenters { get; set; } = new();
@@ -60,14 +60,14 @@ namespace Property_and_Management.src.Viewmodels
         public void LoadData()
         {
             MyGames.Clear();
-            foreach (var game in _gameService.GetGamesForOwner(CurrentUserId))
+            foreach (var game in _gameService.GetGamesForOwner(CurrentUserIdentifier))
             {
                 if (game.IsActive)
                     MyGames.Add(game);
             }
 
             AvailableRenters.Clear();
-            foreach (var user in _userService.GetUsersExcept(CurrentUserId))
+            foreach (var user in _userService.GetUsersExcept(CurrentUserIdentifier))
                 AvailableRenters.Add(user);
         }
 
@@ -85,9 +85,9 @@ namespace Property_and_Management.src.Viewmodels
             try
             {
                 _rentalService.CreateConfirmedRental(
-                    SelectedGame.Id,
-                    SelectedRenter.Id,
-                    CurrentUserId,
+                    SelectedGame.Identifier,
+                    SelectedRenter.Identifier,
+                    CurrentUserIdentifier,
                     StartDate.Value.DateTime,
                     EndDate.Value.DateTime);
                 return null;
@@ -105,3 +105,5 @@ namespace Property_and_Management.src.Viewmodels
         }
     }
 }
+
+

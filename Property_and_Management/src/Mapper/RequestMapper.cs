@@ -21,7 +21,7 @@ namespace Property_and_Management.src.Mapper
 
             return new RequestDataTransferObject
             {
-                Id = request.Id,
+                Identifier = request.Identifier,
                 Game = _gameMapper.ToDataTransferObject(request.Game),
                 Renter = _userMapper.ToDataTransferObject(request.Renter),
                 Owner = _userMapper.ToDataTransferObject(request.Owner),
@@ -38,7 +38,7 @@ namespace Property_and_Management.src.Mapper
 
             return new Request
             {
-                Id = requestDataTransferObject.Id,
+                Identifier = requestDataTransferObject.Identifier,
                 Game = _gameMapper.ToModel(requestDataTransferObject.Game),
                 Renter = _userMapper.ToModel(requestDataTransferObject.Renter),
                 Owner = _userMapper.ToModel(requestDataTransferObject.Owner),
@@ -50,3 +50,4 @@ namespace Property_and_Management.src.Mapper
         }
     }
 }
+

@@ -52,7 +52,7 @@ namespace Property_and_Management.src.Service
 
             foreach (var rental in rentals)
             {
-                _rentalRepository.Delete(rental.Id);
+                _rentalRepository.Delete(rental.Identifier);
             }
 
             // Deleting a game invalidates pending requests for that game.
@@ -66,10 +66,10 @@ namespace Property_and_Management.src.Service
             return _gameMapper.ToDataTransferObject(_gameRepository.Get(gameIdentifier));
         }
 
-        public ImmutableList<GameDataTransferObject> GetGamesForOwner(int ownerId)
+        public ImmutableList<GameDataTransferObject> GetGamesForOwner(int ownerIdentifier)
         {
             return _gameRepository
-                .GetGamesByOwner(ownerId)
+                .GetGamesByOwner(ownerIdentifier)
                 .Select(game => _gameMapper.ToDataTransferObject(game))
                 .ToImmutableList();
         }
@@ -83,3 +83,4 @@ namespace Property_and_Management.src.Service
         }
     }
 }
+

@@ -19,7 +19,7 @@ namespace Property_and_Management.src.Mapper
 
             return new GameDataTransferObject
             {
-                Id = game.Id,
+                Identifier = game.Identifier,
                 Owner = _userMapper.ToDataTransferObject(game.Owner),
                 Name = game.Name,
                 Price = game.Price,
@@ -37,7 +37,7 @@ namespace Property_and_Management.src.Mapper
 
             return new Game
             {
-                Id = gameDataTransferObject.Id,
+                Identifier = gameDataTransferObject.Identifier,
                 Owner = _userMapper.ToModel(gameDataTransferObject.Owner),
                 Name = gameDataTransferObject.Name,
                 Price = gameDataTransferObject.Price,
@@ -50,3 +50,4 @@ namespace Property_and_Management.src.Mapper
         }
     }
 }
+

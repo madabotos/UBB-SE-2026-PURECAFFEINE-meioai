@@ -5,7 +5,7 @@ namespace Property_and_Management.src.Model
 {
     public class Request : IEntity
     {
-        public int Id { get; set; }
+        public int Identifier { get; set; }
         public Game Game { get; set; }
         public User Renter { get; set; }
         public User Owner { get; set; }
@@ -17,10 +17,10 @@ namespace Property_and_Management.src.Model
 
         public Request() { }
 
-        public Request(int id, Game game, User renter, User owner, DateTime startDate, DateTime endDate,
+        public Request(int identifier, Game game, User renter, User owner, DateTime startDate, DateTime endDate,
                        RequestStatus status = RequestStatus.Open, User? offeringUser = null)
         {
-            Id = id;
+            Identifier = identifier;
             Game = game;
             Renter = renter;
             Owner = owner;
@@ -31,3 +31,4 @@ namespace Property_and_Management.src.Model
         }
     }
 }
+

@@ -67,7 +67,7 @@ namespace Property_and_Management.src.Service.Listeners
             // so callers never need to know about ServerCommunication types.
             var incoming = new IncomingNotification
             {
-                UserId = message.UserId,
+                UserIdentifier = message.UserIdentifier,
                 Timestamp = message.Timestamp,
                 Title = message.Title,
                 Body = message.Body
@@ -126,11 +126,11 @@ namespace Property_and_Management.src.Service.Listeners
             return new Unsubscriber(_subscribers, observer);
         }
 
-        public void SendNotification(int userId, string title, string body)
+        public void SendNotification(int userIdentifier, string title, string body)
         {
             var message = new SendNotificationMessage
             {
-                UserId = userId,
+                UserIdentifier = userIdentifier,
                 Timestamp = DateTime.UtcNow,
                 Title = title,
                 Body = body
@@ -140,9 +140,9 @@ namespace Property_and_Management.src.Service.Listeners
             _udpClient.Send(data, data.Length, ServerEndpoint);
         }
 
-        public void SubscribeToServer(int userId)
+        public void SubscribeToServer(int userIdentifier)
         {
-            var message = new SubscribeToServerMessage { UserId = userId };
+            var message = new SubscribeToServerMessage { UserIdentifier = userIdentifier };
             byte[] data = CommunicationHelper.SerializeMessage(message);
             _udpClient.Send(data, data.Length, ServerEndpoint);
         }
@@ -172,3 +172,4 @@ namespace Property_and_Management.src.Service.Listeners
         }
     }
 }
+

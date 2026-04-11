@@ -9,7 +9,7 @@ namespace Property_and_Management.src.Repository
 {
     public class NotificationRepository : INotificationRepository
     {
-        private const int MissingUserId = 0;
+        private const int MissingUserIdentifier = 0;
 
         private readonly string _connectionString =
             System.Configuration.ConfigurationManager.ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
@@ -21,11 +21,11 @@ namespace Property_and_Management.src.Repository
         {
             var user = new User((int)reader["user_id"], reader["user_display_name"] as string ?? string.Empty);
             var type = (NotificationType)(int)reader["type"];
-            var relatedRequestId = reader["related_request_id"];
+            var RelatedRequestIdentifier = reader["related_request_id"];
             return new Notification(
                 (int)reader["notification_id"], user,
                 (DateTime)reader["timestamp"], (string)reader["title"], (string)reader["body"],
-                type, relatedRequestId == DBNull.Value ? null : (int)relatedRequestId);
+                type, RelatedRequestIdentifier == DBNull.Value ? null : (int)RelatedRequestIdentifier);
         }
 
         public ImmutableList<Notification> GetAll()
@@ -57,19 +57,19 @@ namespace Property_and_Management.src.Repository
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "INSERT INTO Notifications(user_id, timestamp, title, body, type, related_request_id) VALUES(@user_id, @timestamp, @title, @body, @type, @related_request_id); SELECT SCOPE_IDENTITY();";
-                    command.Parameters.AddWithValue("@user_id", newEntity.User?.Id ?? MissingUserId);
+                    command.Parameters.AddWithValue("@user_id", newEntity.User?.Identifier ?? MissingUserIdentifier);
                     command.Parameters.AddWithValue("@timestamp", newEntity.Timestamp);
                     command.Parameters.AddWithValue("@title", newEntity.Title);
                     command.Parameters.AddWithValue("@body", newEntity.Body);
                     command.Parameters.AddWithValue("@type", (int)newEntity.Type);
-                    command.Parameters.AddWithValue("@related_request_id", newEntity.RelatedRequestId ?? (object)DBNull.Value);
-                    var newId = Convert.ToInt32(command.ExecuteScalar());
-                    newEntity.Id = newId;
+                    command.Parameters.AddWithValue("@related_request_id", newEntity.RelatedRequestIdentifier ?? (object)DBNull.Value);
+                    var newIdentifier = Convert.ToInt32(command.ExecuteScalar());
+                    newEntity.Identifier = newIdentifier;
                 }
             }
         }
 
-        public Notification Delete(int removedEntityId)
+        public Notification Delete(int removedEntityIdentifier)
         {
             using (var connection = new SqlConnection(_connectionString))
             {
@@ -82,7 +82,7 @@ namespace Property_and_Management.src.Repository
                         "u.display_name AS user_display_name " +
                         "FROM Notifications n LEFT JOIN Users u ON u.id = n.user_id " +
                         "WHERE n.notification_id = @id";
-                    command.Parameters.AddWithValue("@id", removedEntityId);
+                    command.Parameters.AddWithValue("@id", removedEntityIdentifier);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
@@ -95,7 +95,7 @@ namespace Property_and_Management.src.Repository
             throw new KeyNotFoundException();
         }
 
-        public void Update(int updatedEntityId, Notification newEntity)
+        public void Update(int updatedEntityIdentifier, Notification newEntity)
         {
             using (var connection = new SqlConnection(_connectionString))
             {
@@ -103,19 +103,19 @@ namespace Property_and_Management.src.Repository
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "UPDATE Notifications SET user_id = @user_id, timestamp = @timestamp, title = @title, body = @body, type = @type, related_request_id = @related_request_id WHERE notification_id = @id";
-                    command.Parameters.AddWithValue("@id", updatedEntityId);
-                    command.Parameters.AddWithValue("@user_id", newEntity.User?.Id ?? MissingUserId);
+                    command.Parameters.AddWithValue("@id", updatedEntityIdentifier);
+                    command.Parameters.AddWithValue("@user_id", newEntity.User?.Identifier ?? MissingUserIdentifier);
                     command.Parameters.AddWithValue("@timestamp", newEntity.Timestamp);
                     command.Parameters.AddWithValue("@title", newEntity.Title);
                     command.Parameters.AddWithValue("@body", newEntity.Body);
                     command.Parameters.AddWithValue("@type", (int)newEntity.Type);
-                    command.Parameters.AddWithValue("@related_request_id", newEntity.RelatedRequestId ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@related_request_id", newEntity.RelatedRequestIdentifier ?? (object)DBNull.Value);
                     command.ExecuteNonQuery();
                 }
             }
         }
 
-        public Notification Get(int id)
+        public Notification Get(int identifier)
         {
             using (var connection = new SqlConnection(_connectionString))
             {
@@ -123,7 +123,7 @@ namespace Property_and_Management.src.Repository
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = BaseSelectQuery + " WHERE n.notification_id = @id";
-                    command.Parameters.AddWithValue("@id", id);
+                    command.Parameters.AddWithValue("@id", identifier);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
@@ -136,7 +136,7 @@ namespace Property_and_Management.src.Repository
             throw new KeyNotFoundException();
         }
 
-        public ImmutableList<Notification> GetNotificationsByUser(int userId)
+        public ImmutableList<Notification> GetNotificationsByUser(int userIdentifier)
         {
             var list = new List<Notification>();
             using (var connection = new SqlConnection(_connectionString))
@@ -145,7 +145,7 @@ namespace Property_and_Management.src.Repository
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = BaseSelectQuery + " WHERE n.user_id = @user_id";
-                    command.Parameters.AddWithValue("@user_id", userId);
+                    command.Parameters.AddWithValue("@user_id", userIdentifier);
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -158,7 +158,7 @@ namespace Property_and_Management.src.Repository
             return list.ToImmutableList();
         }
 
-        public ImmutableList<Notification> GetActionableByRequestId(int requestId)
+        public ImmutableList<Notification> GetActionableByRequestId(int requestIdentifier)
         {
             var list = new List<Notification>();
             using (var connection = new SqlConnection(_connectionString))
@@ -167,7 +167,7 @@ namespace Property_and_Management.src.Repository
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = BaseSelectQuery + " WHERE n.related_request_id = @request_id AND n.type = @type";
-                    command.Parameters.AddWithValue("@request_id", requestId);
+                    command.Parameters.AddWithValue("@request_id", requestIdentifier);
                     command.Parameters.AddWithValue("@type", (int)NotificationType.OfferReceived);
                     using (var reader = command.ExecuteReader())
                     {
@@ -181,7 +181,7 @@ namespace Property_and_Management.src.Repository
             return list.ToImmutableList();
         }
 
-        public void DeleteByRequestId(int requestId)
+        public void DeleteByRequestId(int requestIdentifier)
         {
             using (var connection = new SqlConnection(_connectionString))
             {
@@ -189,10 +189,13 @@ namespace Property_and_Management.src.Repository
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "DELETE FROM Notifications WHERE related_request_id = @request_id";
-                    command.Parameters.AddWithValue("@request_id", requestId);
+                    command.Parameters.AddWithValue("@request_id", requestIdentifier);
                     command.ExecuteNonQuery();
                 }
             }
         }
     }
 }
+
+
+

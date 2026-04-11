@@ -43,13 +43,13 @@ namespace Property_and_Management
     /// </summary>
     public partial class App : Application
     {
-        private const int DefaultUserId = 1;
-        private const int UserIdArgumentIndex = 1;
+        private const int DefaultUserIdentifier = 1;
+        private const int UserIdentifierArgumentIndex = 1;
         private const int KeyPartIndex = 0;
         private const int ValuePartIndex = 1;
         private const int SplitKeyValuePartsCount = 2;
-        private const int DevModePrimaryUserId = 1;
-        private const int DevModeSecondaryUserId = 2;
+        private const int DevModePrimaryUserIdentifier = 1;
+        private const int DevModeSecondaryUserIdentifier = 2;
         private const int NoRunningProcessCount = 0;
         private const int SuccessExitCode = 0;
 
@@ -63,7 +63,7 @@ namespace Property_and_Management
         public static Window MainWindow { get; set; }
         public Frame RootFrame { get; set; }
         public string AppUserModelId { get; }
-        public int CurrentUserID { get; }
+        public int CurrentUserIdentifier { get; }
         public NotificationsViewModel NotificationsViewModel { get; private set; }
 
 
@@ -84,16 +84,16 @@ namespace Property_and_Management
         /// </summary>
         public App()
         {
-            CurrentUserID = GetUserIdFromArgs();
+            CurrentUserIdentifier = GetUserIdFromArgs();
 
             // Two-window dev mode: user 1 spawns the notification server + a second client
-            if (CurrentUserID == DevModePrimaryUserId && IsTwoWindowsEnabled())
+            if (CurrentUserIdentifier == DevModePrimaryUserIdentifier && IsTwoWindowsEnabled())
             {
                 StartNotificationServer();
                 LaunchSecondClient();
             }
 
-            AppUserModelId = $"BoardRent -- user-{CurrentUserID}";
+            AppUserModelId = $"BoardRent -- user-{CurrentUserIdentifier}";
 
             // Create manager and wire its generic handlers (handlers may reference fields initialized later)
             _notificationManager = new NotificationManager();
@@ -103,7 +103,7 @@ namespace Property_and_Management
             EnsureSingleInstance(AppUserModelId);
 
             ConfigureServices();
-            InitializeServices(CurrentUserID);
+            InitializeServices(CurrentUserIdentifier);
 
             InitializeComponent();
         }
@@ -120,7 +120,7 @@ namespace Property_and_Management
 
 
             // Infrastructure
-            serviceCollection.AddSingleton<ICurrentUserContext>(new CurrentUserContext(CurrentUserID));
+            serviceCollection.AddSingleton<ICurrentUserContext>(new CurrentUserContext(CurrentUserIdentifier));
             serviceCollection.AddSingleton<IToastNotificationService, ToastNotificationService>();
             serviceCollection.AddSingleton<IServerClient, NotificationClient>();
 
@@ -141,9 +141,9 @@ namespace Property_and_Management
             // ViewModels
             serviceCollection.AddSingleton<NotificationsViewModel>();
             serviceCollection.AddSingleton<MenuBarViewModel>();
-            serviceCollection.AddTransient(sp => new ListingsViewModel(
-                sp.GetRequiredService<IGameService>(),
-                sp.GetRequiredService<ICurrentUserContext>().CurrentUserId));
+            serviceCollection.AddTransient(serviceProvider => new ListingsViewModel(
+                serviceProvider.GetRequiredService<IGameService>(),
+                serviceProvider.GetRequiredService<ICurrentUserContext>().CurrentUserIdentifier));
             serviceCollection.AddTransient<CreateGameViewModel>();
             serviceCollection.AddTransient<EditGameViewModel>();
             serviceCollection.AddTransient<CreateRequestViewModel>();
@@ -159,12 +159,12 @@ namespace Property_and_Management
         private int GetUserIdFromArgs()
         {
             string[] commandLineArgs = Environment.GetCommandLineArgs(); // first arg is the executable path
-            if (commandLineArgs.Length > UserIdArgumentIndex && int.TryParse(commandLineArgs[UserIdArgumentIndex], out int parsedUserId))
+            if (commandLineArgs.Length > UserIdentifierArgumentIndex && int.TryParse(commandLineArgs[UserIdentifierArgumentIndex], out int parsedUserIdentifier))
             {
-                return parsedUserId;
+                return parsedUserIdentifier;
             }
 
-            return DefaultUserId;
+            return DefaultUserIdentifier;
         }
 
         #region Two-window dev mode
@@ -240,7 +240,7 @@ namespace Property_and_Management
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = currentExe,
-                    Arguments = DevModeSecondaryUserId.ToString(),
+                    Arguments = DevModeSecondaryUserIdentifier.ToString(),
                     UseShellExecute = true,
                     WorkingDirectory = System.IO.Path.GetDirectoryName(currentExe)
                 });
@@ -315,7 +315,7 @@ namespace Property_and_Management
             };
         }
 
-        private void InitializeServices(int userId)
+        private void InitializeServices(int userIdentifier)
         {
             // Initialize navigation frame
             RootFrame = new Frame();
@@ -329,7 +329,7 @@ namespace Property_and_Management
 
             // Start listening and subscribe for the configured user
             _notification_service.StartListening();
-            _notification_service.SubscribeToServer(userId);
+            _notification_service.SubscribeToServer(userIdentifier);
         }
 
         /// <summary>
@@ -426,3 +426,5 @@ namespace Property_and_Management
         }
     }
 }
+
+

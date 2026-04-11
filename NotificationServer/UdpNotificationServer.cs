@@ -20,16 +20,16 @@ namespace NotificationServer
 
         private static Dictionary<int, IPEndPoint> _userIpMap = [];
 
-        private static async Task SendMessage(int userId, MessageBase unwrappedMessageToSend)
+        private static async Task SendMessage(int userIdentifier, MessageBase unwrappedMessageToSend)
         {
             if (_udpClient == null)
             {
                 throw new NullReferenceException(nameof(_udpClient));
             }
 
-            if (!_userIpMap.TryGetValue(userId, out var endpoint))
+            if (!_userIpMap.TryGetValue(userIdentifier, out var endpoint))
             {
-                throw new InvalidDataException("UserId was not present in the map");
+                throw new InvalidDataException("UserIdentifier was not present in the map");
             }
 
             byte[] data = CommunicationHelper.SerializeMessage(unwrappedMessageToSend);
@@ -45,8 +45,8 @@ namespace NotificationServer
                 throw new InvalidCastException("Expected message was not " + nameof(SubscribeToServerMessage));
             }
 
-            _userIpMap[message.UserId] = recivedEndPoint;
-            Console.WriteLine($"{message.UserId} -> {recivedEndPoint.Address}:{recivedEndPoint.Port}");
+            _userIpMap[message.UserIdentifier] = recivedEndPoint;
+            Console.WriteLine($"{message.UserIdentifier} -> {recivedEndPoint.Address}:{recivedEndPoint.Port}");
         }
 
         private static async Task HandleSendNotificationMessage(MessageWrapper recivedMessage)
@@ -58,11 +58,11 @@ namespace NotificationServer
                 throw new InvalidCastException("Expected message was not " + nameof(SendNotificationMessage));
             }
 
-            var endpoint = _userIpMap.TryGetValue(unwrappedMessage.UserId, out var ep) ? ep.ToString() : "not subscribed";
-            Console.WriteLine($"Sending notification to user: {unwrappedMessage.UserId}({endpoint}) [{unwrappedMessage.Title} - {unwrappedMessage.Body}]");
+            var endpoint = _userIpMap.TryGetValue(unwrappedMessage.UserIdentifier, out var ep) ? ep.ToString() : "not subscribed";
+            Console.WriteLine($"Sending notification to user: {unwrappedMessage.UserIdentifier}({endpoint}) [{unwrappedMessage.Title} - {unwrappedMessage.Body}]");
 
             // Resend the UDP packet to the user id
-            await SendMessage(unwrappedMessage.UserId, unwrappedMessage);
+            await SendMessage(unwrappedMessage.UserIdentifier, unwrappedMessage);
         }
 
         private static async Task HandleMessagePacket(IPEndPoint recivedEndPoint, MessageWrapper recivedMessageWrapper)

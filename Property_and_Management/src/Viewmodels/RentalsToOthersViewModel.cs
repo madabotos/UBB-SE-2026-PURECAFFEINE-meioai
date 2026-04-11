@@ -22,7 +22,7 @@ namespace Property_and_Management.src.Viewmodels
         private ObservableCollection<RentalDataTransferObject> _pagedRentals = new();
         private ImmutableList<RentalDataTransferObject> _allRentals = ImmutableList<RentalDataTransferObject>.Empty;
 
-        public int OwnerId { get; private set; }
+        public int ownerIdentifier { get; private set; }
 
         public static int PageSize => DefaultPageSize;
 
@@ -81,14 +81,14 @@ namespace Property_and_Management.src.Viewmodels
         {
             _rentalService = rentalService;
             _currentUserContext = currentUserContext;
-            OwnerId = _currentUserContext.CurrentUserId;
+            ownerIdentifier = _currentUserContext.CurrentUserIdentifier;
             LoadRentals(FirstPageNumber, PageSize);
         }
 
         public void LoadRentals(int page, int pageSize)
         {
-            OwnerId = _currentUserContext.CurrentUserId;
-            var allRentals = _rentalService.GetRentalsForOwner(OwnerId)
+            ownerIdentifier = _currentUserContext.CurrentUserIdentifier;
+            var allRentals = _rentalService.GetRentalsForOwner(ownerIdentifier)
                 .OrderByDescending(rental => rental.StartDate)
                 .ToImmutableList();
 
@@ -116,3 +116,5 @@ namespace Property_and_Management.src.Viewmodels
         }
     }
 }
+
+

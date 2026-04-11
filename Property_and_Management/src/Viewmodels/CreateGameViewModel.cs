@@ -18,7 +18,7 @@ namespace Property_and_Management.src.Viewmodels
         private const int MaximumDescriptionLength = 500;
         private const int NoValidationErrors = 0;
         private const int EmptyImageLength = 0;
-        private const int NewEntityId = 0;
+        private const int NewEntityIdentifier = 0;
 
         private readonly IGameService _gameService;
         private readonly ICurrentUserContext _currentUserContext;
@@ -36,7 +36,7 @@ namespace Property_and_Management.src.Viewmodels
         public bool IsActive { get; set; } = true;
         public byte[] Image { get; set; } = null;
 
-        public int CurrentUserId => _currentUserContext.CurrentUserId;
+        public int CurrentUserIdentifier => _currentUserContext.CurrentUserIdentifier;
 
         public CreateGameViewModel(IGameService gameService, ICurrentUserContext currentUserContext)
         {
@@ -68,8 +68,8 @@ namespace Property_and_Management.src.Viewmodels
 
             var newgameDataTransferObject = new GameDataTransferObject
             {
-                Id = NewEntityId,
-                Owner = new UserDataTransferObject { Id = CurrentUserId },
+                Identifier = NewEntityIdentifier,
+                Owner = new UserDataTransferObject { Identifier = CurrentUserIdentifier },
                 Name = Name,
                 Price = Price,
                 MinimumPlayerNumber = MinPlayers,
@@ -84,3 +84,6 @@ namespace Property_and_Management.src.Viewmodels
         }
     }
 }
+
+
+

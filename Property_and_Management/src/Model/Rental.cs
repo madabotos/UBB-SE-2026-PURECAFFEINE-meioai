@@ -5,7 +5,7 @@ namespace Property_and_Management.src.Model
 {
     public class Rental : IEntity
     {
-        public int Id { get; set; }
+        public int Identifier { get; set; }
         public Game Game { get; set; }
         public User Renter { get; set; }
         public User Owner { get; set; }
@@ -14,9 +14,9 @@ namespace Property_and_Management.src.Model
 
         public Rental() { }
 
-        public Rental(int id, Game game, User renter, User owner, DateTime startDate, DateTime endDate)
+        public Rental(int identifier, Game game, User renter, User owner, DateTime startDate, DateTime endDate)
         {
-            Id = id;
+            Identifier = identifier;
             Game = game;
             Renter = renter;
             Owner = owner;
@@ -25,3 +25,4 @@ namespace Property_and_Management.src.Model
         }
     }
 }
+

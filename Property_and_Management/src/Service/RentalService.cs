@@ -14,7 +14,7 @@ namespace Property_and_Management.src.Service
         private readonly IMapper<Rental, RentalDataTransferObject> _rentalMapper;
 
         private const int BufferHours = 48;
-        private const int NewEntityId = 0;
+        private const int NewEntityIdentifier = 0;
 
         public RentalService(
             IRentalRepository rentalRepository,
@@ -26,9 +26,9 @@ namespace Property_and_Management.src.Service
             _rentalMapper = rentalMapper;
         }
 
-        public bool IsSlotAvailable(int gameId, DateTime newStart, DateTime newEnd)
+        public bool IsSlotAvailable(int gameIdentifier, DateTime newStart, DateTime newEnd)
         {
-            foreach (var rental in _rentalRepository.GetRentalsByGame(gameId))
+            foreach (var rental in _rentalRepository.GetRentalsByGame(gameIdentifier))
             {
                 var bufferStart = rental.StartDate.AddHours(-BufferHours);
                 var bufferEnd = rental.EndDate.AddHours(BufferHours);
@@ -38,33 +38,35 @@ namespace Property_and_Management.src.Service
             return true;
         }
 
-        public void CreateConfirmedRental(int gameId, int renterId, int ownerId, DateTime startDate, DateTime endDate)
+        public void CreateConfirmedRental(int gameIdentifier, int renterIdentifier, int ownerIdentifier, DateTime startDate, DateTime endDate)
         {
-            var game = _gameRepository.Get(gameId);
-            if (game.Owner.Id != ownerId)
+            var game = _gameRepository.Get(gameIdentifier);
+            if (game.Owner.Identifier != ownerIdentifier)
                 throw new InvalidOperationException("Seller ID must match Game Owner ID [ENT-REN-04].");
 
             var rental = new Rental(
-                id: NewEntityId,
-                game: new Game { Id = gameId },
-                renter: new User { Id = renterId },
-                owner: new User { Id = ownerId },
+                identifier: NewEntityIdentifier,
+                game: new Game { Identifier = gameIdentifier },
+                renter: new User { Identifier = renterIdentifier },
+                owner: new User { Identifier = ownerIdentifier },
                 startDate: startDate,
                 endDate: endDate);
 
             _rentalRepository.AddConfirmed(rental);
         }
 
-        public ImmutableList<RentalDataTransferObject> GetRentalsForRenter(int renterId) =>
+        public ImmutableList<RentalDataTransferObject> GetRentalsForRenter(int renterIdentifier) =>
             _rentalRepository
-                .GetRentalsByRenter(renterId)
+                .GetRentalsByRenter(renterIdentifier)
                 .Select(rental => _rentalMapper.ToDataTransferObject(rental))
                 .ToImmutableList();
 
-        public ImmutableList<RentalDataTransferObject> GetRentalsForOwner(int ownerId) =>
+        public ImmutableList<RentalDataTransferObject> GetRentalsForOwner(int ownerIdentifier) =>
             _rentalRepository
-                .GetRentalsByOwner(ownerId)
+                .GetRentalsByOwner(ownerIdentifier)
                 .Select(rental => _rentalMapper.ToDataTransferObject(rental))
                 .ToImmutableList();
     }
 }
+
+
