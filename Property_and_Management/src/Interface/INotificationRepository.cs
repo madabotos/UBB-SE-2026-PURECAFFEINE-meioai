@@ -13,12 +13,6 @@ namespace Property_and_Management.Src.Interface
         ImmutableList<Notification> GetNotificationsByUser(int userIdentifier);
 
         /// <summary>
-        /// Returns actionable notifications linked to a specific request.
-        /// Used for deduplication and cleanup after offer approve/deny.
-        /// </summary>
-        ImmutableList<Notification> GetActionableByRequestId(int requestIdentifier);
-
-        /// <summary>
         /// Deletes all notifications linked to a specific request.
         /// </summary>
         void DeleteByRequestId(int requestIdentifier);

@@ -60,7 +60,7 @@ namespace Property_and_Management.Src.Views
             var result = await DialogHelper.ShowConfirmationAsync(
                 this.XamlRoot,
                 Constants.DialogTitles.OfferGameConfirmation,
-                $"Offer {gameName} to {renterName} for {request?.StartDateDisplayLong} - {request?.EndDateDisplayLong}? They will be notified and can approve or deny the offer.",
+                $"Offer {gameName} to {renterName} for {request?.StartDateDisplayLong} - {request?.EndDateDisplayLong}? This will approve the request and create the rental immediately.",
                 Constants.DialogButtons.Offer,
                 Constants.DialogButtons.Cancel,
                 ContentDialogButton.Primary);

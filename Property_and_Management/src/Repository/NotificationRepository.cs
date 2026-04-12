@@ -158,29 +158,6 @@ namespace Property_and_Management.Src.Repository
             return list.ToImmutableList();
         }
 
-        public ImmutableList<Notification> GetActionableByRequestId(int requestIdentifier)
-        {
-            var list = new List<Notification>();
-            using (var connection = new SqlConnection(connectionString))
-            {
-                connection.Open();
-                using (var command = connection.CreateCommand())
-                {
-                    command.CommandText = BaseSelectQuery + " WHERE n.related_request_id = @request_id AND n.type = @type";
-                    command.Parameters.AddWithValue("@request_id", requestIdentifier);
-                    command.Parameters.AddWithValue("@type", (int)NotificationType.OfferReceived);
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            list.Add(ReadNotificationFromReader(reader));
-                        }
-                    }
-                }
-            }
-            return list.ToImmutableList();
-        }
-
         public void DeleteByRequestId(int requestIdentifier)
         {
             using (var connection = new SqlConnection(connectionString))

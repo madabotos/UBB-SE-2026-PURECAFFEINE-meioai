@@ -15,9 +15,7 @@ namespace Property_and_Management.Src.DataTransferObjects
         public NotificationType Type { get; set; } = NotificationType.Informational;
         public int? RelatedRequestIdentifier { get; set; }
 
-        // UI computed properties are fine here — they only use Data Transfer Object data
         public string TimeDisplay => Timestamp.ToString("hh:mm tt");
-        public bool IsActionable => Type == NotificationType.OfferReceived;
 
         public NotificationDataTransferObject()
         {

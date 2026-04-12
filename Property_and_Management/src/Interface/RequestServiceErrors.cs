@@ -36,28 +36,8 @@ namespace Property_and_Management.Src.Interface
     {
         NotFound,
         NotOwner,
-        RequestNotOpen
-    }
-
-    /// <summary>
-    /// Failure modes returned by <see cref="IRequestService.ApproveOffer"/>.
-    /// </summary>
-    public enum ApproveOfferError
-    {
-        NotFound,
-        NotRenter,
-        NoPendingOffer,
+        RequestNotOpen,
         TransactionFailed
-    }
-
-    /// <summary>
-    /// Failure modes returned by <see cref="IRequestService.DenyOffer"/>.
-    /// </summary>
-    public enum DenyOfferError
-    {
-        NotFound,
-        NotRenter,
-        NoPendingOffer
     }
 
     /// <summary>

@@ -27,9 +27,7 @@ namespace Property_and_Management.Src.Viewmodels
         protected override void Reload()
         {
             OwnerIdentifier = currentUserContext.CurrentUserIdentifier;
-            // Owners only see Open requests here. OfferPending requests have
-            // already been offered to the renter and are awaiting their decision,
-            // so showing an Offer button on them would just error out.
+            // Owners only see Open requests here.
             var allRequests = requestService
                 .GetRequestsForOwner(OwnerIdentifier)
                 .Where(request => request.Status == RequestStatus.Open)
@@ -89,8 +87,8 @@ namespace Property_and_Management.Src.Viewmodels
         }
 
         /// <summary>
-        /// Offer the game to the renter. Flips the request into OfferPending and
-        /// notifies the renter. Returns null on success or a user-friendly error.
+        /// Offer the game to the renter. In the current flow this directly
+        /// approves the request and creates the rental atomically.
         /// </summary>
         public string? TryOfferGame(int requestIdentifier)
         {
@@ -106,6 +104,7 @@ namespace Property_and_Management.Src.Viewmodels
                 OfferError.NotFound => "Request not found.",
                 OfferError.NotOwner => "You are not the owner of this game.",
                 OfferError.RequestNotOpen => "This request is no longer open.",
+                OfferError.TransactionFailed => "Could not approve the request. Please try again.",
                 _ => Constants.DialogMessages.UnexpectedErrorOccurred
             };
         }

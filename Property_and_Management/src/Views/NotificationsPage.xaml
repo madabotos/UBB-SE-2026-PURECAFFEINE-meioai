@@ -3,14 +3,12 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:local="using:Property_and_Management.Src.Views"
-      xmlns:converters="using:Property_and_Management.Src.Utilities"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:notificationDtoNamespace="using:Property_and_Management.Src.DataTransferObjects"
       mc:Ignorable="d">
 
     <Page.Resources>
-        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <Style TargetType="ListViewItem">
             <Setter Property="Template">
                 <Setter.Value>
@@ -54,21 +52,8 @@
                             <TextBlock Text="{x:Bind TimeDisplay}" Style="{StaticResource CaptionTextBlockStyle}" Margin="0,4,0,0" Opacity="0.6"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <!-- Offer actions: only visible for OfferReceived notifications. -->
-                            <StackPanel Orientation="Horizontal" Spacing="6"
-                                        Visibility="{x:Bind IsActionable, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <Button Content="Approve"
-                                        Click="ApproveOfferButton_Click"
-                                        Background="#107C10"
-                                        Foreground="White"/>
-                                <Button Content="Deny"
-                                        Click="DenyOfferButton_Click"
-                                        Background="#C50F1F"
-                                        Foreground="White"/>
-                            </StackPanel>
                             <Button Click="DeleteButton_Click"
                                     ToolTipService.ToolTip="Delete"
-                                    Margin="12,0,0,0"
                                     Width="40" Height="40"
                                     Background="#C50F1F"
                                     Foreground="White"
