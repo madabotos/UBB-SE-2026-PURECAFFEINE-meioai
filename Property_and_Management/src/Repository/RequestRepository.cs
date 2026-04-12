@@ -1,42 +1,67 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Data;
 using Microsoft.Data.SqlClient;
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.Repository
+namespace Property_and_Management.Src.Repository
 {
     public class RequestRepository : IRequestRepository
     {
-        private readonly string _connectionString =
-            System.Configuration.ConfigurationManager.ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
+        private const int NewEntityIdentifier = 0;
+        private const int MissingForeignKeyIdentifier = 0;
+        private const string ConnectionStringName = "BoardRent";
+
+        private readonly string connectionString =
+            System.Configuration.ConfigurationManager.ConnectionStrings[ConnectionStringName]?.ConnectionString ?? string.Empty;
+
+        private const string BaseSelectQuery =
+            "SELECT r.*, renterUser.display_name AS renter_display_name, ownerUser.display_name AS owner_display_name, " +
+            "g.name AS game_name, g.image AS game_image, " +
+            "offeringUser.display_name AS offering_user_display_name " +
+            "FROM Requests r " +
+            "LEFT JOIN Users renterUser ON renterUser.id = r.renter_id " +
+            "LEFT JOIN Users ownerUser ON ownerUser.id = r.owner_id " +
+            "LEFT JOIN Games g ON g.game_id = r.game_id " +
+            "LEFT JOIN Users offeringUser ON offeringUser.id = r.offering_user_id";
+
+        private static Request ReadFullRequestFromReader(SqlDataReader reader)
+        {
+            var game = new Game
+            {
+                Identifier = (int)reader["game_id"],
+                Name = reader["game_name"] as string ?? string.Empty,
+                Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
+            };
+            var renter = new User((int)reader["renter_id"], reader["renter_display_name"] as string ?? string.Empty);
+            var owner = new User((int)reader["owner_id"], reader["owner_display_name"] as string ?? string.Empty);
+            var status = (RequestStatus)(int)reader["status"];
+            User? offeringUser = null;
+            var offeringUserIdentifier = reader["offering_user_id"];
+            if (offeringUserIdentifier != DBNull.Value)
+            {
+                offeringUser = new User((int)offeringUserIdentifier, reader["offering_user_display_name"] as string ?? string.Empty);
+            }
+            return new Request((int)reader["request_id"], game, renter, owner,
+                (DateTime)reader["start_date"], (DateTime)reader["end_date"], status, offeringUser);
+        }
 
         public ImmutableList<Request> GetAll()
         {
             var list = new List<Request>();
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, g.name AS game_name, g.image AS game_image FROM Requests r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id LEFT JOIN Games g ON g.game_id = r.game_id";
+                    command.CommandText = BaseSelectQuery;
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            var game = new Game
-                            {
-                                Id = (int)reader["game_id"],
-                                Name = reader["game_name"] as string ?? string.Empty,
-                                Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
-                            };
-                            var renterDisplayName = reader["renter_display_name"] as string ?? string.Empty;
-                            var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
-                            var renter = new User((int)reader["renter_id"], renterDisplayName);
-                            var owner = new User((int)reader["owner_id"], ownerDisplayName);
-                            var req = new Request((int)reader["request_id"], game, renter, owner, (DateTime)reader["start_date"], (DateTime)reader["end_date"]);
-                            list.Add(req);
+                            list.Add(ReadFullRequestFromReader(reader));
                         }
                     }
                 }
@@ -44,106 +69,64 @@ namespace Property_and_Management.src.Repository
             return list.ToImmutableList();
         }
 
-        public void Add(Request entity)
+        public void Add(Request request)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var transaction = connection.BeginTransaction())
                 {
-                    Add(entity, connection, transaction);
+                    AddInternal(request, connection, transaction);
                     transaction.Commit();
                 }
             }
         }
 
-        public void Add(Request entity, SqlConnection connection, SqlTransaction transaction)
+        private static void AddInternal(Request request, SqlConnection connection, SqlTransaction transaction)
         {
-            using (var command = connection.CreateCommand())
-            {
-                command.Transaction = transaction;
-                command.CommandText = "INSERT INTO Requests(game_id, renter_id, owner_id, start_date, end_date) VALUES(@game_id, @renter_id, @owner_id, @start_date, @end_date); SELECT SCOPE_IDENTITY();";
-                command.Parameters.AddWithValue("@game_id", entity.Game?.Id ?? 0);
-                command.Parameters.AddWithValue("@renter_id", entity.Renter?.Id ?? 0);
-                command.Parameters.AddWithValue("@owner_id", entity.Owner?.Id ?? 0);
-                command.Parameters.AddWithValue("@start_date", entity.StartDate);
-                command.Parameters.AddWithValue("@end_date", entity.EndDate);
-                var newId = Convert.ToInt32(command.ExecuteScalar());
-                entity.Id = newId;
-            }
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText =
+                "INSERT INTO Requests(game_id, renter_id, owner_id, start_date, end_date, status, offering_user_id) " +
+                "VALUES(@game_id, @renter_id, @owner_id, @start_date, @end_date, @status, @offering_user_id); " +
+                "SELECT SCOPE_IDENTITY();";
+            command.Parameters.AddWithValue("@game_id", request.Game?.Identifier ?? MissingForeignKeyIdentifier);
+            command.Parameters.AddWithValue("@renter_id", request.Renter?.Identifier ?? MissingForeignKeyIdentifier);
+            command.Parameters.AddWithValue("@owner_id", request.Owner?.Identifier ?? MissingForeignKeyIdentifier);
+            command.Parameters.AddWithValue("@start_date", request.StartDate);
+            command.Parameters.AddWithValue("@end_date", request.EndDate);
+            command.Parameters.AddWithValue("@status", (int)request.Status);
+            command.Parameters.AddWithValue("@offering_user_id", request.OfferingUser?.Identifier ?? (object)DBNull.Value);
+            request.Identifier = Convert.ToInt32(command.ExecuteScalar());
         }
 
-        public Request Delete(int removedEntityId)
-        {
-            using (var connection = new SqlConnection(_connectionString))
-            {
-                connection.Open();
-                using (var transaction = connection.BeginTransaction())
-                {
-                    var entity = Get(removedEntityId);
-                    Delete(removedEntityId, connection, transaction);
-                    transaction.Commit();
-                    return entity;
-                }
-            }
-        }
+        private static readonly string DeleteWithOutputQuery =
+            "DELETE r OUTPUT deleted.request_id, deleted.game_id, deleted.renter_id, deleted.owner_id, " +
+            "deleted.start_date, deleted.end_date, deleted.status, deleted.offering_user_id, " +
+            "renterUser.display_name AS renter_display_name, ownerUser.display_name AS owner_display_name, " +
+            "g.name AS game_name, g.image AS game_image, " +
+            "offeringUser.display_name AS offering_user_display_name " +
+            "FROM Requests r " +
+            "LEFT JOIN Users renterUser ON renterUser.id = r.renter_id " +
+            "LEFT JOIN Users ownerUser ON ownerUser.id = r.owner_id " +
+            "LEFT JOIN Games g ON g.game_id = r.game_id " +
+            "LEFT JOIN Users offeringUser ON offeringUser.id = r.offering_user_id " +
+            "WHERE r.request_id = @id";
 
-        public Request Delete(int id, SqlConnection connection, SqlTransaction transaction)
+        public Request Delete(int removedEntityIdentifier)
         {
-            var entity = Get(id);
-            using (var command = connection.CreateCommand())
-            {
-                command.Transaction = transaction;
-                command.CommandText = "DELETE FROM Requests WHERE request_id = @id";
-                command.Parameters.AddWithValue("@id", id);
-                command.ExecuteNonQuery();
-            }
-            return entity;
-        }
-
-        public void Update(int updatedEntityId, Request newEntity)
-        {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "UPDATE Requests SET game_id = @game_id, renter_id = @renter_id, owner_id = @owner_id, start_date = @start_date, end_date = @end_date WHERE request_id = @id";
-                    command.Parameters.AddWithValue("@id", updatedEntityId);
-                    command.Parameters.AddWithValue("@game_id", newEntity.Game?.Id ?? 0);
-                    command.Parameters.AddWithValue("@renter_id", newEntity.Renter?.Id ?? 0);
-                    command.Parameters.AddWithValue("@owner_id", newEntity.Owner?.Id ?? 0);
-                    command.Parameters.AddWithValue("@start_date", newEntity.StartDate);
-                    command.Parameters.AddWithValue("@end_date", newEntity.EndDate);
-                    command.ExecuteNonQuery();
-                }
-            }
-        }
-
-        public Request Get(int id)
-        {
-            using (var connection = new SqlConnection(_connectionString))
-            {
-                connection.Open();
-                using (var command = connection.CreateCommand())
-                {
-                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, g.name AS game_name, g.image AS game_image FROM Requests r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id LEFT JOIN Games g ON g.game_id = r.game_id WHERE r.request_id = @id";
-                    command.Parameters.AddWithValue("@id", id);
+                    command.CommandText = DeleteWithOutputQuery;
+                    command.Parameters.AddWithValue("@id", removedEntityIdentifier);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
                         {
-                            var game = new Game
-                            {
-                                Id = (int)reader["game_id"],
-                                Name = reader["game_name"] as string ?? string.Empty,
-                                Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
-                            };
-                            var renterDisplayName = reader["renter_display_name"] as string ?? string.Empty;
-                            var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
-                            var renter = new User((int)reader["renter_id"], renterDisplayName);
-                            var owner = new User((int)reader["owner_id"], ownerDisplayName);
-                            return new Request((int)reader["request_id"], game, renter, owner, (DateTime)reader["start_date"], (DateTime)reader["end_date"]);
+                            return ReadRequestFromDeleteReader(reader);
                         }
                     }
                 }
@@ -151,32 +134,105 @@ namespace Property_and_Management.src.Repository
             throw new KeyNotFoundException();
         }
 
-        public ImmutableList<Request> GetRequestsByOwner(int ownerId)
+        private static Request ReadRequestFromDeleteReader(SqlDataReader reader)
         {
-            var list = new List<Request>();
-            using (var connection = new SqlConnection(_connectionString))
+            var game = new Game
+            {
+                Identifier = (int)reader["game_id"],
+                Name = reader["game_name"] as string ?? string.Empty,
+                Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
+            };
+            var renter = new User((int)reader["renter_id"], reader["renter_display_name"] as string ?? string.Empty);
+            var owner = new User((int)reader["owner_id"], reader["owner_display_name"] as string ?? string.Empty);
+            var status = (RequestStatus)(int)reader["status"];
+            User? offeringUser = null;
+            var offeringUserIdentifier = reader["offering_user_id"];
+            if (offeringUserIdentifier != DBNull.Value)
+            {
+                offeringUser = new User((int)offeringUserIdentifier, reader["offering_user_display_name"] as string ?? string.Empty);
+            }
+
+            return new Request((int)reader["request_id"], game, renter, owner,
+                (DateTime)reader["start_date"], (DateTime)reader["end_date"], status, offeringUser);
+        }
+
+        public void Update(int updatedEntityIdentifier, Request newEntity)
+        {
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, g.name AS game_name, g.image AS game_image FROM Requests r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id LEFT JOIN Games g ON g.game_id = r.game_id WHERE r.owner_id = @owner_id";
-                    command.Parameters.AddWithValue("@owner_id", ownerId);
+                    command.CommandText =
+                        "UPDATE Requests SET game_id = @game_id, renter_id = @renter_id, owner_id = @owner_id, " +
+                        "start_date = @start_date, end_date = @end_date, status = @status, " +
+                        "offering_user_id = @offering_user_id WHERE request_id = @id";
+                    command.Parameters.AddWithValue("@id", updatedEntityIdentifier);
+                    command.Parameters.AddWithValue("@game_id", newEntity.Game?.Identifier ?? MissingForeignKeyIdentifier);
+                    command.Parameters.AddWithValue("@renter_id", newEntity.Renter?.Identifier ?? MissingForeignKeyIdentifier);
+                    command.Parameters.AddWithValue("@owner_id", newEntity.Owner?.Identifier ?? MissingForeignKeyIdentifier);
+                    command.Parameters.AddWithValue("@start_date", newEntity.StartDate);
+                    command.Parameters.AddWithValue("@end_date", newEntity.EndDate);
+                    command.Parameters.AddWithValue("@status", (int)newEntity.Status);
+                    command.Parameters.AddWithValue("@offering_user_id", newEntity.OfferingUser?.Identifier ?? (object)DBNull.Value);
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void UpdateStatus(int requestIdentifier, RequestStatus status, int? offeringUserIdentifier)
+        {
+            using (var connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText =
+                        "UPDATE Requests SET status = @status, offering_user_id = @offering_user_id WHERE request_id = @id";
+                    command.Parameters.AddWithValue("@id", requestIdentifier);
+                    command.Parameters.AddWithValue("@status", (int)status);
+                    command.Parameters.AddWithValue("@offering_user_id", offeringUserIdentifier ?? (object)DBNull.Value);
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public Request Get(int identifier)
+        {
+            using (var connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = BaseSelectQuery + " WHERE r.request_id = @id";
+                    command.Parameters.AddWithValue("@id", identifier);
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            return ReadFullRequestFromReader(reader);
+                        }
+                    }
+                }
+            }
+            throw new KeyNotFoundException();
+        }
+
+        public ImmutableList<Request> GetRequestsByOwner(int ownerIdentifier)
+        {
+            var list = new List<Request>();
+            using (var connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = BaseSelectQuery + " WHERE r.owner_id = @owner_id";
+                    command.Parameters.AddWithValue("@owner_id", ownerIdentifier);
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            var game = new Game
-                            {
-                                Id = (int)reader["game_id"],
-                                Name = reader["game_name"] as string ?? string.Empty,
-                                Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
-                            };
-                            var renterDisplayName = reader["renter_display_name"] as string ?? string.Empty;
-                            var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
-                            var renter = new User((int)reader["renter_id"], renterDisplayName);
-                            var owner = new User((int)reader["owner_id"], ownerDisplayName);
-                            var req = new Request((int)reader["request_id"], game, renter, owner, (DateTime)reader["start_date"], (DateTime)reader["end_date"]);
-                            list.Add(req);
+                            list.Add(ReadFullRequestFromReader(reader));
                         }
                     }
                 }
@@ -184,32 +240,21 @@ namespace Property_and_Management.src.Repository
             return list.ToImmutableList();
         }
 
-        public ImmutableList<Request> GetRequestsByRenter(int renterId)
+        public ImmutableList<Request> GetRequestsByRenter(int renterIdentifier)
         {
             var list = new List<Request>();
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, g.name AS game_name, g.image AS game_image FROM Requests r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id LEFT JOIN Games g ON g.game_id = r.game_id WHERE r.renter_id = @renter_id";
-                    command.Parameters.AddWithValue("@renter_id", renterId);
+                    command.CommandText = BaseSelectQuery + " WHERE r.renter_id = @renter_id";
+                    command.Parameters.AddWithValue("@renter_id", renterIdentifier);
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            var game = new Game
-                            {
-                                Id = (int)reader["game_id"],
-                                Name = reader["game_name"] as string ?? string.Empty,
-                                Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
-                            };
-                            var renterDisplayName = reader["renter_display_name"] as string ?? string.Empty;
-                            var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
-                            var renter = new User((int)reader["renter_id"], renterDisplayName);
-                            var owner = new User((int)reader["owner_id"], ownerDisplayName);
-                            var req = new Request((int)reader["request_id"], game, renter, owner, (DateTime)reader["start_date"], (DateTime)reader["end_date"]);
-                            list.Add(req);
+                            list.Add(ReadFullRequestFromReader(reader));
                         }
                     }
                 }
@@ -217,37 +262,173 @@ namespace Property_and_Management.src.Repository
             return list.ToImmutableList();
         }
 
-        public ImmutableList<Request> GetRequestsByGame(int gameId)
+        public ImmutableList<Request> GetRequestsByGame(int gameIdentifier)
         {
             var list = new List<Request>();
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT r.*, ru.display_name AS renter_display_name, ou.display_name AS owner_display_name, g.name AS game_name, g.image AS game_image FROM Requests r LEFT JOIN Users ru ON ru.id = r.renter_id LEFT JOIN Users ou ON ou.id = r.owner_id LEFT JOIN Games g ON g.game_id = r.game_id WHERE r.game_id = @game_id";
-                    command.Parameters.AddWithValue("@game_id", gameId);
+                    command.CommandText = BaseSelectQuery + " WHERE r.game_id = @game_id";
+                    command.Parameters.AddWithValue("@game_id", gameIdentifier);
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            var game = new Game
-                            {
-                                Id = (int)reader["game_id"],
-                                Name = reader["game_name"] as string ?? string.Empty,
-                                Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
-                            };
-                            var renterDisplayName = reader["renter_display_name"] as string ?? string.Empty;
-                            var ownerDisplayName = reader["owner_display_name"] as string ?? string.Empty;
-                            var renter = new User((int)reader["renter_id"], renterDisplayName);
-                            var owner = new User((int)reader["owner_id"], ownerDisplayName);
-                            var req = new Request((int)reader["request_id"], game, renter, owner, (DateTime)reader["start_date"], (DateTime)reader["end_date"]);
-                            list.Add(req);
+                            list.Add(ReadFullRequestFromReader(reader));
                         }
                     }
                 }
             }
             return list.ToImmutableList();
+        }
+
+        public ImmutableList<Request> GetOverlappingRequests(
+            int gameIdentifier,
+            int excludeRequestIdentifier,
+            DateTime bufferedStart,
+            DateTime bufferedEnd)
+        {
+            using var connection = new SqlConnection(connectionString);
+            connection.Open();
+            return QueryOverlappingRequests(
+                gameIdentifier,
+                excludeRequestIdentifier,
+                bufferedStart,
+                bufferedEnd,
+                connection,
+                transaction: null).ToImmutableList();
+        }
+
+        public int ApproveAtomically(
+            Request approvedRequest,
+            ImmutableList<Request> overlappingRequests)
+        {
+            using var connection = new SqlConnection(connectionString);
+            connection.Open();
+            using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
+            try
+            {
+                // 1. Delete notifications for all affected requests before the rows
+                //    themselves are deleted (FK constraint: notifications reference requests).
+                foreach (var overlappingRequest in overlappingRequests)
+                {
+                    DeleteNotificationsForRequest(overlappingRequest.Identifier, connection, transaction);
+                }
+
+                DeleteNotificationsForRequest(approvedRequest.Identifier, connection, transaction);
+
+                // 2. Insert the rental.
+                var newRentalIdentifier = InsertRental(approvedRequest, connection, transaction);
+
+                // 3. Delete the overlapping requests.
+                foreach (var overlappingRequest in overlappingRequests)
+                {
+                    DeleteRequest(overlappingRequest.Identifier, connection, transaction);
+                }
+
+                // 4. Delete the approved request itself.
+                DeleteRequest(approvedRequest.Identifier, connection, transaction);
+
+                transaction.Commit();
+                return newRentalIdentifier;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        private static int InsertRental(Request approvedRequest, SqlConnection connection, SqlTransaction transaction)
+        {
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText =
+                "INSERT INTO Rentals(game_id, renter_id, owner_id, start_date, end_date) " +
+                "VALUES(@game_id, @renter_id, @owner_id, @start_date, @end_date); SELECT SCOPE_IDENTITY();";
+            command.Parameters.AddWithValue("@game_id", approvedRequest.Game?.Identifier ?? MissingForeignKeyIdentifier);
+            command.Parameters.AddWithValue("@renter_id", approvedRequest.Renter?.Identifier ?? MissingForeignKeyIdentifier);
+            command.Parameters.AddWithValue("@owner_id", approvedRequest.Owner?.Identifier ?? MissingForeignKeyIdentifier);
+            command.Parameters.AddWithValue("@start_date", approvedRequest.StartDate);
+            command.Parameters.AddWithValue("@end_date", approvedRequest.EndDate);
+            return Convert.ToInt32(command.ExecuteScalar());
+        }
+
+        private static List<Request> QueryOverlappingRequests(
+            int gameIdentifier,
+            int excludeRequestIdentifier,
+            DateTime bufferedStart,
+            DateTime bufferedEnd,
+            SqlConnection connection,
+            SqlTransaction? transaction)
+        {
+            var list = new List<Request>();
+            using var command = connection.CreateCommand();
+            if (transaction != null)
+            {
+                command.Transaction = transaction;
+            }
+
+            command.CommandText =
+                "SELECT r.request_id, r.game_id, r.renter_id, r.owner_id, r.start_date, r.end_date, " +
+                "renterUser.display_name AS renter_display_name, ownerUser.display_name AS owner_display_name, " +
+                "g.name AS game_name, g.image AS game_image " +
+                "FROM Requests r " +
+                "LEFT JOIN Users renterUser ON renterUser.id = r.renter_id " +
+                "LEFT JOIN Users ownerUser ON ownerUser.id = r.owner_id " +
+                "LEFT JOIN Games g ON g.game_id = r.game_id " +
+                "WHERE r.game_id = @game_id AND r.request_id != @exclude_id " +
+                "AND r.start_date < @buffered_end AND r.end_date > @buffered_start";
+            command.Parameters.AddWithValue("@game_id", gameIdentifier);
+            command.Parameters.AddWithValue("@exclude_id", excludeRequestIdentifier);
+            command.Parameters.AddWithValue("@buffered_end", bufferedEnd);
+            command.Parameters.AddWithValue("@buffered_start", bufferedStart);
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var game = new Game
+                {
+                    Identifier = (int)reader["game_id"],
+                    Name = reader["game_name"] as string ?? string.Empty,
+                    Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
+                };
+                var renter = new User((int)reader["renter_id"], reader["renter_display_name"] as string ?? string.Empty);
+                var owner = new User((int)reader["owner_id"], reader["owner_display_name"] as string ?? string.Empty);
+                list.Add(new Request(
+                    (int)reader["request_id"],
+                    game,
+                    renter,
+                    owner,
+                    (DateTime)reader["start_date"],
+                    (DateTime)reader["end_date"]));
+            }
+
+            return list;
+        }
+
+        private static void DeleteNotificationsForRequest(int requestIdentifier, SqlConnection connection, SqlTransaction transaction)
+        {
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = "DELETE FROM Notifications WHERE related_request_id = @id";
+            command.Parameters.AddWithValue("@id", requestIdentifier);
+            command.ExecuteNonQuery();
+        }
+
+        private static void DeleteRequest(int requestIdentifier, SqlConnection connection, SqlTransaction transaction)
+        {
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = "DELETE FROM Requests WHERE request_id = @id";
+            command.Parameters.AddWithValue("@id", requestIdentifier);
+            command.ExecuteNonQuery();
         }
     }
 }
+
+
+
+
+

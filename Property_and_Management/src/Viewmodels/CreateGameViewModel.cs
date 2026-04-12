@@ -1,19 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Property_and_Management.src.DTO;
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Interface;
 
-namespace Property_and_Management.src.Viewmodels
+namespace Property_and_Management.Src.Viewmodels
 {
     public class CreateGameViewModel
     {
-        private readonly IGameService _gameService;
+        private const int NoValidationErrors = 0;
+        private const int NewEntityIdentifier = 0;
+        private const decimal InvalidOrEmptyPriceValue = 0m;
 
-        // UI Binding Properties
+        private readonly IGameService gameService;
+        private readonly ICurrentUserContext currentUserContext;
+
         public string Name { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public double PriceDouble
@@ -21,69 +21,76 @@ namespace Property_and_Management.src.Viewmodels
             get => (double)Price;
             set => Price = (decimal)value;
         }
-        public int MinPlayers { get; set; } = 1;
-        public int MaxPlayers { get; set; } = 4;
+        public int MinimumPlayers { get; set; } = Constants.GameValidation.DefaultMinimumPlayers;
+        public int MaximumPlayers { get; set; } = Constants.GameValidation.DefaultMaximumPlayers;
         public string Description { get; set; } = string.Empty;
         public bool IsActive { get; set; } = true;
         public byte[] Image { get; set; } = null;
 
-        public int CurrentUserId { get; set; } = (App.Current as App).CurrentUserID;
+        public int CurrentUserIdentifier => currentUserContext.CurrentUserIdentifier;
 
-        public CreateGameViewModel(IGameService gameService)
+        public CreateGameViewModel(IGameService gameService, ICurrentUserContext currentUserContext)
         {
-            _gameService = gameService;
+            this.gameService = gameService;
+            this.currentUserContext = currentUserContext;
         }
 
-        public bool ValidateInputs()
+        public List<string> ValidateInputs()
         {
-            if (string.IsNullOrWhiteSpace(Name) || Name.Length < 5 || Name.Length > 30)
-                return false;
-            if (Price <= 0)
-                return false;
-            if (MinPlayers < 1)
-                return false;
-            if (MaxPlayers < MinPlayers)
-                return false;
-            if (string.IsNullOrWhiteSpace(Description) || Description.Length < 10 || Description.Length > 500)
-                return false;
-            return true;
+            return GameInputHelper.BuildValidationErrors(
+                Name,
+                Price,
+                MinimumPlayers,
+                MaximumPlayers,
+                Description,
+                Constants.GameValidation.MinimumNameLength,
+                Constants.GameValidation.MaximumNameLength,
+                Constants.GameValidation.MinimumAllowedPrice,
+                Constants.GameValidation.MinimumPlayerCount,
+                Constants.GameValidation.MinimumDescriptionLength,
+                Constants.GameValidation.MaximumDescriptionLength);
         }
 
-        public GameDTO SaveGame()
+        /// <summary>
+        /// Parse a raw price string from the view's NumberBox and update the
+        /// bound <see cref="Price"/> / <see cref="PriceDouble"/>. Falls back
+        /// to zero so validation rejects empty/unparseable input.
+        /// </summary>
+        public void SetPriceFromText(string priceText)
         {
-            if (!ValidateInputs()) return null;
-
-            if (Image == null || Image.Length == 0)
+            if (PriceInputParser.TryParsePriceInput(priceText, out var parsedPrice))
             {
-                try
-                {
-                    string defaultImagePath = System.IO.Path.Combine(
-                        System.AppDomain.CurrentDomain.BaseDirectory,
-                        "Assets",
-                        "default-game-placeholder.jpg");
-                    Image = System.IO.File.ReadAllBytes(defaultImagePath);
-                }
-                catch
-                {
-                    Image = new byte[0];
-                }
+                PriceDouble = parsedPrice;
+                return;
             }
 
-            var newGameDto = new GameDTO
+            Price = InvalidOrEmptyPriceValue;
+        }
+
+        public GameDataTransferObject SaveGame()
+        {
+            if (ValidateInputs().Count > NoValidationErrors)
             {
-                Id = 0,
-                Owner = new UserDTO { Id = CurrentUserId },
+                return null;
+            }
+
+            Image = GameInputHelper.EnsureImageOrDefault(Image, AppDomain.CurrentDomain.BaseDirectory);
+
+            var newgameDataTransferObject = new GameDataTransferObject
+            {
+                Identifier = NewEntityIdentifier,
+                Owner = new UserDataTransferObject { Identifier = CurrentUserIdentifier },
                 Name = Name,
                 Price = Price,
-                MinimumPlayerNumber = MinPlayers,
-                MaximumPlayerNumber = MaxPlayers,
+                MinimumPlayerNumber = MinimumPlayers,
+                MaximumPlayerNumber = MaximumPlayers,
                 Description = Description,
                 Image = Image,
                 IsActive = IsActive
             };
 
-            _gameService.AddGame(newGameDto);
-            return newGameDto;
+            gameService.AddGame(newgameDataTransferObject);
+            return newgameDataTransferObject;
         }
     }
 }

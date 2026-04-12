@@ -1,0 +1,53 @@
+using System;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Viewmodels;
+
+namespace Property_and_Management.Src.Views
+{
+    public sealed partial class CreateRequestView : Page
+    {
+        public CreateRequestViewModel ViewModel { get; }
+
+        public CreateRequestView()
+        {
+            // Composition root: pull the view model from the DI container. This
+            // is the only place the view knows about <c>App.Services</c>.
+            ViewModel = App.Services.GetRequiredService<CreateRequestViewModel>();
+            this.InitializeComponent();
+
+            GamePicker.ItemsSource = ViewModel.AvailableGames;
+            StartDatePicker.MinDate = DateTimeOffset.Now;
+            EndDatePicker.MinDate = DateTimeOffset.Now;
+        }
+
+        private void GamePicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ViewModel.SelectedGame = GamePicker.SelectedItem as GameDataTransferObject;
+        }
+
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel.StartDate = StartDatePicker.Date;
+            ViewModel.EndDate = EndDatePicker.Date;
+
+            var error = ViewModel.TrySubmitRequest();
+            if (error == null)
+            {
+                if (Frame.CanGoBack)
+                {
+                    Frame.GoBack();
+                }
+                return;
+            }
+
+            var dialogTitle = error == Constants.DialogMessages.CreateRequestValidationError
+                ? Constants.DialogTitles.ValidationError
+                : Constants.DialogTitles.RequestFailed;
+
+            await DialogHelper.ShowMessageAsync(this.XamlRoot, dialogTitle, error);
+        }
+    }
+}

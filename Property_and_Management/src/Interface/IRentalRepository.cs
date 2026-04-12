@@ -1,29 +1,31 @@
 using System.Collections.Immutable;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.Interface
+namespace Property_and_Management.Src.Interface
 {
     public interface IRentalRepository : IRepository<Rental>
     {
         /// <summary>
+        /// Inserts a rental inside a serializable transaction after verifying the time slot
+        /// is not within the 48-hour buffer of an existing rental.
+        /// Throws <see cref="System.InvalidOperationException"/> if the slot is taken.
+        /// </summary>
+        void AddConfirmed(Rental entity);
+
+        /// <summary>
         /// Gets rentals for which the specified user is the owner.
         /// </summary>
-        /// <param name="ownerId">Owner user id.</param>
-        /// <returns>Immutable list of matching rentals.</returns>
-        ImmutableList<Rental> GetRentalsByOwner(int ownerId);
+        ImmutableList<Rental> GetRentalsByOwner(int ownerIdentifier);
 
         /// <summary>
         /// Gets rentals created by the specified renter.
         /// </summary>
-        /// <param name="renterId">Renter user id.</param>
-        /// <returns>Immutable list of matching rentals.</returns>
-        ImmutableList<Rental> GetRentalsByRenter(int renterId);
+        ImmutableList<Rental> GetRentalsByRenter(int renterIdentifier);
 
         /// <summary>
         /// Gets rentals for the specified game.
         /// </summary>
-        /// <param name="gameId">Game id.</param>
-        /// <returns>Immutable list of matching rentals.</returns>
-        ImmutableList<Rental> GetRentalsByGame(int gameId);
+        ImmutableList<Rental> GetRentalsByGame(int gameIdentifier);
     }
 }
+

@@ -1,98 +1,138 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using Property_and_Management.src.DTO;
-using Property_and_Management.src.Viewmodels;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Viewmodels;
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
-
-namespace Property_and_Management.src.Views
+namespace Property_and_Management.Src.Views
 {
     /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
+    /// Notifications list with actionable offer buttons. Periodic refresh is
+    /// not needed here — <see cref="NotificationsViewModel"/> subscribes to
+    /// <c>INotificationService</c> and reloads itself whenever the UDP
+    /// listener pushes a new notification.
     /// </summary>
     public sealed partial class NotificationsPage : Page
     {
         public NotificationsPage()
         {
             InitializeComponent();
-
-            // Grab the ViewModel straight from the App!
-            var app = (Property_and_Management.App)Application.Current;
-            this.DataContext = app.NotificationsViewModel;
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
 
-            if (e.Parameter is NotificationsViewModel vm)
+            // Prefer the view model passed as a navigation parameter (e.g. from
+            // MenuBarView's toast-triggered NavigateToNotifications call). Fall
+            // back to the DI container so direct menu navigation still works.
+            if (e.Parameter is NotificationsViewModel navigatedViewModel)
             {
-                DataContext = vm;
-
-                // If the XAML contains a named ItemsControl / ListView called "ItemsListView" from older implementation,
-                // bind its ItemsSource to the VM's Notifications collection to preserve behavior.
-                if (this.FindName("ItemsListView") is ItemsControl items)
-                {
-                    items.ItemsSource = vm.Notifications;
-                }
+                DataContext = navigatedViewModel;
+                navigatedViewModel.LoadNotificationsForUser(navigatedViewModel.CurrentUserIdentifier);
+                return;
             }
+
+            if (DataContext is NotificationsViewModel existingViewModel)
+            {
+                existingViewModel.LoadNotificationsForUser(existingViewModel.CurrentUserIdentifier);
+                return;
+            }
+
+            // Composition root: resolve from DI when nothing was passed in.
+            var resolvedViewModel = App.Services.GetRequiredService<NotificationsViewModel>();
+            DataContext = resolvedViewModel;
+            resolvedViewModel.LoadNotificationsForUser(resolvedViewModel.CurrentUserIdentifier);
+        }
+
+        private NotificationsViewModel? ResolveViewModel()
+        {
+            var root = this.Content as FrameworkElement;
+            return root?.DataContext as NotificationsViewModel;
         }
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            try
+            var clickedButton = sender as Button;
+            if (clickedButton?.DataContext is not NotificationDataTransferObject notification)
             {
-                var btn = sender as Button;
-                // In ItemsControl the DataContext for the button is the NotificationDTO
-                var note = btn?.DataContext as NotificationDTO;
-                if (note == null)
-                {
-                    Debug.WriteLine("DeleteButton_Click: notification DTO not found");
-                    return;
-                }
-
-                var root = this.Content as FrameworkElement;
-                var vm = root?.DataContext as NotificationsViewModel;
-                if (vm == null)
-                {
-                    Debug.WriteLine("NotificationsPage: viewmodel not found on DeleteButton_Click");
-                    return;
-                }
-
-                vm.DeleteNotificationById(note.Id);
+                Debug.WriteLine("DeleteButton_Click: notification Data Transfer Object not found");
+                return;
             }
-            catch (Exception ex)
+
+            var notificationsViewModel = ResolveViewModel();
+            if (notificationsViewModel == null)
             {
-                Debug.WriteLine($"DeleteButton_Click error: {ex}");
+                Debug.WriteLine("NotificationsPage: viewmodel not found on DeleteButton_Click");
+                return;
+            }
+
+            notificationsViewModel.DeleteNotificationByIdentifier(notification.Identifier);
+        }
+
+        private void NextButton_Click(object sender, RoutedEventArgs e) => ResolveViewModel()?.NextPage();
+
+        private void PrevButton_Click(object sender, RoutedEventArgs e) => ResolveViewModel()?.PrevPage();
+
+        private async void ApproveOfferButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!TryGetActionableRequestIdentifier(sender, out var requestIdentifier, out var notificationsViewModel))
+            {
+                return;
+            }
+
+            var error = notificationsViewModel.TryApproveOffer(requestIdentifier);
+            if (error != null)
+            {
+                await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.ApproveFailed, error);
             }
         }
 
-        private void NextButton_Click(object sender, RoutedEventArgs e)
+        private async void DenyOfferButton_Click(object sender, RoutedEventArgs e)
         {
-            var root = this.Content as FrameworkElement;
-            var vm = root?.DataContext as NotificationsViewModel;
-            vm?.NextPage();
+            if (!TryGetActionableRequestIdentifier(sender, out var requestIdentifier, out var notificationsViewModel))
+            {
+                return;
+            }
+
+            var error = notificationsViewModel.TryDenyOffer(requestIdentifier);
+            if (error != null)
+            {
+                await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.DeclineFailed, error);
+            }
         }
 
-        private void PrevButton_Click(object sender, RoutedEventArgs e)
+        private bool TryGetActionableRequestIdentifier(object sender, out int requestIdentifier, out NotificationsViewModel viewModel)
         {
-            var root = this.Content as FrameworkElement;
-            var vm = root?.DataContext as NotificationsViewModel;
-            vm?.PrevPage();
+            requestIdentifier = default;
+            viewModel = null;
+
+            if (sender is not Button clickedButton)
+            {
+                return false;
+            }
+
+            if (clickedButton.DataContext is not NotificationDataTransferObject notification)
+            {
+                return false;
+            }
+
+            if (notification.RelatedRequestIdentifier is not int relatedRequestIdentifier)
+            {
+                return false;
+            }
+
+            var notificationsViewModel = ResolveViewModel();
+            if (notificationsViewModel == null)
+            {
+                return false;
+            }
+
+            requestIdentifier = relatedRequestIdentifier;
+            viewModel = notificationsViewModel;
+            return true;
         }
     }
 }

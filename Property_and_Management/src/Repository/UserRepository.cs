@@ -1,23 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Configuration;
-using System.Linq;
 using Microsoft.Data.SqlClient;
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.Repository
+namespace Property_and_Management.Src.Repository
 {
     public class UserRepository : IUserRepository
     {
-        private readonly string _connectionString =
+        private readonly string connectionString =
             System.Configuration.ConfigurationManager.ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
 
         public ImmutableList<User> GetAll()
         {
             var list = new List<User>();
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -39,69 +37,76 @@ namespace Property_and_Management.src.Repository
 
         public void Add(User newEntity)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "INSERT INTO Users (display_name) VALUES (@display_name); SELECT SCOPE_IDENTITY();";
                     command.Parameters.AddWithValue("@display_name", newEntity.DisplayName ?? (object)DBNull.Value);
-                    var newId = Convert.ToInt32(command.ExecuteScalar());
-                    newEntity.Id = newId;
+                    var newIdentifier = Convert.ToInt32(command.ExecuteScalar());
+                    newEntity.Identifier = newIdentifier;
                 }
             }
         }
 
-        public User Delete(int removedEntityId)
+        public User Delete(int removedEntityIdentifier)
         {
-            var entity = Get(removedEntityId);
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "DELETE FROM Users WHERE id = @id";
-                    command.Parameters.AddWithValue("@id", removedEntityId);
-                    command.ExecuteNonQuery();
+                    command.CommandText = "DELETE FROM Users OUTPUT deleted.id, deleted.display_name WHERE id = @id";
+                    command.Parameters.AddWithValue("@id", removedEntityIdentifier);
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            return new User((int)reader["id"], reader["display_name"] as string ?? string.Empty);
+                        }
+                    }
                 }
             }
-            return entity;
+            throw new KeyNotFoundException();
         }
 
-        public void Update(int updatedEntityId, User newEntity)
+        public void Update(int updatedEntityIdentifier, User newEntity)
         {
-            if (updatedEntityId != newEntity.Id)
+            if (updatedEntityIdentifier != newEntity.Identifier)
+            {
                 throw new ArgumentException("Id mismatch");
+            }
 
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "UPDATE Users SET display_name = @display_name WHERE id = @id";
                     command.Parameters.AddWithValue("@display_name", newEntity.DisplayName ?? (object)DBNull.Value);
-                    command.Parameters.AddWithValue("@id", updatedEntityId);
+                    command.Parameters.AddWithValue("@id", updatedEntityIdentifier);
                     command.ExecuteNonQuery();
                 }
             }
         }
 
-        public User Get(int id)
+        public User Get(int identifier)
         {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "SELECT * FROM Users WHERE id = @id";
-                    command.Parameters.AddWithValue("@id", id);
+                    command.Parameters.AddWithValue("@id", identifier);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
                         {
-                            var userId = (int)reader["id"];
+                            var userIdentifier = (int)reader["id"];
                             var displayName = reader["display_name"] as string ?? string.Empty;
-                            return new User(userId, displayName);
+                            return new User(userIdentifier, displayName);
                         }
                     }
                 }
@@ -111,3 +116,6 @@ namespace Property_and_Management.src.Repository
         }
     }
 }
+
+
+

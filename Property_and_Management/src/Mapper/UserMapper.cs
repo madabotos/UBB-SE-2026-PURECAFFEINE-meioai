@@ -1,36 +1,38 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Property_and_Management.src.DTO;
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.Mapper
+namespace Property_and_Management.Src.Mapper
 {
-    public class UserMapper : IMapper<User, UserDTO>
+    public class UserMapper : IMapper<User, UserDataTransferObject>
     {
-        public UserDTO ToDTO(User entity)
+        public UserDataTransferObject ToDataTransferObject(User user)
         {
-            if (entity == null) return null;
-
-            return new UserDTO
+            if (user == null)
             {
-                Id = entity.Id,
-                DisplayName = entity.DisplayName
+                return null;
+            }
+
+            return new UserDataTransferObject
+            {
+                Identifier = user.Identifier,
+                DisplayName = user.DisplayName
             };
         }
 
-        public User ToModel(UserDTO dto)
+        public User ToModel(UserDataTransferObject userDataTransferObject)
         {
-            if (dto == null) return null;
+            if (userDataTransferObject == null)
+            {
+                return null;
+            }
 
             return new User
             {
-                Id = dto.Id,
-                DisplayName = dto.DisplayName
+                Identifier = userDataTransferObject.Identifier,
+                DisplayName = userDataTransferObject.DisplayName
             };
         }
     }
 }
+

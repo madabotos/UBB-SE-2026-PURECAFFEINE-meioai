@@ -1,10 +1,8 @@
 ﻿namespace NotificationServer
 {
-
     internal class Program
     {
-
-        static async Task Main(string[] args)
+        private static async Task Main(string[] args)
         {
             using var cts = new CancellationTokenSource();
 
@@ -18,7 +16,5 @@
 
             await UdpNotificationServer.ListenAsync(cts.Token);
         }
-
     }
-
 }

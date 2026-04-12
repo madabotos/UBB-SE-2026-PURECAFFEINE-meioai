@@ -1,46 +1,41 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Property_and_Management.src.DTO;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.DataTransferObjects;
 
-namespace Property_and_Management.src.Interface
+namespace Property_and_Management.Src.Interface
 {
-    public interface INotificationService
+    public interface INotificationService : IObservable<NotificationDataTransferObject>
     {
         /// <summary>Get a notification by its identifier.</summary>
-        /// <param name="id">The identifier of the notification.</param>
-        /// <returns>The <see cref="NotificationDTO"/> with the specified identifier.</returns>
-        NotificationDTO GetNotificationById(int id);
+        /// <param name="notificationIdentifier">The identifier of the notification.</param>
+        /// <returns>The <see cref="NotificationDataTransferObject"/> with the specified identifier.</returns>
+        NotificationDataTransferObject GetNotificationByIdentifier(int notificationIdentifier);
 
         /// <summary>Delete a notification by its identifier and return the deleted item.</summary>
-        /// <param name="id">The identifier of the notification.</param>
-        /// <returns>The deleted <see cref="NotificationDTO"/>.</returns>
-        NotificationDTO DeleteNotificationById(int id);
+        /// <param name="notificationIdentifier">The identifier of the notification.</param>
+        /// <returns>The deleted <see cref="NotificationDataTransferObject"/>.</returns>
+        NotificationDataTransferObject DeleteNotificationByIdentifier(int notificationIdentifier);
 
-        /// <summary>Update an existing notification identified by id.</summary>
-        /// <param name="id">The identifier of the notification to update.</param>
+        /// <summary>Update an existing notification identified by identifier.</summary>
+        /// <param name="notificationIdentifier">The identifier of the notification to update.</param>
         /// <param name="notification">The updated notification data.</param>
-        void UpdateNotificationById(int id, NotificationDTO notification);
+        void UpdateNotificationByIdentifier(int notificationIdentifier, NotificationDataTransferObject notification);
 
         /// <summary>Send a notification to a specific user.</summary>
-        /// <param name="userId">The identifier of the user.</param>
+        /// <param name="userIdentifier">The identifier of the user.</param>
         /// <param name="notification">The notification to send.</param>
-        void SendNotificationToUser(int userId, NotificationDTO notification);
+        void SendNotificationToUser(int userIdentifier, NotificationDataTransferObject notification);
 
         /// <summary>Return all notifications for a given user.</summary>
-        /// <param name="userId">The identifier of the user.</param>
-        /// <returns>A list of <see cref="NotificationDTO"/> objects for the specified user.</returns>
-        ImmutableList<NotificationDTO> GetNotificationsForUser(int userId);
+        /// <param name="userIdentifier">The identifier of the user.</param>
+        /// <returns>A list of <see cref="NotificationDataTransferObject"/> objects for the specified user.</returns>
+        ImmutableList<NotificationDataTransferObject> GetNotificationsForUser(int userIdentifier);
 
         /// <summary>
-        /// Subscribes to recive notifications for the given userId
+        /// Subscribes to recive notifications for the given userIdentifier
         /// </summary>
-        /// <param name="userId"></param>
-        void SubscribeToServer(int userId);
+        /// <param name="userIdentifier"></param>
+        void SubscribeToServer(int userIdentifier);
 
         /// <summary>
         /// Starts the listening on the client
@@ -55,7 +50,12 @@ namespace Property_and_Management.src.Interface
         /// <summary>
         /// Schedule an upcoming rental reminder 24 hours before the rental start for both renter and owner.
         /// </summary>
-        /// <param name="rental">The rental for which to schedule the reminder.</param>
-        void ScheduleUpcomingRentalReminder(Rental rental);
+        void ScheduleUpcomingRentalReminder(int renterIdentifier, int ownerIdentifier, string gameName, DateTime startDate);
+
+        /// <summary>
+        /// Deletes all notifications linked to a specific request (cleanup after offer approve/deny).
+        /// </summary>
+        void DeleteNotificationsByRequestId(int requestIdentifier);
     }
 }
+

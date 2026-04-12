@@ -1,14 +1,11 @@
-using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
-using Property_and_Management.src.DTO;
-using Property_and_Management.src.Viewmodels;
+using Property_and_Management.Src.Viewmodels;
 
-namespace Property_and_Management.src.Views
+namespace Property_and_Management.Src.Views
 {
     public sealed partial class RequestsToOthersPage : Page
     {
@@ -21,28 +18,18 @@ namespace Property_and_Management.src.Views
         {
             base.OnNavigatedTo(e);
 
-            if (e.Parameter is RequestsToOthersViewModel vm)
+            if (e.Parameter is RequestsToOthersViewModel requestsToOthersViewModel)
             {
-                DataContext = vm;
+                DataContext = requestsToOthersViewModel;
                 return;
             }
 
             if (DataContext is not RequestsToOthersViewModel)
             {
+                // Composition root: fall back to the DI container when no
+                // navigation parameter was passed.
                 DataContext = App.Services.GetRequiredService<RequestsToOthersViewModel>();
             }
-        }
-
-        private void RequestItem_Tapped(object sender, DoubleTappedRoutedEventArgs e)
-        {
-            if (sender is FrameworkElement element && element.DataContext is RequestDTO request && request.Id > 0)
-                Frame?.Navigate(typeof(ChatView), request.Id);
-        }
-
-        private void RequestItem_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            if (sender is FrameworkElement element && element.DataContext is RequestDTO request && request.Id > 0)
-                Frame?.Navigate(typeof(ChatView), request.Id);
         }
 
         private void CancelButton_Tapped(object sender, TappedRoutedEventArgs e)
@@ -52,52 +39,43 @@ namespace Property_and_Management.src.Views
 
         private async void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not Button btn || btn.Tag is not int requestId)
+            if (sender is not Button clickedButton || clickedButton.Tag is not int requestIdentifier)
+            {
                 return;
-
-            ContentDialog cancelDialog = new ContentDialog
-            {
-                Title = "Cancel Request?",
-                Content = "Are you sure you want to cancel this request?",
-                PrimaryButtonText = "Cancel Request",
-                CloseButtonText = "Go Back",
-                DefaultButton = ContentDialogButton.Close,
-                XamlRoot = this.XamlRoot
-            };
-
-            var result = await cancelDialog.ShowAsync();
-
-            if (result == ContentDialogResult.Primary)
-            {
-                var vm = DataContext as RequestsToOthersViewModel;
-                vm?.CancelRequest(requestId);
             }
+
+            var result = await DialogHelper.ShowConfirmationAsync(
+                this.XamlRoot,
+                Constants.DialogTitles.CancelRequestConfirmation,
+                "Are you sure you want to cancel this request?",
+                Constants.DialogButtons.CancelRequest,
+                Constants.DialogButtons.GoBack,
+                ContentDialogButton.Close);
+
+            if (result != ContentDialogResult.Primary)
+            {
+                return;
+            }
+
+            var requestsToOthersViewModel = DataContext as RequestsToOthersViewModel;
+            var error = requestsToOthersViewModel?.TryCancelRequest(requestIdentifier);
+            if (error != null)
+            {
+                await DialogHelper.ShowMessageAsync(
+                    this.XamlRoot,
+                    Constants.DialogTitles.CancelRequestConfirmation,
+                    error);
+            }
+        }
+
+        private void CreateRequestButton_Click(object sender, RoutedEventArgs e)
+        {
+            Frame?.Navigate(typeof(CreateRequestView));
         }
 
         private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
         {
-            if (sender is not Image img) return;
-
-            if (img.Source is BitmapImage current &&
-                current.UriSource != null &&
-                current.UriSource.AbsoluteUri.EndsWith("/Assets/default-game-placeholder.jpg", StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            if (Resources.TryGetValue("DefaultGameImage", out var localResource) && localResource is BitmapImage localImage)
-            {
-                img.Source = localImage;
-                return;
-            }
-
-            if (Application.Current.Resources.TryGetValue("DefaultGameImage", out var appResource) && appResource is BitmapImage appImage)
-            {
-                img.Source = appImage;
-                return;
-            }
-
-            img.Source = new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.jpg"));
+            ImageFailureHandler.HandleFailure(sender as Image, Resources);
         }
 
         private void NextButton_Click(object sender, RoutedEventArgs e)

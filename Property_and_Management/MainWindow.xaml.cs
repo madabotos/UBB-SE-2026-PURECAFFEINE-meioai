@@ -18,7 +18,6 @@ using WinRT.Interop;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
-
 namespace Property_and_Management
 {
     /// <summary>
@@ -26,8 +25,7 @@ namespace Property_and_Management
     /// </summary>
     public sealed partial class MainWindow : Window
     {
-
-        public AppWindow AppWindow { get; }
+        public new AppWindow AppWindow { get; }
 
         public MainWindow()
         {
@@ -35,17 +33,19 @@ namespace Property_and_Management
 
             AppWindow = GetAppWindow();
 
-            // override closing
+            // Clicking X truly exits the process (previously this hid the window to the
+            // tray, which left orphan processes alive that had to be killed manually).
+            // Environment.Exit fires AppDomain.ProcessExit, which runs the cleanup handler
+            // in App.xaml.cs that disposes the notification service and kills any child
+            // processes spawned by two-window dev mode.
             AppWindow.Closing += (sender, args) =>
             {
-                args.Cancel = true;
-                AppWindow.Hide();
+                Environment.Exit(0);
             };
         }
 
         private AppWindow GetAppWindow()
         {
-
             var hwnd = WindowNative.GetWindowHandle(this);
             var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
             return AppWindow.GetFromWindowId(windowId);

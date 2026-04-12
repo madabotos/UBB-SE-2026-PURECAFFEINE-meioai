@@ -34,7 +34,7 @@ class Program
             // 2) Send SendNotificationMessage (server should forward to the registered endpoint)
             MessageBase notification = new SendNotificationMessage
             {
-                UserId = userId,
+                UserIdentifier = userId,
                 Timestamp = DateTime.UtcNow,
                 Title = "Test",
                 Body = "This is a test notification"
@@ -48,13 +48,13 @@ class Program
             var receiveTask = client.ReceiveAsync();
             if (await Task.WhenAny(receiveTask, Task.Delay(500000)) == receiveTask)
             {
-                var res = receiveTask.Result;
-                Console.WriteLine($"Received forwarded packet from {res.RemoteEndPoint}:");
+                var receivedPacket = receiveTask.Result;
+                Console.WriteLine($"Received forwarded packet from {receivedPacket.RemoteEndPoint}:");
 
-                string recivedJson = Encoding.UTF8.GetString(res.Buffer);
-                Console.WriteLine($"Got {recivedJson}");
-                // Console.WriteLine(JsonSerializer.Deserialize<MessageWrapper>(recivedJson).Payload.Count());
-                var wrapper = JsonSerializer.Deserialize<MessageWrapper>(recivedJson);
+                string receivedJson = Encoding.UTF8.GetString(receivedPacket.Buffer);
+                Console.WriteLine($"Got {receivedJson}");
+                // Console.WriteLine(JsonSerializer.Deserialize<MessageWrapper>(receivedJson).Payload.Count());
+                var wrapper = JsonSerializer.Deserialize<MessageWrapper>(receivedJson);
 
                 Console.WriteLine(wrapper);
 
@@ -66,9 +66,9 @@ class Program
                 Console.WriteLine("No forwarded message received within timeout.");
             }
         }
-        catch (Exception ex)
+        catch (Exception caughtException)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            Console.WriteLine($"Error: {caughtException.Message}");
             return 1;
         }
 

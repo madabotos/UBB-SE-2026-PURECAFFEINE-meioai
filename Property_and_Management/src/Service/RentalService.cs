@@ -1,65 +1,77 @@
 using System;
 using System.Collections.Immutable;
 using System.Linq;
-using Property_and_Management.src.DTO;
-using Property_and_Management.src.Interface;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.Constants;
+using Property_and_Management.Src.DataTransferObjects;
+using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.Service
+namespace Property_and_Management.Src.Service
 {
     public class RentalService : IRentalService
     {
-        private readonly IRentalRepository _rentalRepository;
-        private readonly IGameRepository _gameRepository;
-        private readonly IMapper<Rental, RentalDTO> _rentalMapper;
+        private readonly IRentalRepository rentalRepository;
+        private readonly IGameRepository gameRepository;
+        private readonly IMapper<Rental, RentalDataTransferObject> rentalMapper;
+
+        private const int NewEntityIdentifier = 0;
 
         public RentalService(
             IRentalRepository rentalRepository,
             IGameRepository gameRepository,
-            IMapper<Rental, RentalDTO> rentalMapper)
+            IMapper<Rental, RentalDataTransferObject> rentalMapper)
         {
-            _rentalRepository = rentalRepository;
-            _gameRepository = gameRepository;
-            _rentalMapper = rentalMapper;
+            this.rentalRepository = rentalRepository;
+            this.gameRepository = gameRepository;
+            this.rentalMapper = rentalMapper;
         }
 
-        public bool IsSlotAvailable(int gameId, DateTime newStart, DateTime newEnd)
+        public bool IsSlotAvailable(int gameIdentifier, DateTime newStart, DateTime newEnd)
         {
-            var existingRentals = _rentalRepository.GetRentalsByGame(gameId);
-            const int bufferHours = 48;
-
-            foreach (var rental in existingRentals)
+            foreach (var rental in rentalRepository.GetRentalsByGame(gameIdentifier))
             {
-                var bufferStart = rental.StartDate.AddHours(-bufferHours);
-                var bufferEnd = rental.EndDate.AddHours(bufferHours);
+                var bufferStart = rental.StartDate.AddHours(-DomainConstants.RentalBufferHours);
+                var bufferEnd = rental.EndDate.AddHours(DomainConstants.RentalBufferHours);
                 if (newStart < bufferEnd && newEnd > bufferStart)
+                {
                     return false;
+                }
             }
+
             return true;
         }
 
-        public void CreateConfirmedRental(Rental rental)
+        public void CreateConfirmedRental(int gameIdentifier, int renterIdentifier, int ownerIdentifier, DateTime startDate, DateTime endDate)
         {
-            var game = _gameRepository.Get(rental.Game.Id);
-            if (game.Owner.Id != rental.Owner.Id)
+            var game = gameRepository.Get(gameIdentifier);
+            if (game.Owner.Identifier != ownerIdentifier)
+            {
                 throw new InvalidOperationException("Seller ID must match Game Owner ID [ENT-REN-04].");
+            }
 
-            if (!IsSlotAvailable(rental.Game.Id, rental.StartDate, rental.EndDate))
-                throw new Exception("Selected dates fall within the mandatory 48-hour buffer of another rental.");
+            var rental = new Rental(
+                identifier: NewEntityIdentifier,
+                game: new Game { Identifier = gameIdentifier },
+                renter: new User { Identifier = renterIdentifier },
+                owner: new User { Identifier = ownerIdentifier },
+                startDate: startDate,
+                endDate: endDate);
 
-            _rentalRepository.Add(rental);
+            rentalRepository.AddConfirmed(rental);
         }
 
-        public ImmutableList<RentalDTO> GetRentalsForRenter(int renterId) =>
-            _rentalRepository
-                .GetRentalsByRenter(renterId)
-                .Select(r => _rentalMapper.ToDTO(r))
+        public ImmutableList<RentalDataTransferObject> GetRentalsForRenter(int renterIdentifier) =>
+            rentalRepository
+                .GetRentalsByRenter(renterIdentifier)
+                .Select(rental => rentalMapper.ToDataTransferObject(rental))
                 .ToImmutableList();
 
-        public ImmutableList<RentalDTO> GetRentalsForOwner(int ownerId) =>
-            _rentalRepository
-                .GetRentalsByOwner(ownerId)
-                .Select(r => _rentalMapper.ToDTO(r))
+        public ImmutableList<RentalDataTransferObject> GetRentalsForOwner(int ownerIdentifier) =>
+            rentalRepository
+                .GetRentalsByOwner(ownerIdentifier)
+                .Select(rental => rentalMapper.ToDataTransferObject(rental))
                 .ToImmutableList();
     }
 }
+
+

@@ -9,6 +9,6 @@ namespace ServerCommunication
 {
     public class SubscribeToServerMessage : MessageBase
     {
-        public int UserId { get; set; }
+        public int UserIdentifier { get; set; }
     }
 }

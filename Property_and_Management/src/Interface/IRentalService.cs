@@ -1,43 +1,31 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Property_and_Management.src.DTO;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.DataTransferObjects;
 
-namespace Property_and_Management.src.Interface
+namespace Property_and_Management.Src.Interface
 {
     public interface IRentalService
     {
         /// <summary>
-        /// Returns ImmutableList<RentalDTO> of all rentals where the user is the renter.
+        /// Returns all rentals where the user is the renter.
         /// </summary>
-        /// <param name="renterId"></param>
-        /// <returns></returns>
-        ImmutableList<RentalDTO> GetRentalsForRenter(int renterId);
+        ImmutableList<RentalDataTransferObject> GetRentalsForRenter(int renterIdentifier);
 
         /// <summary>
-        /// Returns ImmutableList<RentalDTO> of all rentals where the user is the owner.
+        /// Returns all rentals where the user is the owner.
         /// </summary>
-        /// <param name="ownerId"></param>
-        /// <returns></returns>
-        ImmutableList<RentalDTO> GetRentalsForOwner(int ownerId);
+        ImmutableList<RentalDataTransferObject> GetRentalsForOwner(int ownerIdentifier);
 
         /// <summary>
-        /// Returns bool indicating whether the time slot is available for the given game.
+        /// Returns true if the time slot is available for the given game.
         /// </summary>
-        /// <param name="gameId"></param>
-        /// <param name="newStart"></param>
-        /// <param name="newEnd"></param>
-        /// <returns></returns>
-        bool IsSlotAvailable(int gameId, DateTime newStart, DateTime newEnd);
+        bool IsSlotAvailable(int gameIdentifier, DateTime newStart, DateTime newEnd);
 
         /// <summary>
-        /// Creates a rental
+        /// Creates a confirmed rental for the given game, renter, owner and dates.
+        /// Throws if the game owner does not match ownerIdentifier or if the slot is taken.
         /// </summary>
-        /// <param name="rental"></param>
-        public void CreateConfirmedRental(Rental rental);
+        void CreateConfirmedRental(int gameIdentifier, int renterIdentifier, int ownerIdentifier, DateTime startDate, DateTime endDate);
     }
 }
+

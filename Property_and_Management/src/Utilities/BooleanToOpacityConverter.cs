@@ -1,17 +1,16 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.UI.Xaml.Data;
 
-namespace Property_and_Management.src.Utilities
+namespace Property_and_Management.Src.Utilities
 {
     public class BooleanToOpacityConverter : IValueConverter
     {
+        private const double ExpiredItemOpacity = 0.5;
+        private const double ActiveItemOpacity = 1.0;
+
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            return (value is bool isExpired && isExpired) ? 0.5 : 1.0;
+            return (value is bool isExpired && isExpired) ? ExpiredItemOpacity : ActiveItemOpacity;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)

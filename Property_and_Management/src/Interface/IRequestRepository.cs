@@ -1,49 +1,57 @@
+using System;
 using System.Collections.Immutable;
-using Microsoft.Data.SqlClient;
-using Property_and_Management.src.Model;
+using Property_and_Management.Src.Model;
 
-namespace Property_and_Management.src.Interface
+namespace Property_and_Management.Src.Interface
 {
+    /// <summary>
+    /// Persistence-layer contract for the Requests table. Methods are intentionally
+    /// narrow and stateless; all business decisions (what counts as "overlap",
+    /// which notifications to send, etc.) belong in <see cref="IRequestService"/>.
+    /// </summary>
     public interface IRequestRepository : IRepository<Request>
     {
         /// <summary>
+        /// Updates only the status and offering user on a request.
+        /// </summary>
+        void UpdateStatus(int requestIdentifier, RequestStatus status, int? offeringUserIdentifier);
+
+        /// <summary>
         /// Gets requests for which the specified user is the game owner.
         /// </summary>
-        /// <param name="ownerId">Owner user id.</param>
-        /// <returns>Immutable list of matching requests.</returns>
-        ImmutableList<Request> GetRequestsByOwner(int ownerId);
+        ImmutableList<Request> GetRequestsByOwner(int ownerIdentifier);
 
         /// <summary>
         /// Gets requests created by the specified renter.
         /// </summary>
-        /// <param name="renterId">Renter user id.</param>
-        /// <returns>Immutable list of matching requests.</returns>
-        ImmutableList<Request> GetRequestsByRenter(int renterId);
+        ImmutableList<Request> GetRequestsByRenter(int renterIdentifier);
 
         /// <summary>
         /// Gets requests for the specified game.
         /// </summary>
-        /// <param name="gameId">Game id.</param>
-        /// <returns>Immutable list of matching requests.</returns>
-        ImmutableList<Request> GetRequestsByGame(int gameId);
-
-        // Transaction-capable overloads (requests only)
+        ImmutableList<Request> GetRequestsByGame(int gameIdentifier);
 
         /// <summary>
-        /// Inserts the request using an existing connection and transaction.
+        /// Returns every request on <paramref name="gameIdentifier"/> whose date window
+        /// overlaps <c>[bufferedStart, bufferedEnd)</c>, excluding the request identified
+        /// by <paramref name="excludeRequestIdentifier"/>. Used by the service to decide
+        /// which requests get cascade-cancelled when a rental is created.
         /// </summary>
-        /// <param name="entity">Request to insert.</param>
-        /// <param name="connection">Active SQL connection.</param>
-        /// <param name="transaction">Active SQL transaction.</param>
-        void Add(Request entity, SqlConnection connection, SqlTransaction transaction);
+        ImmutableList<Request> GetOverlappingRequests(
+            int gameIdentifier,
+            int excludeRequestIdentifier,
+            DateTime bufferedStart,
+            DateTime bufferedEnd);
 
         /// <summary>
-        /// Deletes the request using an existing connection and transaction and returns the deleted entity.
+        /// Commits the rental-creation cascade inside a single serializable transaction:
+        /// delete notifications for the approved request and all pre-computed overlapping
+        /// requests, insert the rental, then delete the affected requests. Returns the
+        /// new rental identifier. The caller is responsible for deciding which requests
+        /// are actually overlapping — this method just applies their fate atomically.
         /// </summary>
-        /// <param name="id">Request id to delete.</param>
-        /// <param name="connection">Active SQL connection.</param>
-        /// <param name="transaction">Active SQL transaction.</param>
-        /// <returns>The deleted <see cref="Request"/> instance.</returns>
-        Request Delete(int id, SqlConnection connection, SqlTransaction transaction);
+        int ApproveAtomically(
+            Request approvedRequest,
+            ImmutableList<Request> overlappingRequests);
     }
 }
