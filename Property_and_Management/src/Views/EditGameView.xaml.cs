@@ -24,11 +24,11 @@ namespace Property_and_Management.Src.Views
         }
 
         // Catches the game id passed in from the Listings page.
-        protected override async void OnNavigatedTo(NavigationEventArgs e)
+        protected override async void OnNavigatedTo(NavigationEventArgs navigationEventArgs)
         {
-            base.OnNavigatedTo(e);
+            base.OnNavigatedTo(navigationEventArgs);
 
-            if (e.Parameter is int incomingGameId)
+            if (navigationEventArgs.Parameter is int incomingGameId)
             {
                 ViewModel.LoadGame(incomingGameId);
                 this.Bindings.Update();
@@ -46,7 +46,7 @@ namespace Property_and_Management.Src.Views
             }
         }
 
-        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             ViewModel.SetPriceFromText(PriceNumberBox.Text);
 
@@ -66,7 +66,7 @@ namespace Property_and_Management.Src.Views
                 submitResult.DialogMessage);
         }
 
-        private async void UploadImageButton_Click(object sender, RoutedEventArgs e)
+        private async void UploadImageButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             var picker = new Windows.Storage.Pickers.FileOpenPicker();
             picker.ViewMode = Windows.Storage.Pickers.PickerViewMode.Thumbnail;
@@ -76,8 +76,8 @@ namespace Property_and_Management.Src.Views
             picker.FileTypeFilter.Add(".png");
 
             // WinUI 3 quirk: the picker has to be explicitly told which window it belongs to.
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
-            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+            var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
 
             var file = await picker.PickSingleFileAsync();
             if (file == null)

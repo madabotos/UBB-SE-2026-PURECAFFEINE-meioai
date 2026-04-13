@@ -13,11 +13,11 @@ namespace Property_and_Management.Src.Views
             InitializeComponent();
         }
 
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        protected override void OnNavigatedTo(NavigationEventArgs navigationEventArgs)
         {
-            base.OnNavigatedTo(e);
+            base.OnNavigatedTo(navigationEventArgs);
 
-            if (e.Parameter is RentalsFromOthersViewModel rentalsFromOthersViewModel)
+            if (navigationEventArgs.Parameter is RentalsFromOthersViewModel rentalsFromOthersViewModel)
             {
                 DataContext = rentalsFromOthersViewModel;
                 return;
@@ -31,17 +31,17 @@ namespace Property_and_Management.Src.Views
             }
         }
 
-        private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
+        private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs exceptionRoutedEventArgs)
         {
             ImageFailureHandler.HandleFailure(sender as Image, Resources);
         }
 
-        private void NextButton_Click(object sender, RoutedEventArgs e)
+        private void NextButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             (DataContext as RentalsFromOthersViewModel)?.NextPage();
         }
 
-        private void PrevButton_Click(object sender, RoutedEventArgs e)
+        private void PrevButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             (DataContext as RentalsFromOthersViewModel)?.PrevPage();
         }

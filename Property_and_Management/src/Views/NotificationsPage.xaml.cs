@@ -21,14 +21,14 @@ namespace Property_and_Management.Src.Views
             InitializeComponent();
         }
 
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        protected override void OnNavigatedTo(NavigationEventArgs navigationEventArgs)
         {
-            base.OnNavigatedTo(e);
+            base.OnNavigatedTo(navigationEventArgs);
 
             // Prefer the view model passed as a navigation parameter (e.g. from
             // MenuBarView's toast-triggered NavigateToNotifications call). Fall
             // back to the DI container so direct menu navigation still works.
-            if (e.Parameter is NotificationsViewModel navigatedViewModel)
+            if (navigationEventArgs.Parameter is NotificationsViewModel navigatedViewModel)
             {
                 DataContext = navigatedViewModel;
                 navigatedViewModel.LoadNotificationsForUser(navigatedViewModel.CurrentUserIdentifier);
@@ -53,7 +53,7 @@ namespace Property_and_Management.Src.Views
             return root?.DataContext as NotificationsViewModel;
         }
 
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+        private void DeleteButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             var clickedButton = sender as Button;
             if (clickedButton?.DataContext is not NotificationDataTransferObject notification)
@@ -72,8 +72,8 @@ namespace Property_and_Management.Src.Views
             notificationsViewModel.DeleteNotificationByIdentifier(notification.Identifier);
         }
 
-        private void NextButton_Click(object sender, RoutedEventArgs e) => ResolveViewModel()?.NextPage();
+        private void NextButton_Click(object sender, RoutedEventArgs routedEventArgs) => ResolveViewModel()?.NextPage();
 
-        private void PrevButton_Click(object sender, RoutedEventArgs e) => ResolveViewModel()?.PrevPage();
+        private void PrevButton_Click(object sender, RoutedEventArgs routedEventArgs) => ResolveViewModel()?.PrevPage();
     }
 }

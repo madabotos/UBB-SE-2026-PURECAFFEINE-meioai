@@ -20,7 +20,7 @@ namespace Property_and_Management.Src.Views
             ViewModel = App.Services.GetRequiredService<CreateGameViewModel>();
         }
 
-        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             ViewModel.SetPriceFromText(PriceNumberBox.Text);
 
@@ -40,7 +40,7 @@ namespace Property_and_Management.Src.Views
                 submitResult.DialogMessage);
         }
 
-        private async void UploadImageButton_Click(object sender, RoutedEventArgs e)
+        private async void UploadImageButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             // 1. Set up the Windows File Picker
             var picker = new Windows.Storage.Pickers.FileOpenPicker();
@@ -51,8 +51,8 @@ namespace Property_and_Management.Src.Views
             picker.FileTypeFilter.Add(".png");
 
             // WinUI 3 quirk: the picker has to be explicitly told which window it belongs to.
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
-            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+            var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
 
             var file = await picker.PickSingleFileAsync();
             if (file == null)

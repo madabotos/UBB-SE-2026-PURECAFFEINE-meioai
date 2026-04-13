@@ -5,6 +5,8 @@ namespace Property_and_Management.Src.Viewmodels
 {
     internal static class GameInputHelper
     {
+        private const int EmptyImageLength = 0;
+
         public static List<string> BuildValidationErrors(
             string name,
             decimal price,
@@ -50,7 +52,7 @@ namespace Property_and_Management.Src.Viewmodels
 
         public static byte[] EnsureImageOrDefault(byte[] image, string baseDirectory)
         {
-            if (image != null && image.Length > 0)
+            if (image != null && image.Length > EmptyImageLength)
             {
                 return image;
             }

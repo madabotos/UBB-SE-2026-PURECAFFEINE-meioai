@@ -14,11 +14,11 @@ namespace Property_and_Management.Src.Views
             InitializeComponent();
         }
 
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        protected override void OnNavigatedTo(NavigationEventArgs navigationEventArgs)
         {
-            base.OnNavigatedTo(e);
+            base.OnNavigatedTo(navigationEventArgs);
 
-            if (e.Parameter is RequestsToOthersViewModel requestsToOthersViewModel)
+            if (navigationEventArgs.Parameter is RequestsToOthersViewModel requestsToOthersViewModel)
             {
                 DataContext = requestsToOthersViewModel;
                 return;
@@ -32,12 +32,12 @@ namespace Property_and_Management.Src.Views
             }
         }
 
-        private void CancelButton_Tapped(object sender, TappedRoutedEventArgs e)
+        private void CancelButton_Tapped(object sender, TappedRoutedEventArgs tappedRoutedEventArgs)
         {
-            e.Handled = true;
+            tappedRoutedEventArgs.Handled = true;
         }
 
-        private async void CancelButton_Click(object sender, RoutedEventArgs e)
+        private async void CancelButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             if (sender is not Button clickedButton || clickedButton.Tag is not int requestIdentifier)
             {
@@ -68,22 +68,22 @@ namespace Property_and_Management.Src.Views
             }
         }
 
-        private void CreateRequestButton_Click(object sender, RoutedEventArgs e)
+        private void CreateRequestButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             Frame?.Navigate(typeof(CreateRequestView));
         }
 
-        private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
+        private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs exceptionRoutedEventArgs)
         {
             ImageFailureHandler.HandleFailure(sender as Image, Resources);
         }
 
-        private void NextButton_Click(object sender, RoutedEventArgs e)
+        private void NextButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             (DataContext as RequestsToOthersViewModel)?.NextPage();
         }
 
-        private void PrevButton_Click(object sender, RoutedEventArgs e)
+        private void PrevButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             (DataContext as RequestsToOthersViewModel)?.PrevPage();
         }

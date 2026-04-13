@@ -17,13 +17,13 @@ namespace Property_and_Management.Src.Views
         }
 
         // UI-LST-05: Redirect to Create Game page
-        private void CreateGameButton_Click(object sender, RoutedEventArgs e)
+        private void CreateGameButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             this.Frame.Navigate(typeof(CreateGameView));
         }
 
         // UI-LST-04: Redirect to Edit Game page
-        private void EditGameButton_Click(object sender, RoutedEventArgs e)
+        private void EditGameButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             var clickedButton = sender as Button;
             var gameToEdit = clickedButton?.Tag as GameDataTransferObject;
@@ -35,7 +35,7 @@ namespace Property_and_Management.Src.Views
         }
 
         // UI-LST-03: Prompt for confirmation, then delete
-        private async void DeleteGameButton_Click(object sender, RoutedEventArgs e)
+        private async void DeleteGameButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             var clickedButton = sender as Button;
             var gameToDelete = clickedButton?.Tag as GameDataTransferObject;
@@ -66,9 +66,9 @@ namespace Property_and_Management.Src.Views
             }
         }
 
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        protected override void OnNavigatedTo(NavigationEventArgs navigationEventArgs)
         {
-            base.OnNavigatedTo(e);
+            base.OnNavigatedTo(navigationEventArgs);
 
             // Composition root: pull the ViewModel from the DI container
             // whenever the page is navigated to so data is fresh.
@@ -76,17 +76,17 @@ namespace Property_and_Management.Src.Views
             this.DataContext = ViewModel;
         }
 
-        private void PrevButton_Click(object sender, RoutedEventArgs e)
+        private void PrevButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             ViewModel?.PrevPage();
         }
 
-        private void NextButton_Click(object sender, RoutedEventArgs e)
+        private void NextButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             ViewModel?.NextPage();
         }
 
-        private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
+        private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs exceptionRoutedEventArgs)
         {
             ImageFailureHandler.HandleFailure(sender as Image, Resources);
         }
