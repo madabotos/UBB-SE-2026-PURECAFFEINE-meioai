@@ -51,9 +51,6 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void CreateConfirmedRental_OwnerMismatch_ThrowsInvalidOperation()
         {
-            // arrange — game is owned by SampleOwnerIdentifier, but caller claims a different owner
-
-            // act
             var createAction = () => rentalService.CreateConfirmedRental(
                 SampleGameIdentifier,
                 SampleRenterIdentifier,
@@ -61,16 +58,12 @@ namespace Property_and_Management.Tests.Service
                 DateTime.UtcNow.AddDays(1),
                 DateTime.UtcNow.AddDays(3));
 
-            // assert
             createAction.Should().Throw<InvalidOperationException>();
         }
 
         [Test]
         public void CreateConfirmedRental_HappyPath_CallsAddConfirmed()
         {
-            // arrange — game owner matches
-
-            // act
             rentalService.CreateConfirmedRental(
                 SampleGameIdentifier,
                 SampleRenterIdentifier,
@@ -78,40 +71,13 @@ namespace Property_and_Management.Tests.Service
                 DateTime.UtcNow.AddDays(1),
                 DateTime.UtcNow.AddDays(3));
 
-            // assert
             rentalRepositoryMock.Verify(
                 repository => repository.AddConfirmed(It.IsAny<Rental>()), Times.Once);
         }
 
         [Test]
-        public void IsSlotAvailable_WithinBufferOfExistingRental_ReturnsFalse()
+        public void CreateConfirmedRental_WhenSlotUnavailable_ThrowsAndDoesNotPersist()
         {
-            // arrange
-            var existingRental = new Rental(
-                identifier: 1,
-                game: new Game { Identifier = SampleGameIdentifier },
-                renter: new User(SampleRenterIdentifier, "Renter"),
-                owner: new User(SampleOwnerIdentifier, "Owner"),
-                startDate: DateTime.UtcNow.AddDays(10),
-                endDate: DateTime.UtcNow.AddDays(12));
-            rentalRepositoryMock
-                .Setup(repository => repository.GetRentalsByGame(SampleGameIdentifier))
-                .Returns(ImmutableList.Create(existingRental));
-
-            // act
-            var isAvailable = rentalService.IsSlotAvailable(
-                SampleGameIdentifier,
-                DateTime.UtcNow.AddDays(13),
-                DateTime.UtcNow.AddDays(13).AddHours(6));
-
-            // assert
-            isAvailable.Should().BeFalse();
-        }
-
-        [Test]
-        public void IsSlotAvailable_OutsideBuffer_ReturnsTrue()
-        {
-            // arrange
             var existingRental = new Rental(
                 identifier: 1,
                 game: new Game { Identifier = SampleGameIdentifier },
@@ -123,13 +89,59 @@ namespace Property_and_Management.Tests.Service
                 .Setup(repository => repository.GetRentalsByGame(SampleGameIdentifier))
                 .Returns(ImmutableList.Create(existingRental));
 
-            // act — start well outside the 48h buffer window after the existing rental
+            var createAction = () => rentalService.CreateConfirmedRental(
+                SampleGameIdentifier,
+                SampleRenterIdentifier,
+                SampleOwnerIdentifier,
+                DateTime.UtcNow.AddDays(2),
+                DateTime.UtcNow.AddDays(2).AddHours(6));
+
+            createAction.Should().Throw<InvalidOperationException>();
+            rentalRepositoryMock.Verify(
+                repository => repository.AddConfirmed(It.IsAny<Rental>()), Times.Never);
+        }
+
+        [Test]
+        public void IsSlotAvailable_WithinBufferOfExistingRental_ReturnsFalse()
+        {
+            var existingRental = new Rental(
+                identifier: 1,
+                game: new Game { Identifier = SampleGameIdentifier },
+                renter: new User(SampleRenterIdentifier, "Renter"),
+                owner: new User(SampleOwnerIdentifier, "Owner"),
+                startDate: DateTime.UtcNow.AddDays(10),
+                endDate: DateTime.UtcNow.AddDays(12));
+            rentalRepositoryMock
+                .Setup(repository => repository.GetRentalsByGame(SampleGameIdentifier))
+                .Returns(ImmutableList.Create(existingRental));
+
+            var isAvailable = rentalService.IsSlotAvailable(
+                SampleGameIdentifier,
+                DateTime.UtcNow.AddDays(13),
+                DateTime.UtcNow.AddDays(13).AddHours(6));
+
+            isAvailable.Should().BeFalse();
+        }
+
+        [Test]
+        public void IsSlotAvailable_OutsideBuffer_ReturnsTrue()
+        {
+            var existingRental = new Rental(
+                identifier: 1,
+                game: new Game { Identifier = SampleGameIdentifier },
+                renter: new User(SampleRenterIdentifier, "Renter"),
+                owner: new User(SampleOwnerIdentifier, "Owner"),
+                startDate: DateTime.UtcNow.AddDays(1),
+                endDate: DateTime.UtcNow.AddDays(3));
+            rentalRepositoryMock
+                .Setup(repository => repository.GetRentalsByGame(SampleGameIdentifier))
+                .Returns(ImmutableList.Create(existingRental));
+
             var isAvailable = rentalService.IsSlotAvailable(
                 SampleGameIdentifier,
                 DateTime.UtcNow.AddDays(10),
                 DateTime.UtcNow.AddDays(12));
 
-            // assert
             isAvailable.Should().BeTrue();
         }
     }
