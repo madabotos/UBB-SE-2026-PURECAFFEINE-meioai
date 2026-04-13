@@ -64,6 +64,34 @@ namespace Property_and_Management.Tests.Viewmodels
         }
 
         [Test]
+        public void SelectedPageName_MyRentals_RaisesNavigationToRentalsFromOthers()
+        {
+            // arrange
+            AppPage? capturedPage = null;
+            viewModel.RequestNavigation += page => capturedPage = page;
+
+            // act
+            viewModel.SelectedPageName = "My Rentals";
+
+            // assert
+            capturedPage.Should().Be(AppPage.RentalsFromOthers);
+        }
+
+        [Test]
+        public void SelectedPageName_OthersRentals_RaisesNavigationToRentalsToOthers()
+        {
+            // arrange
+            AppPage? capturedPage = null;
+            viewModel.RequestNavigation += page => capturedPage = page;
+
+            // act
+            viewModel.SelectedPageName = "Others' Rentals";
+
+            // assert
+            capturedPage.Should().Be(AppPage.RentalsToOthers);
+        }
+
+        [Test]
         public void SelectedPageName_UnknownName_DoesNotRaiseNavigation()
         {
             // arrange
