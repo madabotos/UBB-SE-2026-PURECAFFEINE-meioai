@@ -1,4 +1,3 @@
-using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -10,8 +9,6 @@ namespace Property_and_Management.Src.Views
 {
     public sealed partial class ListingsPage : Page
     {
-        private const int NoActiveRentalsCount = 0;
-
         public ListingsViewModel ViewModel { get; private set; }
 
         public ListingsPage()
@@ -58,22 +55,13 @@ namespace Property_and_Management.Src.Views
 
             if (result == ContentDialogResult.Primary)
             {
-                try
-                {
-                    // Execute deletion in the ViewModel
-                    ViewModel.DeleteGame(gameToDelete);
-
-                    await DialogHelper.ShowMessageAsync(
-                        this.XamlRoot,
-                        Constants.DialogTitles.GameRemoved,
-                        $"There are {NoActiveRentalsCount} active rentals for this game. It was removed successfully.");
-                }
-                catch (InvalidOperationException invalidOperationException)
+                var deleteResult = ViewModel.TryDeleteGame(gameToDelete);
+                if (!string.IsNullOrWhiteSpace(deleteResult.DialogMessage))
                 {
                     await DialogHelper.ShowMessageAsync(
                         this.XamlRoot,
-                        Constants.DialogTitles.CannotDeleteGame,
-                        invalidOperationException.Message);
+                        deleteResult.DialogTitle,
+                        deleteResult.DialogMessage);
                 }
             }
         }

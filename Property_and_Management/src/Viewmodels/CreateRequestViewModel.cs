@@ -85,11 +85,13 @@ namespace Property_and_Management.Src.Viewmodels
         /// Returns a user-friendly error message, or <c>null</c> on success.
         /// Keeps the service-namespace error enums out of the view layer.
         /// </summary>
-        public string? TrySubmitRequest()
+        public ViewOperationResult SubmitRequest()
         {
             if (!ValidateInputs())
             {
-                return Constants.DialogMessages.CreateRequestValidationError;
+                return ViewOperationResult.Failure(
+                    Constants.DialogTitles.ValidationError,
+                    Constants.DialogMessages.CreateRequestValidationError);
             }
 
             var result = requestService.CreateRequest(
@@ -101,16 +103,29 @@ namespace Property_and_Management.Src.Viewmodels
 
             if (result.IsSuccess)
             {
-                return null;
+                return ViewOperationResult.Success();
             }
 
-            return result.Error switch
+            return ViewOperationResult.Failure(
+                Constants.DialogTitles.RequestFailed,
+                BuildCreateRequestErrorMessage(result.Error));
+        }
+
+        private static string BuildCreateRequestErrorMessage(CreateRequestError createRequestError)
+        {
+            return createRequestError switch
             {
                 CreateRequestError.OwnerCannotRent => "You cannot rent your own game.",
                 CreateRequestError.DatesUnavailable => "The selected dates are not available.",
                 CreateRequestError.GameDoesNotExist => "The selected game no longer exists.",
                 _ => Constants.DialogMessages.UnexpectedErrorOccurred
             };
+        }
+
+        public string? TrySubmitRequest()
+        {
+            var submitResult = SubmitRequest();
+            return submitResult.IsSuccess ? null : submitResult.DialogMessage;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

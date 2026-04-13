@@ -38,28 +38,20 @@ namespace Property_and_Management.Src.Views
             ViewModel.StartDate = StartDatePicker.Date;
             ViewModel.EndDate = EndDatePicker.Date;
 
-            if (ViewModel.ValidateInputs())
+            var createResult = ViewModel.CreateRental();
+            if (createResult.IsSuccess)
             {
-                var error = ViewModel.SaveRental();
-                if (error == null)
+                if (Frame.CanGoBack)
                 {
-                    if (Frame.CanGoBack)
-                    {
-                        Frame.GoBack();
-                    }
+                    Frame.GoBack();
                 }
-                else
-                {
-                    await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.RentalFailed, error);
-                }
+                return;
             }
-            else
-            {
-                await DialogHelper.ShowMessageAsync(
-                    this.XamlRoot,
-                    Constants.DialogTitles.ValidationError,
-                    Constants.DialogMessages.CreateRentalValidationError);
-            }
+
+            await DialogHelper.ShowMessageAsync(
+                this.XamlRoot,
+                createResult.DialogTitle,
+                createResult.DialogMessage);
         }
     }
 }

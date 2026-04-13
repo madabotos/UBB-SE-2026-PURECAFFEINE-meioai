@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -26,11 +24,9 @@ namespace Property_and_Management.Src.Views
         {
             ViewModel.SetPriceFromText(PriceNumberBox.Text);
 
-            var validationErrors = ViewModel.ValidateInputs();
-            if (!validationErrors.Any())
+            var submitResult = ViewModel.SubmitCreateGame();
+            if (submitResult.IsSuccess)
             {
-                ViewModel.SaveGame();
-
                 if (Frame.CanGoBack)
                 {
                     Frame.GoBack();
@@ -38,15 +34,10 @@ namespace Property_and_Management.Src.Views
                 return;
             }
 
-            await ShowValidationErrorsAsync(validationErrors);
-        }
-
-        private async System.Threading.Tasks.Task ShowValidationErrorsAsync(IEnumerable<string> validationErrors)
-        {
             await DialogHelper.ShowMessageAsync(
                 this.XamlRoot,
-                Constants.DialogTitles.ValidationError,
-                string.Join(Environment.NewLine, validationErrors));
+                submitResult.DialogTitle,
+                submitResult.DialogMessage);
         }
 
         private async void UploadImageButton_Click(object sender, RoutedEventArgs e)

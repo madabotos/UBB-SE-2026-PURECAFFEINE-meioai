@@ -33,8 +33,8 @@ namespace Property_and_Management.Src.Views
             ViewModel.StartDate = StartDatePicker.Date;
             ViewModel.EndDate = EndDatePicker.Date;
 
-            var error = ViewModel.TrySubmitRequest();
-            if (error == null)
+            var submitResult = ViewModel.SubmitRequest();
+            if (submitResult.IsSuccess)
             {
                 if (Frame.CanGoBack)
                 {
@@ -43,11 +43,10 @@ namespace Property_and_Management.Src.Views
                 return;
             }
 
-            var dialogTitle = error == Constants.DialogMessages.CreateRequestValidationError
-                ? Constants.DialogTitles.ValidationError
-                : Constants.DialogTitles.RequestFailed;
-
-            await DialogHelper.ShowMessageAsync(this.XamlRoot, dialogTitle, error);
+            await DialogHelper.ShowMessageAsync(
+                this.XamlRoot,
+                submitResult.DialogTitle,
+                submitResult.DialogMessage);
         }
     }
 }
