@@ -6,9 +6,8 @@ namespace Property_and_Management.Src.Interface
     public interface IRentalRepository : IRepository<Rental>
     {
         /// <summary>
-        /// Inserts a rental inside a serializable transaction after verifying the time slot
-        /// is not within the 48-hour buffer of an existing rental.
-        /// Throws <see cref="System.InvalidOperationException"/> if the slot is taken.
+        /// Inserts a rental using repository persistence semantics.
+        /// Availability/business validation is handled in the service layer.
         /// </summary>
         void AddConfirmed(Rental entity);
 

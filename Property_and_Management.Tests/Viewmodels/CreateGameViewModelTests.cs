@@ -128,8 +128,8 @@ namespace Property_and_Management.Tests.Viewmodels
             // assert
             gameServiceMock.Verify(
                 service => service.AddGame(It.Is<GameDataTransferObject>(
-                    dto => dto.Name == "Valid Name"
-                           && dto.Owner.Identifier == SampleCurrentUserIdentifier)),
+                    gameDataTransferObject => gameDataTransferObject.Name == "Valid Name"
+                           && gameDataTransferObject.Owner.Identifier == SampleCurrentUserIdentifier)),
                 Times.Once);
         }
     }
