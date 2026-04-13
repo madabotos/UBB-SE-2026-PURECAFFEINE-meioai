@@ -114,45 +114,15 @@ namespace Property_and_Management.Src.Service
                 return Result<int, ApproveRequestError>.Failure(ApproveRequestError.Unauthorized);
             }
 
-            // Only Open requests can be directly approved. OfferPending requests must go
-            // through ApproveOffer so we never bypass the renter's consent.
             if (request.Status != RequestStatus.Open)
             {
                 return Result<int, ApproveRequestError>.Failure(ApproveRequestError.NotFound);
             }
 
-            var bufferedStart = request.StartDate.AddHours(-DomainConstants.RentalBufferHours);
-            var bufferedEnd = request.EndDate.AddHours(DomainConstants.RentalBufferHours);
-
-            var overlappingRequests = requestRepository.GetOverlappingRequests(
-                request.Game?.Identifier ?? MissingForeignKeyIdentifier,
-                request.Identifier,
-                bufferedStart,
-                bufferedEnd);
-
-            int rentalIdentifier;
-            try
-            {
-                rentalIdentifier = requestRepository.ApproveAtomically(request, overlappingRequests);
-            }
-            catch
+            if (!TryApproveOpenRequestAndNotify(request, out var rentalIdentifier))
             {
                 return Result<int, ApproveRequestError>.Failure(ApproveRequestError.TransactionFailed);
             }
-
-            var gameName = request.Game?.Name ?? "the selected game";
-            NotifyOverlappingRequestsUnavailable(overlappingRequests, gameName);
-
-            SendNotificationToUser(
-                request.Renter?.Identifier ?? MissingUserIdentifier,
-                Constants.NotificationTitles.RentalRequestApproved,
-                $"Your request for {gameName} {FormatRequestPeriod(request.StartDate, request.EndDate)} was approved.");
-
-            notificationService.ScheduleUpcomingRentalReminder(
-                request.Renter?.Identifier ?? MissingUserIdentifier,
-                request.Owner?.Identifier ?? MissingUserIdentifier,
-                request.Game?.Name ?? "your game",
-                request.StartDate);
 
             return Result<int, ApproveRequestError>.Success(rentalIdentifier);
         }
@@ -225,7 +195,7 @@ namespace Property_and_Management.Src.Service
         {
             var pending = requestRepository
                 .GetRequestsByGame(gameIdentifier)
-                .Where(request => request.Status == RequestStatus.Open || request.Status == RequestStatus.OfferPending)
+                .Where(request => request.Status == RequestStatus.Open)
                 .ToImmutableList();
 
             foreach (var request in pending)
@@ -308,10 +278,9 @@ namespace Property_and_Management.Src.Service
             return !requestConflict;
         }
 
-        // [BL-OFR-01] Owner offers their game for a pending request. This is NOT an
-        // immediate rental — it flips the request into OfferPending status and sends an
-        // actionable OfferReceived notification to the renter, who can then approve it
-        // (creating the rental via ApproveOffer) or deny it (reverting to Open).
+        // [BL-OFR-01] Owner offers their game for a pending request. In the current
+        // product flow this is an immediate approval: it creates the rental right away
+        // and notifies the renter that the request was approved.
         public Result<int, OfferError> OfferGame(int requestIdentifier, int offeringUserIdentifier)
         {
             Request request;
@@ -334,136 +303,12 @@ namespace Property_and_Management.Src.Service
                 return Result<int, OfferError>.Failure(OfferError.RequestNotOpen);
             }
 
-            requestRepository.UpdateStatus(requestIdentifier, RequestStatus.OfferPending, offeringUserIdentifier);
-
-            var renterIdentifier = request.Renter?.Identifier ?? MissingUserIdentifier;
-            var ownerName = request.Owner?.DisplayName ?? "The owner";
-            var gameName = request.Game?.Name ?? "the selected game";
-
-            SendNotificationToUser(
-                renterIdentifier,
-                Constants.NotificationTitles.OfferReceived,
-                $"{ownerName} is offering you {gameName} {FormatRequestPeriod(request.StartDate, request.EndDate)}. Open Notifications to approve or deny.",
-                NotificationType.OfferReceived,
-                requestIdentifier);
-
-            return Result<int, OfferError>.Success(requestIdentifier);
-        }
-
-        // [BL-OFR-02] Renter approves a pending offer — mirrors ApproveRequest but gated
-        // on the renter's identity instead of the owner's.
-        public Result<int, ApproveOfferError> ApproveOffer(int requestIdentifier, int renterIdentifier)
-        {
-            Request request;
-            try
+            if (!TryApproveOpenRequestAndNotify(request, out var rentalIdentifier))
             {
-                request = requestRepository.Get(requestIdentifier);
-            }
-            catch (KeyNotFoundException)
-            {
-                return Result<int, ApproveOfferError>.Failure(ApproveOfferError.NotFound);
+                return Result<int, OfferError>.Failure(OfferError.TransactionFailed);
             }
 
-            if (request.Renter?.Identifier != renterIdentifier)
-            {
-                return Result<int, ApproveOfferError>.Failure(ApproveOfferError.NotRenter);
-            }
-
-            if (request.Status != RequestStatus.OfferPending)
-            {
-                return Result<int, ApproveOfferError>.Failure(ApproveOfferError.NoPendingOffer);
-            }
-
-            var bufferedStart = request.StartDate.AddHours(-DomainConstants.RentalBufferHours);
-            var bufferedEnd = request.EndDate.AddHours(DomainConstants.RentalBufferHours);
-
-            var overlappingRequests = requestRepository.GetOverlappingRequests(
-                request.Game?.Identifier ?? MissingForeignKeyIdentifier,
-                request.Identifier,
-                bufferedStart,
-                bufferedEnd);
-
-            int rentalIdentifier;
-            try
-            {
-                rentalIdentifier = requestRepository.ApproveAtomically(request, overlappingRequests);
-            }
-            catch
-            {
-                return Result<int, ApproveOfferError>.Failure(ApproveOfferError.TransactionFailed);
-            }
-
-            var ownerName = request.Owner?.DisplayName ?? "The owner";
-            var renterName = request.Renter?.DisplayName ?? "The requester";
-            var gameName = request.Game?.Name ?? "a game";
-
-            NotifyOverlappingRequestsUnavailable(overlappingRequests, gameName);
-
-            SendNotificationToUser(
-                request.OfferingUser?.Identifier ?? request.Owner?.Identifier ?? MissingUserIdentifier,
-                Constants.NotificationTitles.OfferAccepted,
-                $"{renterName} accepted your offer for {gameName}",
-                NotificationType.OfferResult);
-
-            SendNotificationToUser(
-                renterIdentifier,
-                Constants.NotificationTitles.RentalConfirmed,
-                $"You accepted the offer for {gameName} from {ownerName}",
-                NotificationType.OfferResult);
-
-            notificationService.ScheduleUpcomingRentalReminder(
-                request.Renter?.Identifier ?? MissingUserIdentifier,
-                request.Owner?.Identifier ?? MissingUserIdentifier,
-                request.Game?.Name ?? "your game",
-                request.StartDate);
-
-            return Result<int, ApproveOfferError>.Success(rentalIdentifier);
-        }
-
-        // [BL-OFR-03] Renter denies a pending offer — status reverts to Open and both
-        // parties are notified.
-        public Result<int, DenyOfferError> DenyOffer(int requestIdentifier, int renterIdentifier)
-        {
-            Request request;
-            try
-            {
-                request = requestRepository.Get(requestIdentifier);
-            }
-            catch (KeyNotFoundException)
-            {
-                return Result<int, DenyOfferError>.Failure(DenyOfferError.NotFound);
-            }
-
-            if (request.Renter?.Identifier != renterIdentifier)
-            {
-                return Result<int, DenyOfferError>.Failure(DenyOfferError.NotRenter);
-            }
-
-            if (request.Status != RequestStatus.OfferPending)
-            {
-                return Result<int, DenyOfferError>.Failure(DenyOfferError.NoPendingOffer);
-            }
-
-            requestRepository.UpdateStatus(requestIdentifier, RequestStatus.Open, null);
-            notificationService.DeleteNotificationsByRequestId(requestIdentifier);
-
-            var renterName = request.Renter?.DisplayName ?? "The requester";
-            var ownerName = request.Owner?.DisplayName ?? "The owner";
-            var gameName = request.Game?.Name ?? "a game";
-
-            SendNotificationToUser(
-                request.OfferingUser?.Identifier ?? request.Owner?.Identifier ?? MissingUserIdentifier,
-                Constants.NotificationTitles.OfferDenied,
-                $"{renterName} denied your offer for {gameName}",
-                NotificationType.OfferResult);
-
-            SendNotificationToUser(
-                renterIdentifier,
-                Constants.NotificationTitles.OfferDeclined,
-                $"You declined the offer for {gameName} from {ownerName}",
-                NotificationType.OfferResult);
-
-            return Result<int, DenyOfferError>.Success(requestIdentifier);
+            return Result<int, OfferError>.Success(rentalIdentifier);
         }
 
         private void NotifyOverlappingRequestsUnavailable(ImmutableList<Request> overlappingRequests, string gameName)
@@ -494,8 +339,8 @@ namespace Property_and_Management.Src.Service
             int userIdentifier,
             string title,
             string body,
-            NotificationType type,
-            int? relatedRequestIdentifier)
+                NotificationType type,
+                int? relatedRequestIdentifier)
         {
             return new NotificationDataTransferObject
             {
@@ -507,6 +352,44 @@ namespace Property_and_Management.Src.Service
                 Type = type,
                 RelatedRequestIdentifier = relatedRequestIdentifier
             };
+        }
+
+        private bool TryApproveOpenRequestAndNotify(Request request, out int rentalIdentifier)
+        {
+            var bufferedStart = request.StartDate.AddHours(-DomainConstants.RentalBufferHours);
+            var bufferedEnd = request.EndDate.AddHours(DomainConstants.RentalBufferHours);
+
+            var overlappingRequests = requestRepository.GetOverlappingRequests(
+                request.Game?.Identifier ?? MissingForeignKeyIdentifier,
+                request.Identifier,
+                bufferedStart,
+                bufferedEnd);
+
+            try
+            {
+                rentalIdentifier = requestRepository.ApproveAtomically(request, overlappingRequests);
+            }
+            catch
+            {
+                rentalIdentifier = MissingForeignKeyIdentifier;
+                return false;
+            }
+
+            var gameName = request.Game?.Name ?? "the selected game";
+            NotifyOverlappingRequestsUnavailable(overlappingRequests, gameName);
+
+            SendNotificationToUser(
+                request.Renter?.Identifier ?? MissingUserIdentifier,
+                Constants.NotificationTitles.RentalRequestApproved,
+                $"Your request for {gameName} {FormatRequestPeriod(request.StartDate, request.EndDate)} was approved.");
+
+            notificationService.ScheduleUpcomingRentalReminder(
+                request.Renter?.Identifier ?? MissingUserIdentifier,
+                request.Owner?.Identifier ?? MissingUserIdentifier,
+                request.Game?.Name ?? "your game",
+                request.StartDate);
+
+            return true;
         }
 
         private static string FormatRequestPeriod(DateTime startDate, DateTime endDate)

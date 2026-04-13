@@ -18,11 +18,11 @@ namespace Property_and_Management.Src.Views
             InitializeComponent();
         }
 
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        protected override void OnNavigatedTo(NavigationEventArgs navigationEventArgs)
         {
-            base.OnNavigatedTo(e);
+            base.OnNavigatedTo(navigationEventArgs);
 
-            if (e.Parameter is RequestsFromOthersViewModel requestsFromOthersViewModel)
+            if (navigationEventArgs.Parameter is RequestsFromOthersViewModel requestsFromOthersViewModel)
             {
                 DataContext = requestsFromOthersViewModel;
                 return;
@@ -36,17 +36,17 @@ namespace Property_and_Management.Src.Views
             }
         }
 
-        private void OfferButton_Tapped(object sender, TappedRoutedEventArgs e)
+        private void OfferButton_Tapped(object sender, TappedRoutedEventArgs tappedRoutedEventArgs)
         {
-            e.Handled = true;
+            tappedRoutedEventArgs.Handled = true;
         }
 
-        private void DenyButton_Tapped(object sender, TappedRoutedEventArgs e)
+        private void DenyButton_Tapped(object sender, TappedRoutedEventArgs tappedRoutedEventArgs)
         {
-            e.Handled = true;
+            tappedRoutedEventArgs.Handled = true;
         }
 
-        private async void OfferButton_Click(object sender, RoutedEventArgs e)
+        private async void OfferButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             if (sender is not Button clickedButton || clickedButton.Tag is not int requestIdentifier)
             {
@@ -60,7 +60,7 @@ namespace Property_and_Management.Src.Views
             var result = await DialogHelper.ShowConfirmationAsync(
                 this.XamlRoot,
                 Constants.DialogTitles.OfferGameConfirmation,
-                $"Offer {gameName} to {renterName} for {request?.StartDateDisplayLong} - {request?.EndDateDisplayLong}? They will be notified and can approve or deny the offer.",
+                $"Offer {gameName} to {renterName} for {request?.StartDateDisplayLong} - {request?.EndDateDisplayLong}? This will approve the request and create the rental immediately.",
                 Constants.DialogButtons.Offer,
                 Constants.DialogButtons.Cancel,
                 ContentDialogButton.Primary);
@@ -78,7 +78,7 @@ namespace Property_and_Management.Src.Views
             }
         }
 
-        private async void DenyButton_Click(object sender, RoutedEventArgs e)
+        private async void DenyButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             if (sender is not Button clickedButton || clickedButton.Tag is not int requestIdentifier)
             {
@@ -127,18 +127,18 @@ namespace Property_and_Management.Src.Views
             }
         }
 
-        private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
+        private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs exceptionRoutedEventArgs)
         {
             ImageFailureHandler.HandleFailure(sender as Image, Resources);
         }
 
-        private void NextButton_Click(object sender, RoutedEventArgs e)
+        private void NextButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             var requestsFromOthersViewModel = DataContext as RequestsFromOthersViewModel;
             requestsFromOthersViewModel?.NextPage();
         }
 
-        private void PrevButton_Click(object sender, RoutedEventArgs e)
+        private void PrevButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             var requestsFromOthersViewModel = DataContext as RequestsFromOthersViewModel;
             requestsFromOthersViewModel?.PrevPage();

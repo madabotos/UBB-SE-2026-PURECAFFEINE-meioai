@@ -13,9 +13,11 @@ namespace Property_and_Management.Src.Viewmodels
     /// </summary>
     internal static class PriceInputParser
     {
+        private const double InvalidParsedPrice = 0;
+
         public static bool TryParsePriceInput(string input, out double parsedPrice)
         {
-            parsedPrice = 0;
+            parsedPrice = InvalidParsedPrice;
             var priceText = input?.Trim();
 
             if (string.IsNullOrWhiteSpace(priceText))

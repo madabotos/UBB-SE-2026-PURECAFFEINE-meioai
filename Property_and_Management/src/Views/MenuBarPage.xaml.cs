@@ -37,11 +37,11 @@ namespace Property_and_Management.Src.Views
             this.Unloaded += (pageSender, unloadedEventArgs) => ViewModel.RequestNavigation -= OnViewModelRequestedNavigation;
         }
 
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        protected override void OnNavigatedTo(NavigationEventArgs navigationEventArgs)
         {
-            base.OnNavigatedTo(e);
+            base.OnNavigatedTo(navigationEventArgs);
 
-            if (e.Parameter is IGameService gameService)
+            if (navigationEventArgs.Parameter is IGameService gameService)
             {
                 passedGameService = gameService;
             }

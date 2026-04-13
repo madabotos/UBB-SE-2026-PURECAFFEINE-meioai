@@ -9,7 +9,7 @@ using Property_and_Management.Src.Viewmodels;
 namespace Property_and_Management.Src.Views
 {
     /// <summary>
-    /// Notifications list with actionable offer buttons. Periodic refresh is
+    /// Notifications list. Periodic refresh is
     /// not needed here — <see cref="NotificationsViewModel"/> subscribes to
     /// <c>INotificationService</c> and reloads itself whenever the UDP
     /// listener pushes a new notification.
@@ -21,14 +21,14 @@ namespace Property_and_Management.Src.Views
             InitializeComponent();
         }
 
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        protected override void OnNavigatedTo(NavigationEventArgs navigationEventArgs)
         {
-            base.OnNavigatedTo(e);
+            base.OnNavigatedTo(navigationEventArgs);
 
             // Prefer the view model passed as a navigation parameter (e.g. from
             // MenuBarView's toast-triggered NavigateToNotifications call). Fall
             // back to the DI container so direct menu navigation still works.
-            if (e.Parameter is NotificationsViewModel navigatedViewModel)
+            if (navigationEventArgs.Parameter is NotificationsViewModel navigatedViewModel)
             {
                 DataContext = navigatedViewModel;
                 navigatedViewModel.LoadNotificationsForUser(navigatedViewModel.CurrentUserIdentifier);
@@ -53,7 +53,7 @@ namespace Property_and_Management.Src.Views
             return root?.DataContext as NotificationsViewModel;
         }
 
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+        private void DeleteButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             var clickedButton = sender as Button;
             if (clickedButton?.DataContext is not NotificationDataTransferObject notification)
@@ -72,67 +72,8 @@ namespace Property_and_Management.Src.Views
             notificationsViewModel.DeleteNotificationByIdentifier(notification.Identifier);
         }
 
-        private void NextButton_Click(object sender, RoutedEventArgs e) => ResolveViewModel()?.NextPage();
+        private void NextButton_Click(object sender, RoutedEventArgs routedEventArgs) => ResolveViewModel()?.NextPage();
 
-        private void PrevButton_Click(object sender, RoutedEventArgs e) => ResolveViewModel()?.PrevPage();
-
-        private async void ApproveOfferButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!TryGetActionableRequestIdentifier(sender, out var requestIdentifier, out var notificationsViewModel))
-            {
-                return;
-            }
-
-            var error = notificationsViewModel.TryApproveOffer(requestIdentifier);
-            if (error != null)
-            {
-                await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.ApproveFailed, error);
-            }
-        }
-
-        private async void DenyOfferButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!TryGetActionableRequestIdentifier(sender, out var requestIdentifier, out var notificationsViewModel))
-            {
-                return;
-            }
-
-            var error = notificationsViewModel.TryDenyOffer(requestIdentifier);
-            if (error != null)
-            {
-                await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.DeclineFailed, error);
-            }
-        }
-
-        private bool TryGetActionableRequestIdentifier(object sender, out int requestIdentifier, out NotificationsViewModel viewModel)
-        {
-            requestIdentifier = default;
-            viewModel = null;
-
-            if (sender is not Button clickedButton)
-            {
-                return false;
-            }
-
-            if (clickedButton.DataContext is not NotificationDataTransferObject notification)
-            {
-                return false;
-            }
-
-            if (notification.RelatedRequestIdentifier is not int relatedRequestIdentifier)
-            {
-                return false;
-            }
-
-            var notificationsViewModel = ResolveViewModel();
-            if (notificationsViewModel == null)
-            {
-                return false;
-            }
-
-            requestIdentifier = relatedRequestIdentifier;
-            viewModel = notificationsViewModel;
-            return true;
-        }
+        private void PrevButton_Click(object sender, RoutedEventArgs routedEventArgs) => ResolveViewModel()?.PrevPage();
     }
 }

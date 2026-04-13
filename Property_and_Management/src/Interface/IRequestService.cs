@@ -72,21 +72,10 @@ namespace Property_and_Management.Src.Interface
             int year);
 
         /// <summary>
-        /// Owner offers their game against a pending request. Sets the request status
-        /// to OfferPending and notifies the renter. Returns the request id on success.
+        /// Owner offers their game against a pending request. In the current flow
+        /// this immediately approves the request and creates the rental atomically.
+        /// Returns the new rental id on success.
         /// </summary>
         Result<int, OfferError> OfferGame(int requestIdentifier, int offeringUserIdentifier);
-
-        /// <summary>
-        /// Renter approves a pending offer, creating the rental atomically. Returns
-        /// the new rental id on success.
-        /// </summary>
-        Result<int, ApproveOfferError> ApproveOffer(int requestIdentifier, int renterIdentifier);
-
-        /// <summary>
-        /// Renter denies a pending offer, reverting the request to Open and notifying
-        /// the owner. Returns the request id on success.
-        /// </summary>
-        Result<int, DenyOfferError> DenyOffer(int requestIdentifier, int renterIdentifier);
     }
 }

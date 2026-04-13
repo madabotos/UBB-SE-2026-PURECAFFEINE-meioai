@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -22,15 +20,13 @@ namespace Property_and_Management.Src.Views
             ViewModel = App.Services.GetRequiredService<CreateGameViewModel>();
         }
 
-        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             ViewModel.SetPriceFromText(PriceNumberBox.Text);
 
-            var validationErrors = ViewModel.ValidateInputs();
-            if (!validationErrors.Any())
+            var submitResult = ViewModel.SubmitCreateGame();
+            if (submitResult.IsSuccess)
             {
-                ViewModel.SaveGame();
-
                 if (Frame.CanGoBack)
                 {
                     Frame.GoBack();
@@ -38,18 +34,13 @@ namespace Property_and_Management.Src.Views
                 return;
             }
 
-            await ShowValidationErrorsAsync(validationErrors);
-        }
-
-        private async System.Threading.Tasks.Task ShowValidationErrorsAsync(IEnumerable<string> validationErrors)
-        {
             await DialogHelper.ShowMessageAsync(
                 this.XamlRoot,
-                Constants.DialogTitles.ValidationError,
-                string.Join(Environment.NewLine, validationErrors));
+                submitResult.DialogTitle,
+                submitResult.DialogMessage);
         }
 
-        private async void UploadImageButton_Click(object sender, RoutedEventArgs e)
+        private async void UploadImageButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             // 1. Set up the Windows File Picker
             var picker = new Windows.Storage.Pickers.FileOpenPicker();
@@ -60,8 +51,8 @@ namespace Property_and_Management.Src.Views
             picker.FileTypeFilter.Add(".png");
 
             // WinUI 3 quirk: the picker has to be explicitly told which window it belongs to.
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
-            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+            var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
 
             var file = await picker.PickSingleFileAsync();
             if (file == null)

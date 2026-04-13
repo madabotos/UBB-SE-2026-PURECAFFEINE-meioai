@@ -23,18 +23,18 @@ namespace Property_and_Management.Src.Views
             EndDatePicker.MinDate = DateTimeOffset.Now;
         }
 
-        private void GamePicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void GamePicker_SelectionChanged(object sender, SelectionChangedEventArgs selectionChangedEventArgs)
         {
             ViewModel.SelectedGame = GamePicker.SelectedItem as GameDataTransferObject;
         }
 
-        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             ViewModel.StartDate = StartDatePicker.Date;
             ViewModel.EndDate = EndDatePicker.Date;
 
-            var error = ViewModel.TrySubmitRequest();
-            if (error == null)
+            var submitResult = ViewModel.SubmitRequest();
+            if (submitResult.IsSuccess)
             {
                 if (Frame.CanGoBack)
                 {
@@ -43,11 +43,10 @@ namespace Property_and_Management.Src.Views
                 return;
             }
 
-            var dialogTitle = error == Constants.DialogMessages.CreateRequestValidationError
-                ? Constants.DialogTitles.ValidationError
-                : Constants.DialogTitles.RequestFailed;
-
-            await DialogHelper.ShowMessageAsync(this.XamlRoot, dialogTitle, error);
+            await DialogHelper.ShowMessageAsync(
+                this.XamlRoot,
+                submitResult.DialogTitle,
+                submitResult.DialogMessage);
         }
     }
 }

@@ -182,15 +182,15 @@ namespace Property_and_Management
 
         private static string? FindRepoRoot()
         {
-            var dir = new DirectoryInfo(AppContext.BaseDirectory);
-            while (dir != null)
+            var currentDirectory = new DirectoryInfo(AppContext.BaseDirectory);
+            while (currentDirectory != null)
             {
-                if (Directory.Exists(System.IO.Path.Combine(dir.FullName, ".git")))
+                if (Directory.Exists(System.IO.Path.Combine(currentDirectory.FullName, ".git")))
                 {
-                    return dir.FullName;
+                    return currentDirectory.FullName;
                 }
 
-                dir = dir.Parent;
+                currentDirectory = currentDirectory.Parent;
             }
             return null;
         }
@@ -359,9 +359,9 @@ namespace Property_and_Management
                 return;
             }
 
-            void OnShellLoaded(object sender, NavigationEventArgs e)
+            void OnShellLoaded(object sender, NavigationEventArgs navigationEventArgs)
             {
-                if (e.Content is MenuBarView loadedShell)
+                if (navigationEventArgs.Content is MenuBarView loadedShell)
                 {
                     RootFrame.Navigated -= OnShellLoaded;
                     loadedShell.NavigateToNotifications();

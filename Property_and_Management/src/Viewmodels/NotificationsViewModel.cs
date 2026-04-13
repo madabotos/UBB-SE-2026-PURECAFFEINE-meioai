@@ -16,7 +16,6 @@ namespace Property_and_Management.Src.Viewmodels
         private const int DefaultUserIdentifier = 1;
 
         private readonly INotificationService notificationService;
-        private readonly IRequestService requestService;
         private readonly ICurrentUserContext currentUserContext;
         private readonly IDismissedNotificationStore dismissedNotificationStore;
         private readonly IDisposable subscription;
@@ -33,12 +32,10 @@ namespace Property_and_Management.Src.Viewmodels
 
         public NotificationsViewModel(
             INotificationService notificationService,
-            IRequestService requestService,
             ICurrentUserContext currentUserContext,
             IDismissedNotificationStore dismissedNotificationStore)
         {
             this.notificationService = notificationService;
-            this.requestService = requestService;
             this.currentUserContext = currentUserContext;
             this.dismissedNotificationStore = dismissedNotificationStore;
 
@@ -105,53 +102,6 @@ namespace Property_and_Management.Src.Viewmodels
             }
 
             LoadNotificationsForUser(targetUserIdentifier);
-        }
-
-        /// <summary>
-        /// Approve a pending offer on behalf of the current user. Returns a
-        /// user-friendly error message or null on success. Keeps error-code
-        /// mapping in the view model so the notifications page code-behind
-        /// stays free of service-namespace types.
-        /// </summary>
-        public string? TryApproveOffer(int requestIdentifier)
-        {
-            var result = requestService.ApproveOffer(requestIdentifier, CurrentUserIdentifier);
-            if (result.IsSuccess)
-            {
-                LoadNotificationsForUser(CurrentUserIdentifier);
-                return null;
-            }
-
-            return result.Error switch
-            {
-                ApproveOfferError.NotFound => "Request not found.",
-                ApproveOfferError.NotRenter => "You are not the renter for this request.",
-                ApproveOfferError.NoPendingOffer => "This offer is no longer pending.",
-                ApproveOfferError.TransactionFailed => "Could not approve the offer. Please try again.",
-                _ => Constants.DialogMessages.UnexpectedErrorOccurred
-            };
-        }
-
-        /// <summary>
-        /// Deny a pending offer on behalf of the current user. Returns a
-        /// user-friendly error message or null on success.
-        /// </summary>
-        public string? TryDenyOffer(int requestIdentifier)
-        {
-            var result = requestService.DenyOffer(requestIdentifier, CurrentUserIdentifier);
-            if (result.IsSuccess)
-            {
-                LoadNotificationsForUser(CurrentUserIdentifier);
-                return null;
-            }
-
-            return result.Error switch
-            {
-                DenyOfferError.NotFound => "Request not found.",
-                DenyOfferError.NotRenter => "You are not the renter for this request.",
-                DenyOfferError.NoPendingOffer => "This offer is no longer pending.",
-                _ => Constants.DialogMessages.UnexpectedErrorOccurred
-            };
         }
 
         public void Dispose() => subscription?.Dispose();

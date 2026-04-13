@@ -76,6 +76,20 @@ namespace Property_and_Management.Src.Viewmodels
                 Constants.GameValidation.MaximumDescriptionLength);
         }
 
+        public ViewOperationResult SubmitGameUpdate()
+        {
+            var validationErrors = ValidateInputs();
+            if (validationErrors.Count > NoValidationErrors)
+            {
+                return ViewOperationResult.Failure(
+                    Constants.DialogTitles.ValidationError,
+                    string.Join(Environment.NewLine, validationErrors));
+            }
+
+            UpdateGame();
+            return ViewOperationResult.Success();
+        }
+
         /// <summary>
         /// Parse a raw price string from the view's NumberBox and update the
         /// bound <see cref="Price"/> / <see cref="PriceDouble"/>. Falls back

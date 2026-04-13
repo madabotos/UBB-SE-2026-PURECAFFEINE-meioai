@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Data;
 using Microsoft.Data.SqlClient;
-using Property_and_Management.Src.Constants;
 using Property_and_Management.Src.Interface;
 using Property_and_Management.Src.Model;
 
@@ -12,7 +11,6 @@ namespace Property_and_Management.Src.Repository
     public class RentalRepository : IRentalRepository
     {
         private const int MissingForeignKeyIdentifier = 0;
-        private const int NoConflictsCount = 0;
         private const string ConnectionStringName = "BoardRent";
 
         private readonly string connectionString =
@@ -91,42 +89,16 @@ namespace Property_and_Management.Src.Repository
 
         public void AddConfirmed(Rental rental)
         {
-            using var connection = new SqlConnection(connectionString);
-            connection.Open();
-            using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
-            try
+            // Persistence only. Slot validation lives in the service layer.
+            using (var connection = new SqlConnection(connectionString))
             {
-                if (!IsSlotAvailableInternal(rental.Game?.Identifier ?? MissingForeignKeyIdentifier, rental.StartDate, rental.EndDate, connection, transaction))
+                connection.Open();
+                using (var transaction = connection.BeginTransaction())
                 {
-                    throw new InvalidOperationException(
-                        $"Selected dates fall within the mandatory {DomainConstants.RentalBufferHours}-hour buffer of another rental.");
+                    AddInternal(rental, connection, transaction);
+                    transaction.Commit();
                 }
-
-                AddInternal(rental, connection, transaction);
-                transaction.Commit();
             }
-            catch
-            {
-                transaction.Rollback();
-                throw;
-            }
-        }
-
-        private static bool IsSlotAvailableInternal(int gameIdentifier, DateTime newStart, DateTime newEnd,
-            SqlConnection connection, SqlTransaction transaction)
-        {
-            using var command = connection.CreateCommand();
-            command.Transaction = transaction;
-            command.CommandText =
-                "SELECT COUNT(*) FROM Rentals " +
-                "WHERE game_id = @game_id " +
-                "AND @new_start < DATEADD(HOUR, @buffer, end_date) " +
-                "AND @new_end > DATEADD(HOUR, -@buffer, start_date)";
-            command.Parameters.AddWithValue("@game_id", gameIdentifier);
-            command.Parameters.AddWithValue("@new_start", newStart);
-            command.Parameters.AddWithValue("@new_end", newEnd);
-            command.Parameters.AddWithValue("@buffer", DomainConstants.RentalBufferHours);
-            return Convert.ToInt32(command.ExecuteScalar()) == NoConflictsCount;
         }
 
         public ImmutableList<Rental> GetRentalsByOwner(int ownerIdentifier)

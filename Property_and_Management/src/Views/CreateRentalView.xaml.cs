@@ -23,43 +23,35 @@ namespace Property_and_Management.Src.Views
             EndDatePicker.MinDate = DateTimeOffset.Now;
         }
 
-        private void GamePicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void GamePicker_SelectionChanged(object sender, SelectionChangedEventArgs selectionChangedEventArgs)
         {
             ViewModel.SelectedGame = GamePicker.SelectedItem as GameDataTransferObject;
         }
 
-        private void RenterPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void RenterPicker_SelectionChanged(object sender, SelectionChangedEventArgs selectionChangedEventArgs)
         {
             ViewModel.SelectedRenter = RenterPicker.SelectedItem as UserDataTransferObject;
         }
 
-        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             ViewModel.StartDate = StartDatePicker.Date;
             ViewModel.EndDate = EndDatePicker.Date;
 
-            if (ViewModel.ValidateInputs())
+            var createResult = ViewModel.CreateRental();
+            if (createResult.IsSuccess)
             {
-                var error = ViewModel.SaveRental();
-                if (error == null)
+                if (Frame.CanGoBack)
                 {
-                    if (Frame.CanGoBack)
-                    {
-                        Frame.GoBack();
-                    }
+                    Frame.GoBack();
                 }
-                else
-                {
-                    await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.RentalFailed, error);
-                }
+                return;
             }
-            else
-            {
-                await DialogHelper.ShowMessageAsync(
-                    this.XamlRoot,
-                    Constants.DialogTitles.ValidationError,
-                    Constants.DialogMessages.CreateRentalValidationError);
-            }
+
+            await DialogHelper.ShowMessageAsync(
+                this.XamlRoot,
+                createResult.DialogTitle,
+                createResult.DialogMessage);
         }
     }
 }

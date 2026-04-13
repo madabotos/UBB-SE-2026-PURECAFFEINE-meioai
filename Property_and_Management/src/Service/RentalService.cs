@@ -49,6 +49,12 @@ namespace Property_and_Management.Src.Service
                 throw new InvalidOperationException("Seller ID must match Game Owner ID [ENT-REN-04].");
             }
 
+            if (!IsSlotAvailable(gameIdentifier, startDate, endDate))
+            {
+                throw new InvalidOperationException(
+                    $"Selected dates fall within the mandatory {DomainConstants.RentalBufferHours}-hour buffer of another rental.");
+            }
+
             var rental = new Rental(
                 identifier: NewEntityIdentifier,
                 game: new Game { Identifier = gameIdentifier },

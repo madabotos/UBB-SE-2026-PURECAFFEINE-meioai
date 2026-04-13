@@ -25,6 +25,8 @@ namespace Property_and_Management
     /// </summary>
     public sealed partial class MainWindow : Window
     {
+        private const int SuccessExitCode = 0;
+
         public new AppWindow AppWindow { get; }
 
         public MainWindow()
@@ -40,14 +42,14 @@ namespace Property_and_Management
             // processes spawned by two-window dev mode.
             AppWindow.Closing += (sender, args) =>
             {
-                Environment.Exit(0);
+                Environment.Exit(SuccessExitCode);
             };
         }
 
         private AppWindow GetAppWindow()
         {
-            var hwnd = WindowNative.GetWindowHandle(this);
-            var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+            var windowHandle = WindowNative.GetWindowHandle(this);
+            var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(windowHandle);
             return AppWindow.GetFromWindowId(windowId);
         }
     }

@@ -6,6 +6,10 @@ namespace Property_and_Management.Src.Viewmodels
 {
     public class ListingsViewModel : PagedViewModel<GameDataTransferObject>
     {
+        private const int NoActiveRentalsCount = 0;
+        private const string DeleteSuccessMessageTemplate =
+            "There are {0} active rentals for this game. It was removed successfully.";
+
         private readonly IGameService gameService;
         private readonly int currentUserIdentifier;
 
@@ -34,6 +38,23 @@ namespace Property_and_Management.Src.Viewmodels
         {
             gameService.DeleteGameByIdentifier(game.Identifier);
             Reload();
+        }
+
+        public ViewOperationResult TryDeleteGame(GameDataTransferObject game)
+        {
+            try
+            {
+                DeleteGame(game);
+                return ViewOperationResult.Success(
+                    Constants.DialogTitles.GameRemoved,
+                    string.Format(DeleteSuccessMessageTemplate, NoActiveRentalsCount));
+            }
+            catch (System.InvalidOperationException invalidOperationException)
+            {
+                return ViewOperationResult.Failure(
+                    Constants.DialogTitles.CannotDeleteGame,
+                    invalidOperationException.Message);
+            }
         }
     }
 }

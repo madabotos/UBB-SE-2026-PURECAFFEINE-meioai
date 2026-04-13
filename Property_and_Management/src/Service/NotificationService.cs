@@ -13,7 +13,7 @@ namespace Property_and_Management.Src.Service
 {
     public class NotificationService : INotificationService, IObserver<IncomingNotification>, IObservable<NotificationDataTransferObject>, IDisposable
     {
-        private const int ReminderLeadDays = 1;
+        private static readonly TimeSpan ReminderLeadTime = TimeSpan.FromHours(24);
         private const int NewEntityIdentifier = 0;
         private const int MissingUserIdentifier = 0;
 
@@ -26,7 +26,7 @@ namespace Property_and_Management.Src.Service
         private readonly IToastNotificationService toastNotificationService;
 
         // subscribers is mutated from the UI thread (Subscribe/Unsubscriber.Dispose)
-        // and published to from the UDP listener thread (OnNext → NotifySubscribers).
+        // and published to from the UDP listener thread (OnNext -> NotifySubscribers).
         // All access goes through subscribersLock so iteration snapshots are stable.
         private readonly List<IObserver<NotificationDataTransferObject>> subscribers = new();
         private readonly object subscribersLock = new();
@@ -116,7 +116,7 @@ namespace Property_and_Management.Src.Service
                 catch (Exception listenException)
                 {
                     System.Diagnostics.Debug.WriteLine(
-                        $"NotificationService: listen loop terminated — {listenException}");
+                        $"NotificationService: listen loop terminated - {listenException}");
                 }
             });
         }
@@ -215,7 +215,16 @@ namespace Property_and_Management.Src.Service
 
         public void ScheduleUpcomingRentalReminder(int renterIdentifier, int ownerIdentifier, string gameName, DateTime startDate)
         {
-            DateTime scheduledTime = startDate.AddDays(-ReminderLeadDays);
+            var rentalStartTime = startDate.ToUniversalTime();
+            var currentTime = DateTime.UtcNow;
+
+            // Reminder applies only to upcoming rentals.
+            if (rentalStartTime <= currentTime)
+            {
+                return;
+            }
+
+            DateTime scheduledTime = rentalStartTime - ReminderLeadTime;
             string title = Constants.NotificationTitles.UpcomingRentalReminder;
             string body = CreateReminderBody(gameName, startDate);
 
@@ -237,42 +246,43 @@ namespace Property_and_Management.Src.Service
             }
 
             TimeSpan delay = scheduledTime.ToUniversalTime() - DateTime.UtcNow;
-
-            var notificationDataTransferObject = BuildNotificationDataTransferObject(
-                NewEntityIdentifier,
-                userIdentifier,
-                scheduledTime,
-                title,
-                body,
-                default,
-                null);
-
             if (delay <= TimeSpan.Zero)
             {
-                SendNotificationToUser(userIdentifier, notificationDataTransferObject);
+                SendReminderNotificationNow(userIdentifier, title, body);
                 return;
             }
-
-            notificationRepository.Add(BuildNotificationModel(userIdentifier, scheduledTime, title, body));
 
             _ = Task.Run(async () =>
             {
                 try
                 {
                     await Task.Delay(delay, scheduleCancellationTokenSource.Token);
-                    serverClient.SendNotification(userIdentifier, title, body);
-                    toastNotificationService.Show(title, body);
+                    SendReminderNotificationNow(userIdentifier, title, body);
                 }
                 catch (OperationCanceledException)
                 {
-                    // Disposal/shutdown raced the scheduled send — ignore.
+                    // Disposal/shutdown raced the scheduled send - ignore.
                 }
                 catch (Exception scheduledNotificationException)
                 {
                     System.Diagnostics.Debug.WriteLine(
-                        $"NotificationService: scheduled reminder failed — {scheduledNotificationException}");
+                        $"NotificationService: scheduled reminder failed - {scheduledNotificationException}");
                 }
             });
+        }
+
+        private void SendReminderNotificationNow(int userIdentifier, string title, string body)
+        {
+            var reminderNotification = BuildNotificationDataTransferObject(
+                NewEntityIdentifier,
+                userIdentifier,
+                DateTime.UtcNow,
+                title,
+                body,
+                default,
+                null);
+
+            SendNotificationToUser(userIdentifier, reminderNotification);
         }
 
         private static NotificationDataTransferObject BuildNotificationDataTransferObject(
@@ -317,6 +327,3 @@ namespace Property_and_Management.Src.Service
         }
     }
 }
-
-
-

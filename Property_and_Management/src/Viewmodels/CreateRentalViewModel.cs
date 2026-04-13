@@ -9,6 +9,8 @@ namespace Property_and_Management.Src.Viewmodels
 {
     public class CreateRentalViewModel : INotifyPropertyChanged
     {
+        private const string ValidationFailedMessage = "Validation failed.";
+
         private readonly IGameService gameService;
         private readonly IRentalService rentalService;
         private readonly IUserService userService;
@@ -106,11 +108,13 @@ namespace Property_and_Management.Src.Viewmodels
             return DateRangeValidationHelper.HasValidFutureDateRange(StartDate, EndDate);
         }
 
-        public string SaveRental()
+        public ViewOperationResult CreateRental()
         {
             if (!ValidateInputs())
             {
-                return "Validation failed.";
+                return ViewOperationResult.Failure(
+                    Constants.DialogTitles.ValidationError,
+                    Constants.DialogMessages.CreateRentalValidationError);
             }
 
             try
@@ -121,12 +125,28 @@ namespace Property_and_Management.Src.Viewmodels
                     CurrentUserIdentifier,
                     StartDate.Value.DateTime,
                     EndDate.Value.DateTime);
-                return null;
+                return ViewOperationResult.Success();
             }
             catch (Exception exception)
             {
-                return exception.Message;
+                return ViewOperationResult.Failure(Constants.DialogTitles.RentalFailed, exception.Message);
             }
+        }
+
+        public string? SaveRental()
+        {
+            var createResult = CreateRental();
+            if (createResult.IsSuccess)
+            {
+                return null;
+            }
+
+            if (createResult.DialogTitle == Constants.DialogTitles.ValidationError)
+            {
+                return ValidationFailedMessage;
+            }
+
+            return createResult.DialogMessage;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
