@@ -195,7 +195,7 @@ namespace Property_and_Management.Src.Service
         {
             var pending = requestRepository
                 .GetRequestsByGame(gameIdentifier)
-                .Where(request => request.Status == RequestStatus.Open)
+                .Where(IsPendingForGameDeactivation)
                 .ToImmutableList();
 
             foreach (var request in pending)
@@ -210,6 +210,12 @@ namespace Property_and_Management.Src.Service
                     Constants.NotificationTitles.RentalRequestCancelled,
                     $"Your request for {gameName} {FormatRequestPeriod(request.StartDate, request.EndDate)} has been cancelled because the game is no longer available.");
             }
+        }
+
+        private static bool IsPendingForGameDeactivation(Request request)
+        {
+            return request.Status == RequestStatus.Open ||
+                   request.Status == RequestStatus.OfferPending;
         }
 
         public ImmutableList<(DateTime StartDate, DateTime EndDate)> GetBookedDates(

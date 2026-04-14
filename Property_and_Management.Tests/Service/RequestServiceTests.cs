@@ -311,6 +311,29 @@ namespace Property_and_Management.Tests.Service
         }
 
         [Test]
+        public void OnGameDeactivated_CancelsOfferPendingRequests()
+        {
+            // arrange
+            var openRequest = BuildRequest(identifier: 101, status: RequestStatus.Open);
+            var offerPendingRequest = BuildRequest(identifier: 102, status: RequestStatus.OfferPending);
+            var acceptedRequest = BuildRequest(identifier: 103, status: RequestStatus.Accepted);
+            requestRepositoryMock
+                .Setup(repository => repository.GetRequestsByGame(SampleGameIdentifier))
+                .Returns(ImmutableList.Create(openRequest, offerPendingRequest, acceptedRequest));
+
+            // act
+            requestService.OnGameDeactivated(SampleGameIdentifier);
+
+            // assert
+            requestRepositoryMock.Verify(repository => repository.Delete(101), Times.Once);
+            requestRepositoryMock.Verify(repository => repository.Delete(102), Times.Once);
+            requestRepositoryMock.Verify(repository => repository.Delete(103), Times.Never);
+            notificationServiceMock.Verify(
+                service => service.DeleteNotificationsByRequestId(102),
+                Times.Once);
+        }
+
+        [Test]
         public void CheckAvailability_ExistingRentalOverlaps_ReturnsFalse()
         {
             // arrange
@@ -419,10 +442,10 @@ namespace Property_and_Management.Tests.Service
         }
 
         [Test]
-        public void ApproveOffer_HappyPath_ReturnsRentalId()
+        public void OfferGame_HappyPath_ReturnsRentalId()
         {
             // arrange
-            var request = BuildRequest(status: RequestStatus.OfferPending);
+            var request = BuildRequest();
             requestRepositoryMock
                 .Setup(repository => repository.Get(SampleRequestIdentifier))
                 .Returns(request);
@@ -436,7 +459,7 @@ namespace Property_and_Management.Tests.Service
                 .Returns(SampleRentalIdentifier);
 
             // act
-            var result = requestService.ApproveOffer(SampleRequestIdentifier, SampleRenterIdentifier);
+            var result = requestService.OfferGame(SampleRequestIdentifier, SampleOwnerIdentifier);
 
             // assert
             result.IsSuccess.Should().BeTrue();
@@ -444,23 +467,26 @@ namespace Property_and_Management.Tests.Service
         }
 
         [Test]
-        public void DenyOffer_HappyPath_ResetsRequestToOpen()
+        public void OfferGame_TransactionThrows_ReturnsFailureTransactionFailed()
         {
             // arrange
-            var request = BuildRequest(status: RequestStatus.OfferPending);
             requestRepositoryMock
                 .Setup(repository => repository.Get(SampleRequestIdentifier))
-                .Returns(request);
+                .Returns(BuildRequest());
+            requestRepositoryMock
+                .Setup(repository => repository.GetOverlappingRequests(
+                    It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                .Returns(ImmutableList<Request>.Empty);
+            requestRepositoryMock
+                .Setup(repository => repository.ApproveAtomically(
+                    It.IsAny<Request>(), It.IsAny<ImmutableList<Request>>()))
+                .Throws(new InvalidOperationException("boom"));
 
             // act
-            var result = requestService.DenyOffer(SampleRequestIdentifier, SampleRenterIdentifier);
+            var result = requestService.OfferGame(SampleRequestIdentifier, SampleOwnerIdentifier);
 
             // assert
-            result.IsSuccess.Should().BeTrue();
-            requestRepositoryMock.Verify(
-                repository => repository.UpdateStatus(
-                    SampleRequestIdentifier, RequestStatus.Open, null),
-                Times.Once);
+            result.Error.Should().Be(OfferError.TransactionFailed);
         }
 
         private static Game BuildGame(int identifier = SampleGameIdentifier, bool isActive = true)

@@ -55,6 +55,14 @@ namespace Property_and_Management.Src.Viewmodels
                     Constants.DialogTitles.CannotDeleteGame,
                     invalidOperationException.Message);
             }
+            catch (System.Exception exception)
+            {
+                return ViewOperationResult.Failure(
+                    Constants.DialogTitles.CannotDeleteGame,
+                    string.IsNullOrWhiteSpace(exception.Message)
+                        ? Constants.DialogMessages.UnexpectedErrorOccurred
+                        : exception.Message);
+            }
         }
     }
 }

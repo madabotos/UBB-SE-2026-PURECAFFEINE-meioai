@@ -126,16 +126,16 @@ namespace Property_and_Management.Tests.Service
         }
 
         [Test]
-        public void ScheduleUpcomingRentalReminder_NegativeDelay_SendsImmediately()
+        public void ScheduleUpcomingRentalReminder_ReminderTimeAlreadyDue_SendsImmediately()
         {
-            // arrange — start date is in the past, so the scheduled reminder is due now
-            var pastStartDate = DateTime.UtcNow.AddDays(-5);
+            // arrange - start date is upcoming, but less than 24 hours away, so the reminder is due now
+            var soonStartDate = DateTime.UtcNow.AddHours(1);
 
             // act
             notificationService.ScheduleUpcomingRentalReminder(
-                CurrentUserIdentifier, OtherUserIdentifier, "Catan", pastStartDate);
+                CurrentUserIdentifier, OtherUserIdentifier, "Catan", soonStartDate);
 
-            // assert — because delay <= 0, service calls SendNotificationToUser for each party
+            // assert - because delay <= 0, service calls SendNotificationToUser for each party
             notificationRepositoryMock.Verify(
                 repository => repository.Add(It.IsAny<Notification>()), Times.AtLeast(2));
         }

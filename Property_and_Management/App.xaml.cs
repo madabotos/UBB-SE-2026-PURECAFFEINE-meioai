@@ -130,10 +130,6 @@ namespace Property_and_Management
             serviceCollection.AddSingleton<ICurrentUserContext>(new CurrentUserContext(CurrentUserIdentifier));
             serviceCollection.AddSingleton<IToastNotificationService, ToastNotificationService>();
             serviceCollection.AddSingleton<IServerClient, NotificationClient>();
-            // FileDismissedNotificationStore is provided by Agent 1 under the
-            // Service layer; registering it here replaces the file I/O that
-            // previously lived inside NotificationsViewModel.
-            serviceCollection.AddSingleton<IDismissedNotificationStore, FileDismissedNotificationStore>();
 
             // Repositories
             serviceCollection.AddSingleton<IUserRepository, UserRepository>();

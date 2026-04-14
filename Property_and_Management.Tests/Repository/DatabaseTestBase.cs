@@ -1,5 +1,7 @@
 using System;
 using System.Configuration;
+using System.IO;
+using System.Xml.Linq;
 using Microsoft.Data.SqlClient;
 using NUnit.Framework;
 using Property_and_Management.Src.Repository;
@@ -20,10 +22,13 @@ namespace Property_and_Management.Tests.Repository
         [OneTimeSetUp]
         public void InitializeDatabase()
         {
-            ConnectionString = ConfigurationManager
-                .ConnectionStrings[ConnectionStringName]?.ConnectionString
-                ?? throw new InvalidOperationException(
-                    $"Connection string '{ConnectionStringName}' is missing from App.config.");
+            ConnectionString = ResolveConnectionString();
+            if (string.IsNullOrWhiteSpace(ConnectionString))
+            {
+                Assert.Ignore(
+                    "Skipping integration tests: connection string "
+                    + $"'{ConnectionStringName}' is missing from App.config.");
+            }
 
             try
             {
@@ -40,17 +45,78 @@ namespace Property_and_Management.Tests.Repository
         [SetUp]
         public void TruncateBusinessTables()
         {
-            using var connection = new SqlConnection(ConnectionString);
-            connection.Open();
-            using var command = connection.CreateCommand();
-            command.CommandText =
-                "DELETE FROM Notifications;"
-                + "DELETE FROM Rentals;"
-                + "DELETE FROM Requests;"
-                + "DBCC CHECKIDENT ('Notifications', RESEED, 0);"
-                + "DBCC CHECKIDENT ('Rentals', RESEED, 0);"
-                + "DBCC CHECKIDENT ('Requests', RESEED, 0);";
-            command.ExecuteNonQuery();
+            try
+            {
+                using var connection = new SqlConnection(ConnectionString);
+                connection.Open();
+                using var command = connection.CreateCommand();
+                command.CommandText =
+                    "DELETE FROM Notifications;"
+                    + "DELETE FROM Rentals;"
+                    + "DELETE FROM Requests;"
+                    + "DBCC CHECKIDENT ('Notifications', RESEED, 0);"
+                    + "DBCC CHECKIDENT ('Rentals', RESEED, 0);"
+                    + "DBCC CHECKIDENT ('Requests', RESEED, 0);";
+                command.ExecuteNonQuery();
+            }
+            catch (SqlException sqlException)
+            {
+                Assert.Ignore(
+                    "Skipping integration tests: SQL Server test database is not reachable. "
+                    + $"Error: {sqlException.Message}");
+            }
+        }
+
+        private static string ResolveConnectionString()
+        {
+            ConfigureAppConfigForTestHost();
+
+            var configuredConnectionString = ConfigurationManager
+                .ConnectionStrings[ConnectionStringName]?.ConnectionString;
+            if (!string.IsNullOrWhiteSpace(configuredConnectionString))
+            {
+                return configuredConnectionString;
+            }
+
+            return ReadConnectionStringFromCopiedConfig("Property_and_Management.Tests.dll.config")
+                   ?? ReadConnectionStringFromCopiedConfig("App.config")
+                   ?? string.Empty;
+        }
+
+        private static void ConfigureAppConfigForTestHost()
+        {
+            var copiedConfigPath = Path.Combine(
+                TestContext.CurrentContext.TestDirectory,
+                "Property_and_Management.Tests.dll.config");
+
+            if (!File.Exists(copiedConfigPath))
+            {
+                return;
+            }
+
+            AppDomain.CurrentDomain.SetData("APP_CONFIG_FILE", copiedConfigPath);
+            ConfigurationManager.RefreshSection("connectionStrings");
+        }
+
+        private static string? ReadConnectionStringFromCopiedConfig(string configFileName)
+        {
+            var configPath = Path.Combine(TestContext.CurrentContext.TestDirectory, configFileName);
+            if (!File.Exists(configPath))
+            {
+                return null;
+            }
+
+            var configuration = XDocument.Load(configPath);
+            foreach (var addElement in configuration.Descendants("add"))
+            {
+                var name = addElement.Attribute("name")?.Value;
+                if (string.Equals(name, ConnectionStringName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return addElement.Attribute("connectionString")?.Value;
+                }
+            }
+
+            return null;
         }
     }
 }

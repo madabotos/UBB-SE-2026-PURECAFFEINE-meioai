@@ -16,8 +16,6 @@ namespace Property_and_Management.Src.Viewmodels
         private const int DefaultUserIdentifier = 1;
 
         private readonly INotificationService notificationService;
-        private readonly ICurrentUserContext currentUserContext;
-        private readonly IDismissedNotificationStore dismissedNotificationStore;
         private readonly IDisposable subscription;
 
         // Captured at construction (on the UI thread via DI) so we can marshal
@@ -26,18 +24,13 @@ namespace Property_and_Management.Src.Viewmodels
         // writes from a non-UI thread either throw or silently drop updates.
         private readonly DispatcherQueue? dispatcherQueue;
 
-        private HashSet<int> dismissedNotificationIds = new HashSet<int>();
-
         public int CurrentUserIdentifier { get; private set; }
 
         public NotificationsViewModel(
             INotificationService notificationService,
-            ICurrentUserContext currentUserContext,
-            IDismissedNotificationStore dismissedNotificationStore)
+            ICurrentUserContext currentUserContext)
         {
             this.notificationService = notificationService;
-            this.currentUserContext = currentUserContext;
-            this.dismissedNotificationStore = dismissedNotificationStore;
 
             // DI resolution happens from App.InitializeServices on the UI thread,
             // so GetForCurrentThread() returns the UI dispatcher. If ever
@@ -53,7 +46,6 @@ namespace Property_and_Management.Src.Viewmodels
         public void LoadNotificationsForUser(int userIdentifier)
         {
             CurrentUserIdentifier = userIdentifier;
-            dismissedNotificationIds = dismissedNotificationStore.Load(userIdentifier) ?? new HashSet<int>();
             Reload();
         }
 
@@ -61,7 +53,6 @@ namespace Property_and_Management.Src.Viewmodels
         {
             var notifications = notificationService
                 .GetNotificationsForUser(CurrentUserIdentifier)
-                .Where(notification => !dismissedNotificationIds.Contains(notification.Identifier))
                 .OrderByDescending(notification => notification.Identifier)
                 .ToImmutableList();
 
@@ -70,10 +61,15 @@ namespace Property_and_Management.Src.Viewmodels
 
         public void DeleteNotificationByIdentifier(int notificationIdentifier)
         {
-            // REQ-NOT-02: dismiss locally from view and persist locally, keep
-            // DB history untouched.
-            dismissedNotificationIds.Add(notificationIdentifier);
-            dismissedNotificationStore.Save(CurrentUserIdentifier, dismissedNotificationIds);
+            try
+            {
+                notificationService.DeleteNotificationByIdentifier(notificationIdentifier);
+            }
+            catch (KeyNotFoundException)
+            {
+                // The row may already have been removed by another app instance.
+            }
+
             Reload();
         }
 
