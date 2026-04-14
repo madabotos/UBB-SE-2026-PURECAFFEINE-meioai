@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using FluentAssertions;
 using Moq;
 using NUnit.Framework;
+using Property_and_Management;
 using Property_and_Management.Src.DataTransferObjects;
 using Property_and_Management.Src.Interface;
 using Property_and_Management.Src.Viewmodels;
@@ -95,6 +96,25 @@ namespace Property_and_Management.Tests.Viewmodels
 
             // assert
             showingText.Should().Contain("games");
+        }
+
+        [Test]
+        public void TryDeleteGame_ServiceThrows_ReturnsFailureDialog()
+        {
+            // arrange
+            var gameToDelete = BuildGame(identifier: SampleGameIdentifier);
+            gameServiceMock
+                .Setup(service => service.DeleteGameByIdentifier(SampleGameIdentifier))
+                .Throws(new System.Exception("delete failed"));
+            var viewModel = new ListingsViewModel(gameServiceMock.Object, SampleCurrentUserIdentifier);
+
+            // act
+            var result = viewModel.TryDeleteGame(gameToDelete);
+
+            // assert
+            result.IsSuccess.Should().BeFalse();
+            result.DialogTitle.Should().Be(Constants.DialogTitles.CannotDeleteGame);
+            result.DialogMessage.Should().Be("delete failed");
         }
 
         private static GameDataTransferObject BuildGame(int identifier)

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using FluentAssertions;
 using Moq;
@@ -10,27 +9,21 @@ using Property_and_Management.Src.Viewmodels;
 
 namespace Property_and_Management.Tests.Viewmodels
 {
-    // After Agent 2's refactor, NotificationsViewModel no longer performs file
-    // I/O directly; it takes an IDismissedNotificationStore via constructor
-    // injection. These tests mock the store so they never touch disk.
+    // NotificationsViewModel treats the database-backed notification service as
+    // the source of truth, so tests keep all persistence behind mocks.
     [TestFixture]
     public sealed class NotificationsViewModelTests
     {
         private const int CurrentUserIdentifier = 1;
-        private const int DismissedNotificationIdentifier = 7;
 
         private Mock<INotificationService> notificationServiceMock = null!;
-        private Mock<IRequestService> requestServiceMock = null!;
         private Mock<ICurrentUserContext> currentUserContextMock = null!;
-        private Mock<IDismissedNotificationStore> dismissedNotificationStoreMock = null!;
 
         [SetUp]
         public void SetUp()
         {
             notificationServiceMock = new Mock<INotificationService>();
-            requestServiceMock = new Mock<IRequestService>();
             currentUserContextMock = new Mock<ICurrentUserContext>();
-            dismissedNotificationStoreMock = new Mock<IDismissedNotificationStore>();
 
             currentUserContextMock
                 .SetupGet(context => context.CurrentUserIdentifier)
@@ -38,23 +31,17 @@ namespace Property_and_Management.Tests.Viewmodels
             notificationServiceMock
                 .Setup(service => service.Subscribe(It.IsAny<IObserver<NotificationDataTransferObject>>()))
                 .Returns(Mock.Of<IDisposable>());
-            dismissedNotificationStoreMock
-                .Setup(store => store.Load(CurrentUserIdentifier))
-                .Returns(new HashSet<int>());
         }
 
         [Test]
-        public void Constructor_LoadsFromService_ExcludesDismissed()
+        public void Constructor_LoadsAllNotificationsFromService()
         {
             // arrange
-            dismissedNotificationStoreMock
-                .Setup(store => store.Load(CurrentUserIdentifier))
-                .Returns(new HashSet<int> { DismissedNotificationIdentifier });
             notificationServiceMock
                 .Setup(service => service.GetNotificationsForUser(CurrentUserIdentifier))
                 .Returns(ImmutableList.Create(
                     BuildNotification(identifier: 1),
-                    BuildNotification(identifier: DismissedNotificationIdentifier),
+                    BuildNotification(identifier: 7),
                     BuildNotification(identifier: 2)));
 
             // act
@@ -62,27 +49,27 @@ namespace Property_and_Management.Tests.Viewmodels
 
             // assert
             viewModel.PagedItems
-                .Should().NotContain(notification => notification.Identifier == DismissedNotificationIdentifier);
+                .Should().HaveCount(3);
         }
 
         [Test]
-        public void DeleteNotificationByIdentifier_AddsToStoreAndRemovesFromCollection()
+        public void DeleteNotificationByIdentifier_DeletesFromServiceAndRemovesFromCollection()
         {
             // arrange
             notificationServiceMock
-                .Setup(service => service.GetNotificationsForUser(CurrentUserIdentifier))
-                .Returns(ImmutableList.Create(BuildNotification(identifier: 1)));
+                .SetupSequence(service => service.GetNotificationsForUser(CurrentUserIdentifier))
+                .Returns(ImmutableList.Create(BuildNotification(identifier: 1)))
+                .Returns(ImmutableList<NotificationDataTransferObject>.Empty);
             var viewModel = BuildViewModel();
 
             // act
             viewModel.DeleteNotificationByIdentifier(1);
 
             // assert
-            dismissedNotificationStoreMock.Verify(
-                store => store.Save(
-                    CurrentUserIdentifier,
-                    It.Is<IEnumerable<int>>(ids => System.Linq.Enumerable.Contains(ids, 1))),
-                Times.AtLeastOnce);
+            notificationServiceMock.Verify(
+                service => service.DeleteNotificationByIdentifier(1),
+                Times.Once);
+            viewModel.PagedItems.Should().BeEmpty();
         }
 
         [Test]
@@ -104,59 +91,11 @@ namespace Property_and_Management.Tests.Viewmodels
                 Times.AtLeastOnce);
         }
 
-        [Test]
-        public void TryApproveOffer_Success_ReloadsCollection()
-        {
-            // arrange
-            notificationServiceMock
-                .Setup(service => service.GetNotificationsForUser(CurrentUserIdentifier))
-                .Returns(ImmutableList<NotificationDataTransferObject>.Empty);
-            requestServiceMock
-                .Setup(service => service.ApproveOffer(It.IsAny<int>(), CurrentUserIdentifier))
-                .Returns(Result<int, ApproveOfferError>.Success(1));
-            var viewModel = BuildViewModel();
-            notificationServiceMock.Invocations.Clear();
-
-            // act
-            var errorMessage = viewModel.TryApproveOffer(requestIdentifier: 10);
-
-            // assert
-            errorMessage.Should().BeNull();
-            notificationServiceMock.Verify(
-                service => service.GetNotificationsForUser(CurrentUserIdentifier),
-                Times.AtLeastOnce);
-        }
-
-        [Test]
-        public void TryDenyOffer_Success_ReloadsCollection()
-        {
-            // arrange
-            notificationServiceMock
-                .Setup(service => service.GetNotificationsForUser(CurrentUserIdentifier))
-                .Returns(ImmutableList<NotificationDataTransferObject>.Empty);
-            requestServiceMock
-                .Setup(service => service.DenyOffer(It.IsAny<int>(), CurrentUserIdentifier))
-                .Returns(Result<int, DenyOfferError>.Success(1));
-            var viewModel = BuildViewModel();
-            notificationServiceMock.Invocations.Clear();
-
-            // act
-            var errorMessage = viewModel.TryDenyOffer(requestIdentifier: 10);
-
-            // assert
-            errorMessage.Should().BeNull();
-            notificationServiceMock.Verify(
-                service => service.GetNotificationsForUser(CurrentUserIdentifier),
-                Times.AtLeastOnce);
-        }
-
         private NotificationsViewModel BuildViewModel()
         {
             return new NotificationsViewModel(
                 notificationServiceMock.Object,
-                requestServiceMock.Object,
-                currentUserContextMock.Object,
-                dismissedNotificationStoreMock.Object);
+                currentUserContextMock.Object);
         }
 
         private static NotificationDataTransferObject BuildNotification(int identifier)
