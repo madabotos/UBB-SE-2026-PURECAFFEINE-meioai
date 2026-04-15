@@ -8,59 +8,59 @@ namespace Property_and_Management.Src.Viewmodels
         private const int EmptyImageLength = 0;
 
         public static List<string> BuildValidationErrors(
-            string name,
-            decimal price,
-            int minPlayers,
-            int maxPlayers,
-            string description,
+            string gameName,
+            decimal gamePrice,
+            int minimumPlayerCount,
+            int maximumPlayerCount,
+            string gameDescription,
             int minimumNameLength,
             int maximumNameLength,
             decimal minimumAllowedPrice,
-            int minimumPlayerCount,
+            int absoluteMinimumPlayerCount,
             int minimumDescriptionLength,
             int maximumDescriptionLength)
         {
-            var errors = new List<string>();
+            var gameValidationErrors = new List<string>();
 
-            if (string.IsNullOrWhiteSpace(name) || name.Length < minimumNameLength || name.Length > maximumNameLength)
+            if (string.IsNullOrWhiteSpace(gameName) || gameName.Length < minimumNameLength || gameName.Length > maximumNameLength)
             {
-                errors.Add(Constants.ValidationMessages.NameLengthRange(minimumNameLength, maximumNameLength));
+                gameValidationErrors.Add(Constants.ValidationMessages.NameLengthRange(minimumNameLength, maximumNameLength));
             }
 
-            if (price < minimumAllowedPrice)
+            if (gamePrice < minimumAllowedPrice)
             {
-                errors.Add(Constants.ValidationMessages.PriceMinimum(minimumAllowedPrice));
+                gameValidationErrors.Add(Constants.ValidationMessages.PriceMinimum(minimumAllowedPrice));
             }
 
-            if (minPlayers < minimumPlayerCount)
+            if (minimumPlayerCount < absoluteMinimumPlayerCount)
             {
-                errors.Add(Constants.ValidationMessages.MinimumPlayerCount(minimumPlayerCount));
+                gameValidationErrors.Add(Constants.ValidationMessages.MinimumPlayerCount(absoluteMinimumPlayerCount));
             }
 
-            if (maxPlayers < minPlayers)
+            if (maximumPlayerCount < minimumPlayerCount)
             {
-                errors.Add(Constants.ValidationMessages.MaximumPlayerCountComparedToMinimum);
+                gameValidationErrors.Add(Constants.ValidationMessages.MaximumPlayerCountComparedToMinimum);
             }
 
-            if (string.IsNullOrWhiteSpace(description) || description.Length < minimumDescriptionLength || description.Length > maximumDescriptionLength)
+            if (string.IsNullOrWhiteSpace(gameDescription) || gameDescription.Length < minimumDescriptionLength || gameDescription.Length > maximumDescriptionLength)
             {
-                errors.Add(Constants.ValidationMessages.DescriptionLengthRange(minimumDescriptionLength, maximumDescriptionLength));
+                gameValidationErrors.Add(Constants.ValidationMessages.DescriptionLengthRange(minimumDescriptionLength, maximumDescriptionLength));
             }
 
-            return errors;
+            return gameValidationErrors;
         }
 
-        public static byte[] EnsureImageOrDefault(byte[] image, string baseDirectory)
+        public static byte[] EnsureImageOrDefault(byte[] gameImage, string applicationBaseDirectory)
         {
-            if (image != null && image.Length > EmptyImageLength)
+            if (gameImage != null && gameImage.Length > EmptyImageLength)
             {
-                return image;
+                return gameImage;
             }
 
             try
             {
-                string defaultImagePath = System.IO.Path.Combine(baseDirectory, "Assets", "default-game-placeholder.jpg");
-                return System.IO.File.ReadAllBytes(defaultImagePath);
+                string defaultGameImagePath = System.IO.Path.Combine(applicationBaseDirectory, "Assets", "default-game-placeholder.jpg");
+                return System.IO.File.ReadAllBytes(defaultGameImagePath);
             }
             catch
             {

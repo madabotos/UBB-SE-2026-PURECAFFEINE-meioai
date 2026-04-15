@@ -9,68 +9,68 @@ namespace Property_and_Management.Src.Viewmodels
 {
     public class CreateRequestViewModel : INotifyPropertyChanged
     {
-        private readonly IGameService gameService;
-        private readonly IRequestService requestService;
+        private readonly IGameService gameListingService;
+        private readonly IRequestService rentalRequestService;
         private readonly ICurrentUserContext currentUserContext;
 
-        public int currentUserId => currentUserContext.currentUserId;
+        public int CurrentUserId => currentUserContext.CurrentUserId;
 
-        public ObservableCollection<GameDTO> AvailableGames { get; set; } = new();
+        public ObservableCollection<GameDTO> AvailableGamesToRequest { get; set; } = new();
 
-        private GameDTO selectedGame;
+        private GameDTO selectedGameToRequest;
         public GameDTO SelectedGame
         {
-            get => selectedGame;
+            get => selectedGameToRequest;
             set
             {
-                selectedGame = value;
+                selectedGameToRequest = value;
                 OnPropertyChanged();
             }
         }
 
-        private System.DateTimeOffset? startDate;
+        private System.DateTimeOffset? requestedStartDate;
         public System.DateTimeOffset? StartDate
         {
-            get => startDate;
+            get => requestedStartDate;
             set
             {
-                startDate = value;
+                requestedStartDate = value;
                 OnPropertyChanged();
             }
         }
 
-        private System.DateTimeOffset? endDate;
+        private System.DateTimeOffset? requestedEndDate;
         public System.DateTimeOffset? EndDate
         {
-            get => endDate;
+            get => requestedEndDate;
             set
             {
-                endDate = value;
+                requestedEndDate = value;
                 OnPropertyChanged();
             }
         }
 
-        public CreateRequestViewModel(IGameService gameService, IRequestService requestService,
+        public CreateRequestViewModel(IGameService gameListingService, IRequestService rentalRequestService,
                                       ICurrentUserContext currentUserContext)
         {
-            this.gameService = gameService;
-            this.requestService = requestService;
+            this.gameListingService = gameListingService;
+            this.rentalRequestService = rentalRequestService;
             this.currentUserContext = currentUserContext;
-            LoadGames();
+            LoadAvailableGames();
         }
 
-        public void LoadGames()
+        public void LoadAvailableGames()
         {
-            AvailableGames.Clear();
-            var games = gameService.GetAllGames()
-                .Where(game => game.IsActive && game.Owner?.Id != currentUserId);
-            foreach (var game in games)
+            AvailableGamesToRequest.Clear();
+            var gamesOwnedByOtherUsers = gameListingService.GetAllGames()
+                .Where(game => game.IsActive && game.Owner?.Id != CurrentUserId);
+            foreach (var availableGame in gamesOwnedByOtherUsers)
             {
-                AvailableGames.Add(game);
+                AvailableGamesToRequest.Add(availableGame);
             }
         }
 
-        public bool ValidateInputs()
+        public bool ValidateRequestInputs()
         {
             if (SelectedGame == null)
             {
@@ -82,28 +82,28 @@ namespace Property_and_Management.Src.Viewmodels
 
         public ViewOperationResult SubmitRequest()
         {
-            if (!ValidateInputs())
+            if (!ValidateRequestInputs())
             {
                 return ViewOperationResult.Failure(
                     Constants.DialogTitles.ValidationError,
                     Constants.DialogMessages.CreateRequestValidationError);
             }
 
-            var result = requestService.CreateRequest(
+            var requestCreationResult = rentalRequestService.CreateRequest(
                 SelectedGame.Id,
-                currentUserId,
+                CurrentUserId,
                 SelectedGame.Owner.Id,
                 StartDate.Value.DateTime,
                 EndDate.Value.DateTime);
 
-            if (result.IsSuccess)
+            if (requestCreationResult.IsSuccess)
             {
                 return ViewOperationResult.Success();
             }
 
             return ViewOperationResult.Failure(
                 Constants.DialogTitles.RequestFailed,
-                BuildCreateRequestErrorMessage(result.Error));
+                BuildCreateRequestErrorMessage(requestCreationResult.Error));
         }
 
         private static string BuildCreateRequestErrorMessage(CreateRequestError createRequestError)
@@ -119,8 +119,8 @@ namespace Property_and_Management.Src.Viewmodels
 
         public string? TrySubmitRequest()
         {
-            var submitResult = SubmitRequest();
-            return submitResult.IsSuccess ? null : submitResult.DialogMessage;
+            var requestSubmissionResult = SubmitRequest();
+            return requestSubmissionResult.IsSuccess ? null : requestSubmissionResult.DialogMessage;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

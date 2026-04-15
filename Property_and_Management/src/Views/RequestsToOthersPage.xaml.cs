@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -42,7 +42,7 @@ namespace Property_and_Management.Src.Views
                 return;
             }
 
-            var result = await DialogHelper.ShowConfirmationAsync(
+            var cancelConfirmationResult = await DialogHelper.ShowConfirmationAsync(
                 this.XamlRoot,
                 Constants.DialogTitles.CancelRequestConfirmation,
                 "Are you sure you want to cancel this request?",
@@ -50,19 +50,19 @@ namespace Property_and_Management.Src.Views
                 Constants.DialogButtons.GoBack,
                 ContentDialogButton.Close);
 
-            if (result != ContentDialogResult.Primary)
+            if (cancelConfirmationResult != ContentDialogResult.Primary)
             {
                 return;
             }
 
-            var requestsToOthersViewModel = DataContext as RequestsToOthersViewModel;
-            var error = requestsToOthersViewModel?.TryCancelRequest(requestId);
-            if (error != null)
+            var pageViewModel = DataContext as RequestsToOthersViewModel;
+            var cancelErrorMessage = pageViewModel?.TryCancelRequest(requestId);
+            if (cancelErrorMessage != null)
             {
                 await DialogHelper.ShowMessageAsync(
                     this.XamlRoot,
                     Constants.DialogTitles.CancelRequestConfirmation,
-                    error);
+                    cancelErrorMessage);
             }
         }
 

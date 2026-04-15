@@ -1,4 +1,4 @@
-﻿using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Interface;
 
 namespace Property_and_Management.Src.Model
 {
@@ -18,12 +18,12 @@ namespace Property_and_Management.Src.Model
         {
         }
 
-        public Game(int id, User owner, string name, decimal price,
+        public Game(int id, User gameOwner, string name, decimal price,
                     int minimumPlayerNumber, int maximumPlayerNumber,
                     string description, byte[] image, bool isActive)
         {
             this.Id = id;
-            Owner = owner;
+            Owner = gameOwner;
             Name = name;
             Price = price;
             MinimumPlayerNumber = minimumPlayerNumber;

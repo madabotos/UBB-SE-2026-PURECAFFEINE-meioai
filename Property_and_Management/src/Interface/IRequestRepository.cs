@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Immutable;
 using Property_and_Management.Src.Model;
 
@@ -8,9 +8,9 @@ namespace Property_and_Management.Src.Interface
     {
         void UpdateStatus(int requestId, RequestStatus status, int? offeringUserId);
 
-        ImmutableList<Request> GetRequestsByOwner(int ownerId);
+        ImmutableList<Request> GetRequestsByOwner(int ownerUserId);
 
-        ImmutableList<Request> GetRequestsByRenter(int renterId);
+        ImmutableList<Request> GetRequestsByRenter(int renterUserId);
 
         ImmutableList<Request> GetRequestsByGame(int gameId);
 

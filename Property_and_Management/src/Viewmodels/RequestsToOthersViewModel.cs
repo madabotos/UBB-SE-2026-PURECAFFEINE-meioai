@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Linq;
 using Property_and_Management.Src.DataTransferObjects;
 using Property_and_Management.Src.Interface;
@@ -9,14 +9,14 @@ namespace Property_and_Management.Src.Viewmodels
     {
         private const int MinimumSuccessfulEntityId = 1;
 
-        private readonly IRequestService requestService;
+        private readonly IRequestService rentalRequestService;
         private readonly ICurrentUserContext currentUserContext;
 
-        public int renterId { get; private set; }
+        public int CurrentRenterUserId { get; private set; }
 
-        public RequestsToOthersViewModel(IRequestService requestService, ICurrentUserContext currentUserContext)
+        public RequestsToOthersViewModel(IRequestService rentalRequestService, ICurrentUserContext currentUserContext)
         {
-            this.requestService = requestService;
+            this.rentalRequestService = rentalRequestService;
             this.currentUserContext = currentUserContext;
             Reload();
         }
@@ -27,24 +27,24 @@ namespace Property_and_Management.Src.Viewmodels
 
         protected override void Reload()
         {
-            renterId = currentUserContext.currentUserId;
-            var allRequests = requestService
-                .GetRequestsForRenter(renterId)
+            CurrentRenterUserId = currentUserContext.CurrentUserId;
+            var renterRequestsSortedByNewest = rentalRequestService
+                .GetRequestsForRenter(CurrentRenterUserId)
                 .OrderByDescending(request => request.StartDate)
                 .ToImmutableList();
-            SetAllItems(allRequests);
+            SetAllItems(renterRequestsSortedByNewest);
         }
 
-        public string? TryCancelRequest(int requestId)
+        public string? TryCancelRequest(int requestIdToCancel)
         {
-            var rawResult = requestService.CancelRequest(requestId, renterId);
-            if (rawResult >= MinimumSuccessfulEntityId)
+            var cancellationResultCode = rentalRequestService.CancelRequest(requestIdToCancel, CurrentRenterUserId);
+            if (cancellationResultCode >= MinimumSuccessfulEntityId)
             {
                 Reload();
                 return null;
             }
 
-            return ((CancelRequestError)rawResult) switch
+            return ((CancelRequestError)cancellationResultCode) switch
             {
                 CancelRequestError.NotFound => "Request not found.",
                 CancelRequestError.Unauthorized => "You are not authorized to cancel this request.",

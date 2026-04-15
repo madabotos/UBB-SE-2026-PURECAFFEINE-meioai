@@ -20,13 +20,13 @@ namespace Property_and_Management
 
         public void Init()
         {
-            AppNotificationManager notificationManager = AppNotificationManager.Default;
+            AppNotificationManager appNotificationManagerInstance = AppNotificationManager.Default;
 
-            notificationManager.NotificationInvoked += OnNotificationInvoked;
+            appNotificationManagerInstance.NotificationInvoked += OnNotificationInvoked;
 
             try
             {
-                notificationManager.Register();
+                appNotificationManagerInstance.Register();
                 isRegistered = true;
             }
             catch (Exception registrationException)
@@ -45,14 +45,14 @@ namespace Property_and_Management
             }
         }
 
-        private void OnNotificationInvoked(AppNotificationManager sender, AppNotificationActivatedEventArgs args)
+        private void OnNotificationInvoked(AppNotificationManager notificationManagerSender, AppNotificationActivatedEventArgs notificationActivationArgs)
         {
-            NotificationClicked?.Invoke(this, args);
+            NotificationClicked?.Invoke(this, notificationActivationArgs);
         }
 
-        public void ProcessLaunchActivationArgs(AppNotificationActivatedEventArgs args)
+        public void ProcessLaunchActivationArgs(AppNotificationActivatedEventArgs notificationActivationArgs)
         {
-            NotificationClicked?.Invoke(this, args);
+            NotificationClicked?.Invoke(this, notificationActivationArgs);
         }
     }
 }

@@ -42,7 +42,7 @@ namespace Property_and_Management.Src.Views
                 return;
             }
 
-            var result = await DialogHelper.ShowConfirmationAsync(
+            var deleteConfirmationResult = await DialogHelper.ShowConfirmationAsync(
                 this.XamlRoot,
                 Constants.DialogTitles.DeleteGameConfirmation,
                 $"Are you sure you want to permanently delete '{gameToDelete.Name}'? Pending requests will be cancelled and notified. Deletion is blocked if active or upcoming rentals exist.",
@@ -50,15 +50,15 @@ namespace Property_and_Management.Src.Views
                 Constants.DialogButtons.Cancel,
                 ContentDialogButton.Close);
 
-            if (result == ContentDialogResult.Primary)
+            if (deleteConfirmationResult == ContentDialogResult.Primary)
             {
-                var deleteResult = ViewModel.TryDeleteGame(gameToDelete);
-                if (!string.IsNullOrWhiteSpace(deleteResult.DialogMessage))
+                var gameDeletionResult = ViewModel.TryDeleteGame(gameToDelete);
+                if (!string.IsNullOrWhiteSpace(gameDeletionResult.DialogMessage))
                 {
                     await DialogHelper.ShowMessageAsync(
                         this.XamlRoot,
-                        deleteResult.DialogTitle,
-                        deleteResult.DialogMessage);
+                        gameDeletionResult.DialogTitle,
+                        gameDeletionResult.DialogMessage);
                 }
             }
         }

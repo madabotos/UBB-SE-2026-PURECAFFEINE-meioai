@@ -6,31 +6,31 @@ namespace Property_and_Management.Src.Mapper
 {
     public class UserMapper : IMapper<User, UserDTO>
     {
-        public UserDTO ToDTO(User user)
+        public UserDTO ToDTO(User userModel)
         {
-            if (user == null)
+            if (userModel == null)
             {
                 return null;
             }
 
             return new UserDTO
             {
-                Id = user.Id,
-                DisplayName = user.DisplayName
+                Id = userModel.Id,
+                DisplayName = userModel.DisplayName
             };
         }
 
-        public User ToModel(UserDTO UserDTO)
+        public User ToModel(UserDTO userDto)
         {
-            if (UserDTO == null)
+            if (userDto == null)
             {
                 return null;
             }
 
             return new User
             {
-                Id = UserDTO.Id,
-                DisplayName = UserDTO.DisplayName
+                Id = userDto.Id,
+                DisplayName = userDto.DisplayName
             };
         }
     }

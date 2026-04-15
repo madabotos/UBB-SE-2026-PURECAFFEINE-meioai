@@ -13,20 +13,20 @@ namespace Property_and_Management.Src.Service
 {
     public class NotificationService : INotificationService, IObserver<IncomingNotification>, IObservable<NotificationDTO>, IDisposable
     {
-        private static readonly TimeSpan ReminderLeadTime = TimeSpan.FromHours(24);
-        private const int NewEntityId = 0;
+        private static readonly TimeSpan UpcomingRentalReminderLeadTime = TimeSpan.FromHours(24);
+        private const int NewNotificationId = 0;
         private const int MissingUserId = 0;
 
-        private bool disposed;
-        private readonly CancellationTokenSource scheduleCancellationTokenSource = new();
-        private readonly INotificationRepository notificationRepository;
-        private readonly IMapper<Notification, NotificationDTO> notificationMapper;
-        private readonly IServerClient serverClient;
+        private bool isDisposed;
+        private readonly CancellationTokenSource reminderScheduleCancellationSource = new();
+        private readonly INotificationRepository notificationDataRepository;
+        private readonly IMapper<Notification, NotificationDTO> notificationDtoMapper;
+        private readonly IServerClient serverNotificationClient;
         private readonly ICurrentUserContext currentUserContext;
-        private readonly IToastNotificationService toastNotificationService;
+        private readonly IToastNotificationService toastAlertService;
 
-        private readonly List<IObserver<NotificationDTO>> subscribers = new();
-        private readonly object subscribersLock = new();
+        private readonly List<IObserver<NotificationDTO>> notificationSubscribers = new();
+        private readonly object notificationSubscribersLock = new();
 
         public NotificationService(
             INotificationRepository notificationRepository,
@@ -35,68 +35,68 @@ namespace Property_and_Management.Src.Service
             ICurrentUserContext currentUserContext,
             IToastNotificationService toastNotificationService)
         {
-            this.notificationRepository = notificationRepository;
-            this.notificationMapper = notificationMapper;
-            this.serverClient = serverClient;
+            this.notificationDataRepository = notificationRepository;
+            this.notificationDtoMapper = notificationMapper;
+            this.serverNotificationClient = serverClient;
             this.currentUserContext = currentUserContext;
-            this.toastNotificationService = toastNotificationService;
-            serverClient.Subscribe(this);
+            this.toastAlertService = toastNotificationService;
+            serverNotificationClient.Subscribe(this);
         }
 
         public NotificationDTO DeleteNotificationByIdentifier(int notificationId) =>
-            notificationMapper.ToDTO(notificationRepository.Delete(notificationId));
+            notificationDtoMapper.ToDTO(notificationDataRepository.Delete(notificationId));
 
         public NotificationDTO GetNotificationByIdentifier(int notificationId) =>
-            notificationMapper.ToDTO(notificationRepository.Get(notificationId));
+            notificationDtoMapper.ToDTO(notificationDataRepository.Get(notificationId));
 
-        public ImmutableList<NotificationDTO> GetNotificationsForUser(int userId) =>
-            notificationRepository
-                .GetNotificationsByUser(userId)
-                .Select(notification => notificationMapper.ToDTO(notification))
+        public ImmutableList<NotificationDTO> GetNotificationsForUser(int targetUserId) =>
+            notificationDataRepository
+                .GetNotificationsByUser(targetUserId)
+                .Select(notification => notificationDtoMapper.ToDTO(notification))
                 .ToImmutableList();
 
-        public void SendNotificationToUser(int userId, NotificationDTO notification)
+        public void SendNotificationToUser(int recipientUserId, NotificationDTO notificationToSend)
         {
-            if (notification == null)
+            if (notificationToSend == null)
             {
-                throw new ArgumentNullException(nameof(notification));
+                throw new ArgumentNullException(nameof(notificationToSend));
             }
 
-            DateTime timestamp = notification.Timestamp == default ? DateTime.UtcNow : notification.Timestamp;
+            DateTime notificationTimestamp = notificationToSend.Timestamp == default ? DateTime.UtcNow : notificationToSend.Timestamp;
 
-            var notificationModel = BuildNotificationModel(
-                userId,
-                timestamp,
-                notification.Title,
-                notification.Body,
-                notification.Type,
-                notification.RelatedRequestId);
+            var notificationModel = BuildNotificationDomainModel(
+                recipientUserId,
+                notificationTimestamp,
+                notificationToSend.Title,
+                notificationToSend.Body,
+                notificationToSend.Type,
+                notificationToSend.RelatedRequestId);
 
-            notificationRepository.Add(notificationModel);
+            notificationDataRepository.Add(notificationModel);
 
-            if (currentUserContext.currentUserId == userId)
+            if (currentUserContext.CurrentUserId == recipientUserId)
             {
-                NotifySubscribers(BuildNotificationDTO(
+                NotifyAllSubscribers(BuildNotificationDataTransferObject(
                     notificationModel.Id,
-                    userId,
-                    timestamp,
-                    notification.Title,
-                    notification.Body,
-                    notification.Type,
-                    notification.RelatedRequestId));
+                    recipientUserId,
+                    notificationTimestamp,
+                    notificationToSend.Title,
+                    notificationToSend.Body,
+                    notificationToSend.Type,
+                    notificationToSend.RelatedRequestId));
             }
 
-            serverClient.SendNotification(userId, notification.Title, notification.Body);
+            serverNotificationClient.SendNotification(recipientUserId, notificationToSend.Title, notificationToSend.Body);
         }
 
-        public void DeleteNotificationsLinkedToRequest(int relatedRequestId)
+        public void DeleteNotificationsLinkedToRequest(int linkedRequestId)
         {
-            notificationRepository.DeleteNotificationsLinkedToRequest(relatedRequestId);
+            notificationDataRepository.DeleteNotificationsLinkedToRequest(linkedRequestId);
         }
 
-        public void UpdateNotificationByIdentifier(int notificationId, NotificationDTO notification)
+        public void UpdateNotificationByIdentifier(int notificationId, NotificationDTO updatedNotificationData)
         {
-            notificationRepository.Update(notificationId, notificationMapper.ToModel(notification));
+            notificationDataRepository.Update(notificationId, notificationDtoMapper.ToModel(updatedNotificationData));
         }
 
         public void StartListening()
@@ -105,7 +105,7 @@ namespace Property_and_Management.Src.Service
             {
                 try
                 {
-                    await serverClient.ListenAsync();
+                    await serverNotificationClient.ListenAsync();
                 }
                 catch (Exception listenException)
                 {
@@ -115,130 +115,130 @@ namespace Property_and_Management.Src.Service
             });
         }
 
-        public void StopListening() => serverClient.StopListening();
+        public void StopListening() => serverNotificationClient.StopListening();
         public void OnCompleted()
         {
         }
-        public void OnError(Exception error)
+        public void OnError(Exception observableError)
         {
         }
 
-        public void OnNext(IncomingNotification incomingNotification)
+        public void OnNext(IncomingNotification receivedNotification)
         {
-            var NotificationDTO = BuildNotificationDTO(
-                NewEntityId,
-                incomingNotification.UserId,
-                incomingNotification.Timestamp,
-                incomingNotification.Title,
-                incomingNotification.Body,
+            var incomingNotificationDto = BuildNotificationDataTransferObject(
+                NewNotificationId,
+                receivedNotification.UserId,
+                receivedNotification.Timestamp,
+                receivedNotification.Title,
+                receivedNotification.Body,
                 default,
                 null);
 
-            NotifySubscribers(NotificationDTO);
-            toastNotificationService.Show(incomingNotification.Title, incomingNotification.Body);
+            NotifyAllSubscribers(incomingNotificationDto);
+            toastAlertService.Show(receivedNotification.Title, receivedNotification.Body);
         }
 
-        private void NotifySubscribers(NotificationDTO NotificationDTO)
+        private void NotifyAllSubscribers(NotificationDTO outgoingNotificationDto)
         {
-            IObserver<NotificationDTO>[] snapshot;
-            lock (subscribersLock)
+            IObserver<NotificationDTO>[] subscribersSnapshot;
+            lock (notificationSubscribersLock)
             {
-                snapshot = subscribers.ToArray();
+                subscribersSnapshot = notificationSubscribers.ToArray();
             }
 
-            foreach (var subscriber in snapshot)
+            foreach (var subscriber in subscribersSnapshot)
             {
-                subscriber.OnNext(NotificationDTO);
+                subscriber.OnNext(outgoingNotificationDto);
             }
         }
 
-        public IDisposable Subscribe(IObserver<NotificationDTO> observer)
+        public IDisposable Subscribe(IObserver<NotificationDTO> newObserver)
         {
-            lock (subscribersLock)
+            lock (notificationSubscribersLock)
             {
-                subscribers.Add(observer);
+                notificationSubscribers.Add(newObserver);
             }
 
-            return new Unsubscriber(subscribers, subscribersLock, observer);
+            return new Unsubscriber(notificationSubscribers, notificationSubscribersLock, newObserver);
         }
 
         private sealed class Unsubscriber : IDisposable
         {
-            private readonly List<IObserver<NotificationDTO>> subscribers;
-            private readonly object subscribersLock;
-            private readonly IObserver<NotificationDTO> observer;
+            private readonly List<IObserver<NotificationDTO>> subscribersList;
+            private readonly object subscribersListLock;
+            private readonly IObserver<NotificationDTO> subscriberToRemove;
 
             public Unsubscriber(
                 List<IObserver<NotificationDTO>> subscribers,
                 object subscribersLock,
                 IObserver<NotificationDTO> observer)
             {
-                this.subscribers = subscribers;
-                this.subscribersLock = subscribersLock;
-                this.observer = observer;
+                this.subscribersList = subscribers;
+                this.subscribersListLock = subscribersLock;
+                this.subscriberToRemove = observer;
             }
 
             public void Dispose()
             {
-                lock (subscribersLock)
+                lock (subscribersListLock)
                 {
-                    subscribers.Remove(observer);
+                    subscribersList.Remove(subscriberToRemove);
                 }
             }
         }
 
-        public void SubscribeToServer(int userId) => serverClient.SubscribeToServer(userId);
+        public void SubscribeToServer(int userId) => serverNotificationClient.SubscribeToServer(userId);
 
         public void Dispose()
         {
-            if (disposed)
+            if (isDisposed)
             {
                 return;
             }
 
-            disposed = true;
+            isDisposed = true;
 
-            scheduleCancellationTokenSource.Cancel();
-            scheduleCancellationTokenSource.Dispose();
+            reminderScheduleCancellationSource.Cancel();
+            reminderScheduleCancellationSource.Dispose();
             StopListening();
-            (serverClient as IDisposable)?.Dispose();
+            (serverNotificationClient as IDisposable)?.Dispose();
         }
 
-        public void ScheduleUpcomingRentalReminder(int renterId, int ownerId, string gameName, DateTime startDate)
+        public void ScheduleUpcomingRentalReminder(int renterUserId, int ownerUserId, string rentalGameName, DateTime rentalStartDate)
         {
-            var rentalStartTime = startDate.ToUniversalTime();
-            var currentTime = DateTime.UtcNow;
+            var rentalStartUtc = rentalStartDate.ToUniversalTime();
+            var currentUtcTime = DateTime.UtcNow;
 
-            if (rentalStartTime <= currentTime)
+            if (rentalStartUtc <= currentUtcTime)
             {
                 return;
             }
 
-            DateTime scheduledTime = rentalStartTime - ReminderLeadTime;
-            string title = Constants.NotificationTitles.UpcomingRentalReminder;
-            string body = CreateReminderBody(gameName, startDate);
+            DateTime scheduledReminderTime = rentalStartUtc - UpcomingRentalReminderLeadTime;
+            string reminderTitle = Constants.NotificationTitles.UpcomingRentalReminder;
+            string reminderBody = BuildUpcomingRentalReminderBody(rentalGameName, rentalStartDate);
 
-            ScheduleOrSendUserNotification(renterId, title, body, scheduledTime);
-            ScheduleOrSendUserNotification(ownerId, title, body, scheduledTime);
+            ScheduleOrSendReminderForUser(renterUserId, reminderTitle, reminderBody, scheduledReminderTime);
+            ScheduleOrSendReminderForUser(ownerUserId, reminderTitle, reminderBody, scheduledReminderTime);
         }
 
-        private static string CreateReminderBody(string gameName, DateTime startDate)
+        private static string BuildUpcomingRentalReminderBody(string rentalGameName, DateTime rentalStartDate)
         {
-            return $"Game: {gameName}\nStart: {startDate:dd/MM/yyyy HH:mm}\n" +
+            return $"Game: {rentalGameName}\nStart: {rentalStartDate:dd/MM/yyyy HH:mm}\n" +
                    "Delivery/Pick-up: Coordinate delivery/pick-up directly with the other party.";
         }
 
-        private void ScheduleOrSendUserNotification(int userId, string title, string body, DateTime scheduledTime)
+        private void ScheduleOrSendReminderForUser(int recipientUserId, string reminderTitle, string reminderBody, DateTime scheduledSendTime)
         {
-            if (userId == MissingUserId)
+            if (recipientUserId == MissingUserId)
             {
                 return;
             }
 
-            TimeSpan delay = scheduledTime.ToUniversalTime() - DateTime.UtcNow;
-            if (delay <= TimeSpan.Zero)
+            TimeSpan sendDelay = scheduledSendTime.ToUniversalTime() - DateTime.UtcNow;
+            if (sendDelay <= TimeSpan.Zero)
             {
-                SendReminderNotificationNow(userId, title, body);
+                SendReminderNotificationImmediately(recipientUserId, reminderTitle, reminderBody);
                 return;
             }
 
@@ -246,72 +246,72 @@ namespace Property_and_Management.Src.Service
             {
                 try
                 {
-                    await Task.Delay(delay, scheduleCancellationTokenSource.Token);
-                    SendReminderNotificationNow(userId, title, body);
+                    await Task.Delay(sendDelay, reminderScheduleCancellationSource.Token);
+                    SendReminderNotificationImmediately(recipientUserId, reminderTitle, reminderBody);
                 }
                 catch (OperationCanceledException)
                 {
                 }
-                catch (Exception scheduledNotificationException)
+                catch (Exception scheduledReminderException)
                 {
                     System.Diagnostics.Debug.WriteLine(
-                        $"NotificationService: scheduled reminder failed - {scheduledNotificationException}");
+                        $"NotificationService: scheduled reminder failed - {scheduledReminderException}");
                 }
             });
         }
 
-        private void SendReminderNotificationNow(int userId, string title, string body)
+        private void SendReminderNotificationImmediately(int recipientUserId, string reminderTitle, string reminderBody)
         {
-            var reminderNotification = BuildNotificationDTO(
-                NewEntityId,
-                userId,
+            var immediateReminderDto = BuildNotificationDataTransferObject(
+                NewNotificationId,
+                recipientUserId,
                 DateTime.UtcNow,
-                title,
-                body,
+                reminderTitle,
+                reminderBody,
                 default,
                 null);
 
-            SendNotificationToUser(userId, reminderNotification);
+            SendNotificationToUser(recipientUserId, immediateReminderDto);
         }
 
-        private static NotificationDTO BuildNotificationDTO(
+        private static NotificationDTO BuildNotificationDataTransferObject(
             int notificationId,
-            int userId,
-            DateTime timestamp,
-            string title,
-            string body,
-            NotificationType type,
-            int? relatedRequestId)
+            int recipientUserId,
+            DateTime notificationTimestamp,
+            string notificationTitle,
+            string notificationBody,
+            NotificationType notificationType,
+            int? linkedRequestId)
         {
             return new NotificationDTO
             {
                 Id = notificationId,
-                User = new UserDTO { Id = userId },
-                Timestamp = timestamp,
-                Title = title,
-                Body = body,
-                Type = type,
-                RelatedRequestId = relatedRequestId
+                User = new UserDTO { Id = recipientUserId },
+                Timestamp = notificationTimestamp,
+                Title = notificationTitle,
+                Body = notificationBody,
+                Type = notificationType,
+                RelatedRequestId = linkedRequestId
             };
         }
 
-        private static Notification BuildNotificationModel(
-            int userId,
-            DateTime timestamp,
-            string title,
-            string body,
-            NotificationType type = default,
-            int? relatedRequestId = null)
+        private static Notification BuildNotificationDomainModel(
+            int recipientUserId,
+            DateTime notificationTimestamp,
+            string notificationTitle,
+            string notificationBody,
+            NotificationType notificationType = default,
+            int? linkedRequestId = null)
         {
             return new Notification
             {
-                Id = NewEntityId,
-                User = new User { Id = userId },
-                Timestamp = timestamp,
-                Title = title,
-                Body = body,
-                Type = type,
-                RelatedRequestId = relatedRequestId
+                Id = NewNotificationId,
+                User = new User { Id = recipientUserId },
+                Timestamp = notificationTimestamp,
+                Title = notificationTitle,
+                Body = notificationBody,
+                Type = notificationType,
+                RelatedRequestId = linkedRequestId
             };
         }
     }

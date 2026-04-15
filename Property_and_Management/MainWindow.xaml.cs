@@ -38,9 +38,9 @@ namespace Property_and_Management
 
         private AppWindow GetAppWindow()
         {
-            var windowHandle = WindowNative.GetWindowHandle(this);
-            var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(windowHandle);
-            return AppWindow.GetFromWindowId(windowId);
+            var mainWindowHandle = WindowNative.GetWindowHandle(this);
+            var mainWindowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(mainWindowHandle);
+            return AppWindow.GetFromWindowId(mainWindowId);
         }
     }
 }

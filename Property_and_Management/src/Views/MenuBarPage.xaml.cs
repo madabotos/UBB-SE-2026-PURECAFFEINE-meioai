@@ -23,7 +23,7 @@ namespace Property_and_Management.Src.Views
             { AppPage.Notifications,       typeof(NotificationsPage) }
         };
 
-        private IGameService passedGameService;
+        private IGameService injectedGameService;
 
         public MenuBarView()
         {
@@ -40,7 +40,7 @@ namespace Property_and_Management.Src.Views
 
             if (navigationEventArgs.Parameter is IGameService gameService)
             {
-                passedGameService = gameService;
+                injectedGameService = gameService;
             }
         }
 
@@ -51,13 +51,13 @@ namespace Property_and_Management.Src.Views
                 return;
             }
 
-            ContentFrame.Navigate(pageType, passedGameService);
+            ContentFrame.Navigate(pageType, injectedGameService);
         }
 
         public void NavigateToNotifications()
         {
-            var notificationsViewModel = App.Services.GetRequiredService<NotificationsViewModel>();
-            ContentFrame.Navigate(typeof(NotificationsPage), notificationsViewModel);
+            var resolvedNotificationsViewModel = App.Services.GetRequiredService<NotificationsViewModel>();
+            ContentFrame.Navigate(typeof(NotificationsPage), resolvedNotificationsViewModel);
             ViewModel.SelectedPageName = "Notifications";
         }
     }

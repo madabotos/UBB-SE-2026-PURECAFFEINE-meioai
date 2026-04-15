@@ -14,20 +14,20 @@ namespace Property_and_Management.Src.Viewmodels
         protected const int PageStep = 1;
         private const int NoItemsCount = 0;
 
-        private ImmutableList<T> allItems = ImmutableList<T>.Empty;
-        private ObservableCollection<T> pagedItems = new ObservableCollection<T>();
+        private ImmutableList<T> allPageableItems = ImmutableList<T>.Empty;
+        private ObservableCollection<T> currentPageItems = new ObservableCollection<T>();
         private int currentPage = FirstPageNumber;
 
-        protected ImmutableList<T> AllItems => allItems;
+        protected ImmutableList<T> AllItems => allPageableItems;
 
         public ObservableCollection<T> PagedItems
         {
-            get => pagedItems;
+            get => currentPageItems;
             private set
             {
-                if (pagedItems != value)
+                if (currentPageItems != value)
                 {
-                    pagedItems = value;
+                    currentPageItems = value;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(DisplayedCount));
                     OnPropertyChanged(nameof(TotalCount));
@@ -43,10 +43,10 @@ namespace Property_and_Management.Src.Viewmodels
             get => currentPage;
             set
             {
-                var clamped = Math.Max(FirstPageNumber, Math.Min(value, PageCount));
-                if (currentPage != clamped)
+                var clampedPageNumber = Math.Max(FirstPageNumber, Math.Min(value, PageCount));
+                if (currentPage != clampedPageNumber)
                 {
-                    currentPage = clamped;
+                    currentPage = clampedPageNumber;
                     OnPropertyChanged();
                     UpdatePaging();
                 }
@@ -55,13 +55,13 @@ namespace Property_and_Management.Src.Viewmodels
 
         public static int PageSize => DefaultPageSize;
 
-        public int TotalCount => allItems?.Count ?? NoItemsCount;
+        public int TotalCount => allPageableItems?.Count ?? NoItemsCount;
 
         public int PageCount => Math.Max(
             FirstPageNumber,
             (int)Math.Ceiling((double)TotalCount / PageSize));
 
-        public int DisplayedCount => pagedItems?.Count ?? NoItemsCount;
+        public int DisplayedCount => currentPageItems?.Count ?? NoItemsCount;
 
         public virtual string ShowingText => $"Showing {DisplayedCount} of {TotalCount}";
 
@@ -83,9 +83,9 @@ namespace Property_and_Management.Src.Viewmodels
 
         protected abstract void Reload();
 
-        protected void SetAllItems(ImmutableList<T> items)
+        protected void SetAllItems(ImmutableList<T> updatedItems)
         {
-            allItems = items ?? ImmutableList<T>.Empty;
+            allPageableItems = updatedItems ?? ImmutableList<T>.Empty;
             OnPropertyChanged(nameof(TotalCount));
             OnPropertyChanged(nameof(PageCount));
 
@@ -102,9 +102,9 @@ namespace Property_and_Management.Src.Viewmodels
 
         private void UpdatePaging()
         {
-            var skip = (CurrentPage - FirstPageNumber) * PageSize;
-            var pageItems = allItems.Skip(skip).Take(PageSize).ToList();
-            PagedItems = new ObservableCollection<T>(pageItems);
+            var itemsToSkipForCurrentPage = (CurrentPage - FirstPageNumber) * PageSize;
+            var itemsOnCurrentPage = allPageableItems.Skip(itemsToSkipForCurrentPage).Take(PageSize).ToList();
+            PagedItems = new ObservableCollection<T>(itemsOnCurrentPage);
 
             OnPropertyChanged(nameof(DisplayedCount));
             OnPropertyChanged(nameof(ShowingText));

@@ -11,91 +11,91 @@ namespace Property_and_Management.Src.Viewmodels
     {
         private const string ValidationFailedMessage = "Validation failed.";
 
-        private readonly IGameService gameService;
-        private readonly IRentalService rentalService;
-        private readonly IUserService userService;
+        private readonly IGameService gameListingService;
+        private readonly IRentalService rentalCreationService;
+        private readonly IUserService userLookupService;
         private readonly ICurrentUserContext currentUserContext;
 
-        public int currentUserId => currentUserContext.currentUserId;
+        public int CurrentUserId => currentUserContext.CurrentUserId;
 
-        public ObservableCollection<GameDTO> MyGames { get; set; } = new();
+        public ObservableCollection<GameDTO> OwnedActiveGames { get; set; } = new();
         public ObservableCollection<UserDTO> AvailableRenters { get; set; } = new();
 
-        private GameDTO selectedGame;
-        public GameDTO SelectedGame
+        private GameDTO selectedGameToRent;
+        public GameDTO SelectedGameToRent
         {
-            get => selectedGame;
+            get => selectedGameToRent;
             set
             {
-                selectedGame = value;
+                selectedGameToRent = value;
                 OnPropertyChanged();
             }
         }
 
-        private UserDTO selectedRenter;
+        private UserDTO selectedRenterUser;
         public UserDTO SelectedRenter
         {
-            get => selectedRenter;
+            get => selectedRenterUser;
             set
             {
-                selectedRenter = value;
+                selectedRenterUser = value;
                 OnPropertyChanged();
             }
         }
 
-        private DateTimeOffset? startDate;
+        private DateTimeOffset? rentalStartDate;
         public DateTimeOffset? StartDate
         {
-            get => startDate;
+            get => rentalStartDate;
             set
             {
-                startDate = value;
+                rentalStartDate = value;
                 OnPropertyChanged();
             }
         }
 
-        private DateTimeOffset? endDate;
+        private DateTimeOffset? rentalEndDate;
         public DateTimeOffset? EndDate
         {
-            get => endDate;
+            get => rentalEndDate;
             set
             {
-                endDate = value;
+                rentalEndDate = value;
                 OnPropertyChanged();
             }
         }
 
-        public CreateRentalViewModel(IGameService gameService, IRentalService rentalService,
-                                     IUserService userService, ICurrentUserContext currentUserContext)
+        public CreateRentalViewModel(IGameService gameListingService, IRentalService rentalCreationService,
+                                     IUserService userLookupService, ICurrentUserContext currentUserContext)
         {
-            this.gameService = gameService;
-            this.rentalService = rentalService;
-            this.userService = userService;
+            this.gameListingService = gameListingService;
+            this.rentalCreationService = rentalCreationService;
+            this.userLookupService = userLookupService;
             this.currentUserContext = currentUserContext;
-            LoadData();
+            LoadRentalFormData();
         }
 
-        public void LoadData()
+        public void LoadRentalFormData()
         {
-            MyGames.Clear();
-            foreach (var game in gameService.GetGamesForOwner(currentUserId))
+            OwnedActiveGames.Clear();
+            foreach (var ownedGame in gameListingService.GetGamesForOwner(CurrentUserId))
             {
-                if (game.IsActive)
+                if (ownedGame.IsActive)
                 {
-                    MyGames.Add(game);
+                    OwnedActiveGames.Add(ownedGame);
                 }
             }
 
             AvailableRenters.Clear();
-            foreach (var user in userService.GetUsersExcept(currentUserId))
+            foreach (var potentialRenter in userLookupService.GetUsersExcept(CurrentUserId))
             {
-                AvailableRenters.Add(user);
+                AvailableRenters.Add(potentialRenter);
             }
         }
 
-        public bool ValidateInputs()
+        public bool ValidateRentalInputs()
         {
-            if (SelectedGame == null)
+            if (SelectedGameToRent == null)
             {
                 return false;
             }
@@ -110,7 +110,7 @@ namespace Property_and_Management.Src.Viewmodels
 
         public ViewOperationResult CreateRental()
         {
-            if (!ValidateInputs())
+            if (!ValidateRentalInputs())
             {
                 return ViewOperationResult.Failure(
                     Constants.DialogTitles.ValidationError,
@@ -119,34 +119,34 @@ namespace Property_and_Management.Src.Viewmodels
 
             try
             {
-                rentalService.CreateConfirmedRental(
-                    SelectedGame.Id,
+                rentalCreationService.CreateConfirmedRental(
+                    SelectedGameToRent.Id,
                     SelectedRenter.Id,
-                    currentUserId,
+                    CurrentUserId,
                     StartDate.Value.DateTime,
                     EndDate.Value.DateTime);
                 return ViewOperationResult.Success();
             }
-            catch (Exception exception)
+            catch (Exception rentalCreationException)
             {
-                return ViewOperationResult.Failure(Constants.DialogTitles.RentalFailed, exception.Message);
+                return ViewOperationResult.Failure(Constants.DialogTitles.RentalFailed, rentalCreationException.Message);
             }
         }
 
         public string? SaveRental()
         {
-            var createResult = CreateRental();
-            if (createResult.IsSuccess)
+            var rentalCreationResult = CreateRental();
+            if (rentalCreationResult.IsSuccess)
             {
                 return null;
             }
 
-            if (createResult.DialogTitle == Constants.DialogTitles.ValidationError)
+            if (rentalCreationResult.DialogTitle == Constants.DialogTitles.ValidationError)
             {
                 return ValidationFailedMessage;
             }
 
-            return createResult.DialogMessage;
+            return rentalCreationResult.DialogMessage;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

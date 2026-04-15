@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Property_and_Management.Src.Interface;
 
 namespace Property_and_Management.Src.Model
@@ -16,12 +16,12 @@ namespace Property_and_Management.Src.Model
         {
         }
 
-        public Rental(int id, Game game, User renter, User owner, DateTime startDate, DateTime endDate)
+        public Rental(int id, Game rentedGame, User renterUser, User ownerUser, DateTime startDate, DateTime endDate)
         {
             this.Id = id;
-            Game = game;
-            Renter = renter;
-            Owner = owner;
+            Game = rentedGame;
+            Renter = renterUser;
+            Owner = ownerUser;
             StartDate = startDate;
             EndDate = endDate;
         }

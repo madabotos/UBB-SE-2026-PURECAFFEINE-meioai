@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Immutable;
 using Property_and_Management.Src.DataTransferObjects;
 
@@ -6,20 +6,20 @@ namespace Property_and_Management.Src.Interface
 {
     public interface IRequestService
     {
-        ImmutableList<RequestDTO> GetRequestsForRenter(int renterId);
+        ImmutableList<RequestDTO> GetRequestsForRenter(int renterUserId);
 
-        ImmutableList<RequestDTO> GetRequestsForOwner(int ownerId);
+        ImmutableList<RequestDTO> GetRequestsForOwner(int ownerUserId);
 
         Result<int, CreateRequestError> CreateRequest(
             int gameId,
-            int renterId,
-            int ownerId,
+            int renterUserId,
+            int ownerUserId,
             DateTime startDate,
             DateTime endDate);
 
-        Result<int, ApproveRequestError> ApproveRequest(int requestId, int ownerId);
+        Result<int, ApproveRequestError> ApproveRequest(int requestId, int ownerUserId);
 
-        Result<int, DenyRequestError> DenyRequest(int requestId, int ownerId, string reason);
+        Result<int, DenyRequestError> DenyRequest(int requestId, int ownerUserId, string declineReason);
 
         int CancelRequest(int requestId, int cancellingUserId);
 
@@ -32,6 +32,6 @@ namespace Property_and_Management.Src.Interface
             int calendarMonth,
             int calendarYear);
 
-        Result<int, OfferError> OfferGame(int requestId, int offeringUserId);
+        Result<int, OfferError> OfferGame(int requestId, int offeringOwnerUserId);
     }
 }

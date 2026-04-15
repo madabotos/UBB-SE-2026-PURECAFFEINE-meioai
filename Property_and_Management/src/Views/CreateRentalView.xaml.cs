@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -17,7 +17,7 @@ namespace Property_and_Management.Src.Views
             ViewModel = App.Services.GetRequiredService<CreateRentalViewModel>();
             this.InitializeComponent();
 
-            GamePicker.ItemsSource = ViewModel.MyGames;
+            GamePicker.ItemsSource = ViewModel.OwnedActiveGames;
             RenterPicker.ItemsSource = ViewModel.AvailableRenters;
             StartDatePicker.MinDate = DateTimeOffset.Now;
             EndDatePicker.MinDate = DateTimeOffset.Now;
@@ -25,7 +25,7 @@ namespace Property_and_Management.Src.Views
 
         private void GamePicker_SelectionChanged(object sender, SelectionChangedEventArgs selectionChangedEventArgs)
         {
-            ViewModel.SelectedGame = GamePicker.SelectedItem as GameDTO;
+            ViewModel.SelectedGameToRent = GamePicker.SelectedItem as GameDTO;
         }
 
         private void RenterPicker_SelectionChanged(object sender, SelectionChangedEventArgs selectionChangedEventArgs)
@@ -38,8 +38,8 @@ namespace Property_and_Management.Src.Views
             ViewModel.StartDate = StartDatePicker.Date;
             ViewModel.EndDate = EndDatePicker.Date;
 
-            var createResult = ViewModel.CreateRental();
-            if (createResult.IsSuccess)
+            var rentalCreationResult = ViewModel.CreateRental();
+            if (rentalCreationResult.IsSuccess)
             {
                 if (Frame.CanGoBack)
                 {
@@ -50,8 +50,8 @@ namespace Property_and_Management.Src.Views
 
             await DialogHelper.ShowMessageAsync(
                 this.XamlRoot,
-                createResult.DialogTitle,
-                createResult.DialogMessage);
+                rentalCreationResult.DialogTitle,
+                rentalCreationResult.DialogMessage);
         }
     }
 }

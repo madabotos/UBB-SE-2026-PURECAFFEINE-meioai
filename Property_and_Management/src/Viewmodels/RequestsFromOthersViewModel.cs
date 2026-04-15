@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Linq;
 using Property_and_Management.Src.DataTransferObjects;
 using Property_and_Management.Src.Interface;
@@ -8,14 +8,14 @@ namespace Property_and_Management.Src.Viewmodels
 {
     public class RequestsFromOthersViewModel : PagedViewModel<RequestDTO>
     {
-        private readonly IRequestService requestService;
+        private readonly IRequestService rentalRequestService;
         private readonly ICurrentUserContext currentUserContext;
 
-        public int ownerId { get; private set; }
+        public int CurrentGameOwnerUserId { get; private set; }
 
-        public RequestsFromOthersViewModel(IRequestService requestService, ICurrentUserContext currentUserContext)
+        public RequestsFromOthersViewModel(IRequestService rentalRequestService, ICurrentUserContext currentUserContext)
         {
-            this.requestService = requestService;
+            this.rentalRequestService = rentalRequestService;
             this.currentUserContext = currentUserContext;
             Reload();
         }
@@ -26,26 +26,26 @@ namespace Property_and_Management.Src.Viewmodels
 
         protected override void Reload()
         {
-            ownerId = currentUserContext.currentUserId;
+            CurrentGameOwnerUserId = currentUserContext.CurrentUserId;
 
-            var allRequests = requestService
-                .GetRequestsForOwner(ownerId)
+            var openRequestsForOwnerSortedByNewest = rentalRequestService
+                .GetRequestsForOwner(CurrentGameOwnerUserId)
                 .Where(request => request.Status == RequestStatus.Open)
                 .OrderByDescending(request => request.StartDate)
                 .ToImmutableList();
-            SetAllItems(allRequests);
+            SetAllItems(openRequestsForOwnerSortedByNewest);
         }
 
-        public string? TryApproveRequest(int requestId)
+        public string? TryApproveRequest(int requestIdToApprove)
         {
-            var result = requestService.ApproveRequest(requestId, ownerId);
-            if (result.IsSuccess)
+            var approvalResult = rentalRequestService.ApproveRequest(requestIdToApprove, CurrentGameOwnerUserId);
+            if (approvalResult.IsSuccess)
             {
                 Reload();
                 return null;
             }
 
-            return result.Error switch
+            return approvalResult.Error switch
             {
                 ApproveRequestError.Unauthorized => "You are not authorized to approve this request.",
                 ApproveRequestError.NotFound => "Request not found.",
@@ -54,22 +54,22 @@ namespace Property_and_Management.Src.Viewmodels
             };
         }
 
-        public string? TryDenyRequest(int requestId, string? rawReason)
+        public string? TryDenyRequest(int requestIdToDeny, string? rawDenialReason)
         {
-            var trimmedReason = (rawReason ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(trimmedReason))
+            var trimmedDenialReason = (rawDenialReason ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(trimmedDenialReason))
             {
-                trimmedReason = Constants.DialogMessages.NoReasonProvided;
+                trimmedDenialReason = Constants.DialogMessages.NoReasonProvided;
             }
 
-            var result = requestService.DenyRequest(requestId, ownerId, trimmedReason);
-            if (result.IsSuccess)
+            var denialResult = rentalRequestService.DenyRequest(requestIdToDeny, CurrentGameOwnerUserId, trimmedDenialReason);
+            if (denialResult.IsSuccess)
             {
                 Reload();
                 return null;
             }
 
-            return result.Error switch
+            return denialResult.Error switch
             {
                 DenyRequestError.NotFound => "Request not found.",
                 DenyRequestError.Unauthorized => "You are not authorized to deny this request.",
@@ -77,16 +77,16 @@ namespace Property_and_Management.Src.Viewmodels
             };
         }
 
-        public string? TryOfferGame(int requestId)
+        public string? TryOfferGame(int requestIdForGameOffer)
         {
-            var result = requestService.OfferGame(requestId, ownerId);
-            if (result.IsSuccess)
+            var gameOfferResult = rentalRequestService.OfferGame(requestIdForGameOffer, CurrentGameOwnerUserId);
+            if (gameOfferResult.IsSuccess)
             {
                 Reload();
                 return null;
             }
 
-            return result.Error switch
+            return gameOfferResult.Error switch
             {
                 OfferError.NotFound => "Request not found.",
                 OfferError.NotOwner => "You are not the owner of this game.",

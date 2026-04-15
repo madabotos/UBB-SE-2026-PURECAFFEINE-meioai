@@ -1,7 +1,7 @@
-﻿namespace Property_and_Management.Src.Interface
+namespace Property_and_Management.Src.Interface
 {
     public interface ICurrentUserContext
     {
-        int currentUserId { get; }
+        int CurrentUserId { get; }
     }
 }

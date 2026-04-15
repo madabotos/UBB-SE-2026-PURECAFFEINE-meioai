@@ -9,15 +9,15 @@ namespace ServerCommunication
 {
     public static class CommunicationHelper
     {
-        public static byte[] SerializeMessage(MessageBase message)
+        public static byte[] SerializeMessage(MessageBase messageToSerialize)
         {
-            return JsonSerializer.SerializeToUtf8Bytes(message.ToMessageWrapper());
+            return JsonSerializer.SerializeToUtf8Bytes(messageToSerialize.ToMessageWrapper());
         }
 
-        public static MessageWrapper? GetMessageWrapper(byte[] resultBytes)
+        public static MessageWrapper? GetMessageWrapper(byte[] receivedPayloadBytes)
         {
-            string recivedJson = Encoding.UTF8.GetString(resultBytes);
-            return JsonSerializer.Deserialize<MessageWrapper>(recivedJson);
+            string receivedJsonPayload = Encoding.UTF8.GetString(receivedPayloadBytes);
+            return JsonSerializer.Deserialize<MessageWrapper>(receivedJsonPayload);
         }
     }
 }

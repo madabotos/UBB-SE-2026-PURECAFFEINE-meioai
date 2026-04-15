@@ -15,46 +15,46 @@ namespace Property_and_Management.Src.Service
         private const string DismissedFileSuffix = ".txt";
         private const char TokenSeparator = ',';
 
-        public HashSet<int> Load(int userId)
+        public HashSet<int> Load(int ownerUserId)
         {
-            var path = GetStoragePath(userId);
-            if (!File.Exists(path))
+            var storageFilePath = GetStoragePath(ownerUserId);
+            if (!File.Exists(storageFilePath))
             {
                 return new HashSet<int>();
             }
 
-            var serialized = File.ReadAllText(path);
-            if (string.IsNullOrWhiteSpace(serialized))
+            var serializedContent = File.ReadAllText(storageFilePath);
+            if (string.IsNullOrWhiteSpace(serializedContent))
             {
                 return new HashSet<int>();
             }
 
-            return serialized
+            return serializedContent
                 .Split(TokenSeparator, StringSplitOptions.RemoveEmptyEntries)
-                .Select(token => int.TryParse(token, out var parsedId) ? parsedId : InvalidNotificationId)
-                .Where(notificationId => notificationId > MinimumValidNotificationId)
+                .Select(token => int.TryParse(token, out var parsedNotificationId) ? parsedNotificationId : InvalidNotificationId)
+                .Where(parsedNotificationId => parsedNotificationId > MinimumValidNotificationId)
                 .ToHashSet();
         }
 
-        public void Save(int currentUserId, IEnumerable<int> dismissedNotificationIdentifiers)
+        public void Save(int ownerUserId, IEnumerable<int> dismissedNotificationIdentifiers)
         {
             if (dismissedNotificationIdentifiers == null)
             {
                 throw new ArgumentNullException(nameof(dismissedNotificationIdentifiers));
             }
 
-            var path = GetStoragePath(currentUserId);
-            var serialized = string.Join(TokenSeparator, dismissedNotificationIdentifiers.OrderBy(notificationId => notificationId));
-            File.WriteAllText(path, serialized);
+            var storageFilePath = GetStoragePath(ownerUserId);
+            var serializedContent = string.Join(TokenSeparator, dismissedNotificationIdentifiers.OrderBy(notificationId => notificationId));
+            File.WriteAllText(storageFilePath, serializedContent);
         }
 
-        private static string GetStoragePath(int userId)
+        private static string GetStoragePath(int ownerUserId)
         {
-            var folder = Path.Combine(
+            var appDataFolder = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 ApplicationFolderName);
-            Directory.CreateDirectory(folder);
-            return Path.Combine(folder, $"{DismissedFilePrefix}{userId}{DismissedFileSuffix}");
+            Directory.CreateDirectory(appDataFolder);
+            return Path.Combine(appDataFolder, $"{DismissedFilePrefix}{ownerUserId}{DismissedFileSuffix}");
         }
     }
 }

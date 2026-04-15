@@ -10,29 +10,29 @@ namespace Property_and_Management.Src.Service
 {
     public class RentalService : IRentalService
     {
-        private readonly IRentalRepository rentalRepository;
-        private readonly IGameRepository gameRepository;
-        private readonly IMapper<Rental, RentalDTO> rentalMapper;
+        private readonly IRentalRepository rentalDataRepository;
+        private readonly IGameRepository gameLookupRepository;
+        private readonly IMapper<Rental, RentalDTO> rentalDtoMapper;
 
-        private const int NewEntityId = 0;
+        private const int NewRentalId = 0;
 
         public RentalService(
             IRentalRepository rentalRepository,
             IGameRepository gameRepository,
             IMapper<Rental, RentalDTO> rentalMapper)
         {
-            this.rentalRepository = rentalRepository;
-            this.gameRepository = gameRepository;
-            this.rentalMapper = rentalMapper;
+            this.rentalDataRepository = rentalRepository;
+            this.gameLookupRepository = gameRepository;
+            this.rentalDtoMapper = rentalMapper;
         }
 
-        public bool IsSlotAvailable(int gameId, DateTime newStart, DateTime newEnd)
+        public bool IsSlotAvailable(int gameId, DateTime proposedStartDate, DateTime proposedEndDate)
         {
-            foreach (var rental in rentalRepository.GetRentalsByGame(gameId))
+            foreach (var existingRental in rentalDataRepository.GetRentalsByGame(gameId))
             {
-                var bufferStart = rental.StartDate.AddHours(-DomainConstants.RentalBufferHours);
-                var bufferEnd = rental.EndDate.AddHours(DomainConstants.RentalBufferHours);
-                if (newStart < bufferEnd && newEnd > bufferStart)
+                var bufferStart = existingRental.StartDate.AddHours(-DomainConstants.RentalBufferHours);
+                var bufferEnd = existingRental.EndDate.AddHours(DomainConstants.RentalBufferHours);
+                if (proposedStartDate < bufferEnd && proposedEndDate > bufferStart)
                 {
                     return false;
                 }
@@ -41,41 +41,41 @@ namespace Property_and_Management.Src.Service
             return true;
         }
 
-        public void CreateConfirmedRental(int gameId, int renterId, int ownerId, DateTime startDate, DateTime endDate)
+        public void CreateConfirmedRental(int gameId, int renterUserId, int ownerUserId, DateTime rentalStartDate, DateTime rentalEndDate)
         {
-            var game = gameRepository.Get(gameId);
-            if (game.Owner.Id != ownerId)
+            var gameToRent = gameLookupRepository.Get(gameId);
+            if (gameToRent.Owner.Id != ownerUserId)
             {
                 throw new InvalidOperationException("Seller ID must match Game Owner ID [ENT-REN-04].");
             }
 
-            if (!IsSlotAvailable(gameId, startDate, endDate))
+            if (!IsSlotAvailable(gameId, rentalStartDate, rentalEndDate))
             {
                 throw new InvalidOperationException(
                     $"Selected dates fall within the mandatory {DomainConstants.RentalBufferHours}-hour buffer of another rental.");
             }
 
-            var rental = new Rental(
-                id: NewEntityId,
-                game: new Game { Id = gameId },
-                renter: new User { Id = renterId },
-                owner: new User { Id = ownerId },
-                startDate: startDate,
-                endDate: endDate);
+            var confirmedRental = new Rental(
+                id: NewRentalId,
+                rentedGame: new Game { Id = gameId },
+                renterUser: new User { Id = renterUserId },
+                ownerUser: new User { Id = ownerUserId },
+                startDate: rentalStartDate,
+                endDate: rentalEndDate);
 
-            rentalRepository.AddConfirmed(rental);
+            rentalDataRepository.AddConfirmed(confirmedRental);
         }
 
-        public ImmutableList<RentalDTO> GetRentalsForRenter(int renterId) =>
-            rentalRepository
-                .GetRentalsByRenter(renterId)
-                .Select(rental => rentalMapper.ToDTO(rental))
+        public ImmutableList<RentalDTO> GetRentalsForRenter(int renterUserId) =>
+            rentalDataRepository
+                .GetRentalsByRenter(renterUserId)
+                .Select(rental => rentalDtoMapper.ToDTO(rental))
                 .ToImmutableList();
 
-        public ImmutableList<RentalDTO> GetRentalsForOwner(int ownerId) =>
-            rentalRepository
-                .GetRentalsByOwner(ownerId)
-                .Select(rental => rentalMapper.ToDTO(rental))
+        public ImmutableList<RentalDTO> GetRentalsForOwner(int ownerUserId) =>
+            rentalDataRepository
+                .GetRentalsByOwner(ownerUserId)
+                .Select(rental => rentalDtoMapper.ToDTO(rental))
                 .ToImmutableList();
     }
 }

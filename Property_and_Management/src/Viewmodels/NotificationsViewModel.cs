@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -12,50 +12,50 @@ namespace Property_and_Management.Src.Viewmodels
                                            IObserver<NotificationDTO>,
                                            IDisposable
     {
-        private const int InvalidUserId = 0;
-        private const int DefaultUserId = 1;
+        private const int InvalidOrUnknownUserId = 0;
+        private const int FallbackDefaultUserId = 1;
 
-        private readonly INotificationService notificationService;
-        private readonly IDisposable subscription;
+        private readonly INotificationService notificationLookupService;
+        private readonly IDisposable notificationSubscription;
 
-        private readonly DispatcherQueue? dispatcherQueue;
+        private readonly DispatcherQueue? uiDispatcherQueue;
 
-        public int currentUserId { get; private set; }
+        public int CurrentUserId { get; private set; }
 
         public NotificationsViewModel(
-            INotificationService notificationService,
+            INotificationService notificationLookupService,
             ICurrentUserContext currentUserContext)
         {
-            this.notificationService = notificationService;
+            this.notificationLookupService = notificationLookupService;
 
-            dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+            uiDispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
-            LoadNotificationsForUser(currentUserContext.currentUserId);
+            LoadNotificationsForUser(currentUserContext.CurrentUserId);
 
-            subscription = notificationService.Subscribe(this);
+            notificationSubscription = notificationLookupService.Subscribe(this);
         }
 
-        public void LoadNotificationsForUser(int userId)
+        public void LoadNotificationsForUser(int targetUserId)
         {
-            currentUserId = userId;
+            CurrentUserId = targetUserId;
             Reload();
         }
 
         protected override void Reload()
         {
-            var notifications = notificationService
-                .GetNotificationsForUser(currentUserId)
+            var userNotificationsSortedByNewest = notificationLookupService
+                .GetNotificationsForUser(CurrentUserId)
                 .OrderByDescending(notification => notification.Id)
                 .ToImmutableList();
 
-            SetAllItems(notifications);
+            SetAllItems(userNotificationsSortedByNewest);
         }
 
-        public void DeleteNotificationByIdentifier(int notificationId)
+        public void DeleteNotificationByIdentifier(int notificationIdToDelete)
         {
             try
             {
-                notificationService.DeleteNotificationByIdentifier(notificationId);
+                notificationLookupService.DeleteNotificationByIdentifier(notificationIdToDelete);
             }
             catch (KeyNotFoundException)
             {
@@ -68,26 +68,26 @@ namespace Property_and_Management.Src.Viewmodels
         {
         }
 
-        public void OnError(Exception error)
+        public void OnError(Exception observableError)
         {
-            System.Diagnostics.Debug.WriteLine($"Notification observable error: {error.Message}");
+            System.Diagnostics.Debug.WriteLine($"Notification observable error: {observableError.Message}");
         }
 
-        public void OnNext(NotificationDTO value)
+        public void OnNext(NotificationDTO incomingNotification)
         {
-            var targetUserId = currentUserId == InvalidUserId
-                ? DefaultUserId
-                : currentUserId;
+            var resolvedUserIdForReload = CurrentUserId == InvalidOrUnknownUserId
+                ? FallbackDefaultUserId
+                : CurrentUserId;
 
-            if (dispatcherQueue != null && !dispatcherQueue.HasThreadAccess)
+            if (uiDispatcherQueue != null && !uiDispatcherQueue.HasThreadAccess)
             {
-                dispatcherQueue.TryEnqueue(() => LoadNotificationsForUser(targetUserId));
+                uiDispatcherQueue.TryEnqueue(() => LoadNotificationsForUser(resolvedUserIdForReload));
                 return;
             }
 
-            LoadNotificationsForUser(targetUserId);
+            LoadNotificationsForUser(resolvedUserIdForReload);
         }
 
-        public void Dispose() => subscription?.Dispose();
+        public void Dispose() => notificationSubscription?.Dispose();
     }
 }

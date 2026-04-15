@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Property_and_Management.Src.Interface;
 
 namespace Property_and_Management.Src.Model
@@ -18,13 +18,13 @@ namespace Property_and_Management.Src.Model
         {
         }
 
-        public Request(int id, Game game, User renter, User owner, DateTime startDate, DateTime endDate,
+        public Request(int id, Game requestedGame, User renterUser, User ownerUser, DateTime startDate, DateTime endDate,
                        RequestStatus status = RequestStatus.Open, User? offeringUser = null)
         {
             this.Id = id;
-            Game = game;
-            Renter = renter;
-            Owner = owner;
+            Game = requestedGame;
+            Renter = renterUser;
+            Owner = ownerUser;
             StartDate = startDate;
             EndDate = endDate;
             Status = status;

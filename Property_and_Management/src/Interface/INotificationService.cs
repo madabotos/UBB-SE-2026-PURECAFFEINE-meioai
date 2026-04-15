@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Immutable;
 using Property_and_Management.Src.DataTransferObjects;
 
@@ -10,9 +10,9 @@ namespace Property_and_Management.Src.Interface
 
         NotificationDTO DeleteNotificationByIdentifier(int notificationId);
 
-        void UpdateNotificationByIdentifier(int notificationId, NotificationDTO updatedNotificationDTO);
+        void UpdateNotificationByIdentifier(int notificationId, NotificationDTO updatedNotificationDto);
 
-        void SendNotificationToUser(int targetUserId, NotificationDTO NotificationDTO);
+        void SendNotificationToUser(int recipientUserId, NotificationDTO notificationDto);
 
         ImmutableList<NotificationDTO> GetNotificationsForUser(int userId);
 

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -51,28 +51,28 @@ namespace Property_and_Management.Src.Views
                 return;
             }
 
-            var request = clickedButton.DataContext as RequestDTO;
-            var gameName = request?.Game?.Name ?? "this game";
-            var renterName = request?.Renter?.DisplayName ?? "the requester";
+            var tappedRequestDto = clickedButton.DataContext as RequestDTO;
+            var requestedGameName = tappedRequestDto?.Game?.Name ?? "this game";
+            var requesterDisplayName = tappedRequestDto?.Renter?.DisplayName ?? "the requester";
 
-            var result = await DialogHelper.ShowConfirmationAsync(
+            var offerConfirmationResult = await DialogHelper.ShowConfirmationAsync(
                 this.XamlRoot,
                 Constants.DialogTitles.OfferGameConfirmation,
-                $"Offer {gameName} to {renterName} for {request?.StartDateDisplayLong} - {request?.EndDateDisplayLong}? This will approve the request and create the rental immediately.",
+                $"Offer {requestedGameName} to {requesterDisplayName} for {tappedRequestDto?.StartDateDisplayLong} - {tappedRequestDto?.EndDateDisplayLong}? This will approve the request and create the rental immediately.",
                 Constants.DialogButtons.Offer,
                 Constants.DialogButtons.Cancel,
                 ContentDialogButton.Primary);
 
-            if (result != ContentDialogResult.Primary)
+            if (offerConfirmationResult != ContentDialogResult.Primary)
             {
                 return;
             }
 
-            var requestsFromOthersViewModel = DataContext as RequestsFromOthersViewModel;
-            var error = requestsFromOthersViewModel?.TryOfferGame(requestId);
-            if (error != null)
+            var pageViewModel = DataContext as RequestsFromOthersViewModel;
+            var offerErrorMessage = pageViewModel?.TryOfferGame(requestId);
+            if (offerErrorMessage != null)
             {
-                await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.OfferFailed, error);
+                await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.OfferFailed, offerErrorMessage);
             }
         }
 
@@ -83,11 +83,11 @@ namespace Property_and_Management.Src.Views
                 return;
             }
 
-            var request = clickedButton.DataContext as RequestDTO;
-            var gameName = request?.Game?.Name ?? "this game";
-            var renterName = request?.Renter?.DisplayName ?? "the requester";
+            var tappedRequestDto = clickedButton.DataContext as RequestDTO;
+            var requestedGameName = tappedRequestDto?.Game?.Name ?? "this game";
+            var requesterDisplayName = tappedRequestDto?.Renter?.DisplayName ?? "the requester";
 
-            var reasonBox = new TextBox
+            var denyReasonTextBox = new TextBox
             {
                 PlaceholderText = "Optional reason (e.g. unavailable in this period)",
                 AcceptsReturn = true,
@@ -95,30 +95,31 @@ namespace Property_and_Management.Src.Views
                 MinWidth = DenyReasonInputMinimumWidth
             };
 
-            var contentPanel = new StackPanel { Spacing = DenyDialogContentSpacing };
-            contentPanel.Children.Add(new TextBlock
+            var denyDialogContentPanel = new StackPanel { Spacing = DenyDialogContentSpacing };
+            denyDialogContentPanel.Children.Add(new TextBlock
             {
-                Text = $"Decline request for {gameName} from {renterName}?"
+                Text = $"Decline request for {requestedGameName} from {requesterDisplayName}?"
             });
-            contentPanel.Children.Add(reasonBox);
+            denyDialogContentPanel.Children.Add(denyReasonTextBox);
 
-            var dialogResult = await DialogHelper.ShowConfirmationAsync(
+            var denyConfirmationResult = await DialogHelper.ShowConfirmationAsync(
                 this.XamlRoot,
                 Constants.DialogTitles.DeclineRequestConfirmation,
-                contentPanel,
+                denyDialogContentPanel,
                 Constants.DialogButtons.Decline,
                 Constants.DialogButtons.Cancel,
                 ContentDialogButton.Primary);
-            if (dialogResult != ContentDialogResult.Primary)
+
+            if (denyConfirmationResult != ContentDialogResult.Primary)
             {
                 return;
             }
 
-            var requestsFromOthersViewModel = DataContext as RequestsFromOthersViewModel;
-            var error = requestsFromOthersViewModel?.TryDenyRequest(requestId, reasonBox.Text);
-            if (error != null)
+            var pageViewModel = DataContext as RequestsFromOthersViewModel;
+            var denyErrorMessage = pageViewModel?.TryDenyRequest(requestId, denyReasonTextBox.Text);
+            if (denyErrorMessage != null)
             {
-                await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.DeclineFailed, error);
+                await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.DeclineFailed, denyErrorMessage);
             }
         }
 
@@ -129,14 +130,12 @@ namespace Property_and_Management.Src.Views
 
         private void NextButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
-            var requestsFromOthersViewModel = DataContext as RequestsFromOthersViewModel;
-            requestsFromOthersViewModel?.NextPage();
+            (DataContext as RequestsFromOthersViewModel)?.NextPage();
         }
 
         private void PrevButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
-            var requestsFromOthersViewModel = DataContext as RequestsFromOthersViewModel;
-            requestsFromOthersViewModel?.PrevPage();
+            (DataContext as RequestsFromOthersViewModel)?.PrevPage();
         }
     }
 }

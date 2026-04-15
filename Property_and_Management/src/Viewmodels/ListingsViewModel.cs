@@ -10,13 +10,13 @@ namespace Property_and_Management.Src.Viewmodels
         private const string DeleteSuccessMessageTemplate =
             "There are {0} active rentals for this game. It was removed successfully.";
 
-        private readonly IGameService gameService;
-        private readonly int currentUserId;
+        private readonly IGameService gameListingService;
+        private readonly int currentOwnerUserId;
 
-        public ListingsViewModel(IGameService gameService, int currentUserId)
+        public ListingsViewModel(IGameService gameListingService, int currentOwnerUserId)
         {
-            this.gameService = gameService;
-            this.currentUserId = currentUserId;
+            this.gameListingService = gameListingService;
+            this.currentOwnerUserId = currentOwnerUserId;
             Reload();
         }
 
@@ -24,40 +24,40 @@ namespace Property_and_Management.Src.Viewmodels
 
         protected override void Reload()
         {
-            var games = gameService.GetGamesForOwner(currentUserId);
-            SetAllItems(games.ToImmutableList());
+            var ownerGameListings = gameListingService.GetGamesForOwner(currentOwnerUserId);
+            SetAllItems(ownerGameListings.ToImmutableList());
         }
 
         public override string ShowingText => $"Showing {DisplayedCount} of {TotalCount} games";
 
-        public void DeleteGame(GameDTO game)
+        public void DeleteGame(GameDTO gameToDelete)
         {
-            gameService.DeleteGameByIdentifier(game.Id);
+            gameListingService.DeleteGameByIdentifier(gameToDelete.Id);
             Reload();
         }
 
-        public ViewOperationResult TryDeleteGame(GameDTO game)
+        public ViewOperationResult TryDeleteGame(GameDTO gameToDelete)
         {
             try
             {
-                DeleteGame(game);
+                DeleteGame(gameToDelete);
                 return ViewOperationResult.Success(
                     Constants.DialogTitles.GameRemoved,
                     string.Format(DeleteSuccessMessageTemplate, NoActiveRentalsCount));
             }
-            catch (System.InvalidOperationException invalidOperationException)
+            catch (System.InvalidOperationException gameHasActiveRentalsException)
             {
                 return ViewOperationResult.Failure(
                     Constants.DialogTitles.CannotDeleteGame,
-                    invalidOperationException.Message);
+                    gameHasActiveRentalsException.Message);
             }
-            catch (System.Exception exception)
+            catch (System.Exception unexpectedException)
             {
                 return ViewOperationResult.Failure(
                     Constants.DialogTitles.CannotDeleteGame,
-                    string.IsNullOrWhiteSpace(exception.Message)
+                    string.IsNullOrWhiteSpace(unexpectedException.Message)
                         ? Constants.DialogMessages.UnexpectedErrorOccurred
-                        : exception.Message);
+                        : unexpectedException.Message);
             }
         }
     }

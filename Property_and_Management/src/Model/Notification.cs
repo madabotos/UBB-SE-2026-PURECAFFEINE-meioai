@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Property_and_Management.Src.Interface;
 
 namespace Property_and_Management.Src.Model
@@ -16,15 +16,15 @@ namespace Property_and_Management.Src.Model
         public Notification()
         {
         }
-        public Notification(int id, User user, DateTime timestamp, string title, string body,
-                            NotificationType type = NotificationType.Informational, int? relatedRequestId = null)
+        public Notification(int id, User recipientUser, DateTime timestamp, string title, string body,
+                            NotificationType notificationType = NotificationType.Informational, int? relatedRequestId = null)
         {
             this.Id = id;
-            User = user;
+            User = recipientUser;
             Timestamp = timestamp;
             Title = title;
             Body = body;
-            Type = type;
+            Type = notificationType;
             this.RelatedRequestId = relatedRequestId;
         }
     }

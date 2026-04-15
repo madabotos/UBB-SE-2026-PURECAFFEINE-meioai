@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
@@ -59,7 +59,7 @@ namespace Property_and_Management
         public static Window MainWindow { get; set; }
         public Frame RootFrame { get; set; }
         public string AppUserModelId { get; }
-        public int currentUserId { get; }
+        public int CurrentUserId { get; }
         public NotificationsViewModel NotificationsViewModel { get; private set; }
 
         private TaskbarIcon trayIcon;
@@ -76,17 +76,17 @@ namespace Property_and_Management
 
         public App()
         {
-            currentUserId = GetUserIdFromArgs();
+            CurrentUserId = GetUserIdFromArgs();
 
             DatabaseInitializer.EnsureDatabaseInitialized();
 
-            if (currentUserId == DevModePrimaryUserIdentifier && IsTwoWindowsEnabled())
+            if (CurrentUserId == DevModePrimaryUserIdentifier && IsTwoWindowsEnabled())
             {
                 StartNotificationServer();
                 LaunchSecondClient();
             }
 
-            AppUserModelId = $"BoardRent -- user-{currentUserId}";
+            AppUserModelId = $"BoardRent -- user-{CurrentUserId}";
 
             notificationManager = new NotificationManager();
 
@@ -95,52 +95,52 @@ namespace Property_and_Management
             EnsureSingleInstance(AppUserModelId);
 
             ConfigureServices();
-            InitializeServices(currentUserId);
+            InitializeServices(CurrentUserId);
 
             InitializeComponent();
         }
 
         private void ConfigureServices()
         {
-            var serviceCollection = new ServiceCollection();
+            var applicationServiceCollection = new ServiceCollection();
 
-            serviceCollection.AddSingleton<IMapper<User, UserDTO>, UserMapper>();
-            serviceCollection.AddSingleton<IMapper<Game, GameDTO>, GameMapper>();
-            serviceCollection.AddSingleton<IMapper<Notification, NotificationDTO>, NotificationMapper>();
-            serviceCollection.AddSingleton<IMapper<Rental, RentalDTO>, RentalMapper>();
-            serviceCollection.AddSingleton<IMapper<Request, RequestDTO>, RequestMapper>();
+            applicationServiceCollection.AddSingleton<IMapper<User, UserDTO>, UserMapper>();
+            applicationServiceCollection.AddSingleton<IMapper<Game, GameDTO>, GameMapper>();
+            applicationServiceCollection.AddSingleton<IMapper<Notification, NotificationDTO>, NotificationMapper>();
+            applicationServiceCollection.AddSingleton<IMapper<Rental, RentalDTO>, RentalMapper>();
+            applicationServiceCollection.AddSingleton<IMapper<Request, RequestDTO>, RequestMapper>();
 
-            serviceCollection.AddSingleton<ICurrentUserContext>(new CurrentUserContext(currentUserId));
-            serviceCollection.AddSingleton<IToastNotificationService, ToastNotificationService>();
-            serviceCollection.AddSingleton<IServerClient, NotificationClient>();
+            applicationServiceCollection.AddSingleton<ICurrentUserContext>(new CurrentUserContext(CurrentUserId));
+            applicationServiceCollection.AddSingleton<IToastNotificationService, ToastNotificationService>();
+            applicationServiceCollection.AddSingleton<IServerClient, NotificationClient>();
 
-            serviceCollection.AddSingleton<IUserRepository, UserRepository>();
-            serviceCollection.AddSingleton<IGameRepository, GameRepository>();
-            serviceCollection.AddSingleton<IRequestRepository, RequestRepository>();
-            serviceCollection.AddSingleton<IRentalRepository, RentalRepository>();
-            serviceCollection.AddSingleton<INotificationRepository, NotificationRepository>();
+            applicationServiceCollection.AddSingleton<IUserRepository, UserRepository>();
+            applicationServiceCollection.AddSingleton<IGameRepository, GameRepository>();
+            applicationServiceCollection.AddSingleton<IRequestRepository, RequestRepository>();
+            applicationServiceCollection.AddSingleton<IRentalRepository, RentalRepository>();
+            applicationServiceCollection.AddSingleton<INotificationRepository, NotificationRepository>();
 
-            serviceCollection.AddSingleton<IUserService, UserService>();
-            serviceCollection.AddSingleton<IGameService, GameService>();
-            serviceCollection.AddSingleton<IRentalService, RentalService>();
-            serviceCollection.AddSingleton<INotificationService, NotificationService>();
-            serviceCollection.AddSingleton<IRequestService, RequestService>();
+            applicationServiceCollection.AddSingleton<IUserService, UserService>();
+            applicationServiceCollection.AddSingleton<IGameService, GameService>();
+            applicationServiceCollection.AddSingleton<IRentalService, RentalService>();
+            applicationServiceCollection.AddSingleton<INotificationService, NotificationService>();
+            applicationServiceCollection.AddSingleton<IRequestService, RequestService>();
 
-            serviceCollection.AddSingleton<NotificationsViewModel>();
-            serviceCollection.AddSingleton<MenuBarViewModel>();
-            serviceCollection.AddTransient(serviceProvider => new ListingsViewModel(
+            applicationServiceCollection.AddSingleton<NotificationsViewModel>();
+            applicationServiceCollection.AddSingleton<MenuBarViewModel>();
+            applicationServiceCollection.AddTransient(serviceProvider => new ListingsViewModel(
                 serviceProvider.GetRequiredService<IGameService>(),
-                serviceProvider.GetRequiredService<ICurrentUserContext>().currentUserId));
-            serviceCollection.AddTransient<CreateGameViewModel>();
-            serviceCollection.AddTransient<EditGameViewModel>();
-            serviceCollection.AddTransient<CreateRequestViewModel>();
-            serviceCollection.AddTransient<CreateRentalViewModel>();
-            serviceCollection.AddTransient<RequestsFromOthersViewModel>();
-            serviceCollection.AddTransient<RequestsToOthersViewModel>();
-            serviceCollection.AddTransient<RentalsFromOthersViewModel>();
-            serviceCollection.AddTransient<RentalsToOthersViewModel>();
+                serviceProvider.GetRequiredService<ICurrentUserContext>().CurrentUserId));
+            applicationServiceCollection.AddTransient<CreateGameViewModel>();
+            applicationServiceCollection.AddTransient<EditGameViewModel>();
+            applicationServiceCollection.AddTransient<CreateRequestViewModel>();
+            applicationServiceCollection.AddTransient<CreateRentalViewModel>();
+            applicationServiceCollection.AddTransient<RequestsFromOthersViewModel>();
+            applicationServiceCollection.AddTransient<RequestsToOthersViewModel>();
+            applicationServiceCollection.AddTransient<RentalsFromOthersViewModel>();
+            applicationServiceCollection.AddTransient<RentalsToOthersViewModel>();
 
-            Services = serviceCollection.BuildServiceProvider();
+            Services = applicationServiceCollection.BuildServiceProvider();
         }
 
         private int GetUserIdFromArgs()
@@ -307,14 +307,14 @@ namespace Property_and_Management
                 KillSpawnedChildProcesses();
             };
 
-            notificationManager.NotificationClicked += (sender, eventArguments) =>
+            notificationManager.NotificationClicked += (sender, notificationActivationArgs) =>
             {
                 mainWindow?.DispatcherQueue.TryEnqueue(() =>
                 {
                     mainWindow?.Activate();
 
-                    if (eventArguments.Arguments.ContainsKey(NotificationNavigationArgumentKey) &&
-                        eventArguments.Arguments[NotificationNavigationArgumentKey] == nameof(NotificationsPage))
+                    if (notificationActivationArgs.Arguments.ContainsKey(NotificationNavigationArgumentKey) &&
+                        notificationActivationArgs.Arguments[NotificationNavigationArgumentKey] == nameof(NotificationsPage))
                     {
                         ActivateWindow();
                         NavigateToNotificationsWithinShell();
@@ -361,7 +361,7 @@ namespace Property_and_Management
             };
         }
 
-        private void InitializeServices(int userId)
+        private void InitializeServices(int startupUserId)
         {
             RootFrame = new Frame();
 
@@ -372,7 +372,7 @@ namespace Property_and_Management
             NotificationsViewModel = Services.GetRequiredService<NotificationsViewModel>();
 
             notificationService.StartListening();
-            notificationService.SubscribeToServer(userId);
+            notificationService.SubscribeToServer(startupUserId);
         }
 
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
@@ -401,9 +401,9 @@ namespace Property_and_Management
         {
             mainWindow?.DispatcherQueue.TryEnqueue(() =>
             {
-                if (mainWindow is MainWindow win)
+                if (mainWindow is MainWindow activatedMainWindow)
                 {
-                    win.AppWindow.Show();
+                    activatedMainWindow.AppWindow.Show();
                 }
                 mainWindow.Activate();
             });
@@ -417,36 +417,36 @@ namespace Property_and_Management
                 IconSource = new BitmapImage(new Uri(Constants.AppTrayIconUri)),
             };
 
-            var openCommand = new XamlUICommand();
-            openCommand.ExecuteRequested += (commandSender, executeRequestedEventArgs) =>
+            var trayOpenCommand = new XamlUICommand();
+            trayOpenCommand.ExecuteRequested += (commandSender, executeRequestedEventArgs) =>
             {
                 ActivateWindow();
             };
 
-            var openItem = new MenuFlyoutItem
+            var trayOpenMenuItem = new MenuFlyoutItem
             {
                 Text = "Open",
-                Command = openCommand
+                Command = trayOpenCommand
             };
 
-            var exitCommand = new XamlUICommand();
-            exitCommand.ExecuteRequested += (commandSender, executeRequestedEventArgs) =>
+            var trayExitCommand = new XamlUICommand();
+            trayExitCommand.ExecuteRequested += (commandSender, executeRequestedEventArgs) =>
             {
                 trayIcon.Dispose();
                 Environment.Exit(SuccessExitCode);
             };
 
-            var exitItem = new MenuFlyoutItem
+            var trayExitMenuItem = new MenuFlyoutItem
             {
                 Text = "Exit",
-                Command = exitCommand
+                Command = trayExitCommand
             };
 
             trayIcon.ContextFlyout = new MenuFlyout
             {
                 Items =
                 {
-                    openItem, exitItem
+                    trayOpenMenuItem, trayExitMenuItem
                 }
             };
 

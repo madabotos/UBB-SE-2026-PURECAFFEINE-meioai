@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -16,7 +16,7 @@ namespace Property_and_Management.Src.Views
             ViewModel = App.Services.GetRequiredService<CreateRequestViewModel>();
             this.InitializeComponent();
 
-            GamePicker.ItemsSource = ViewModel.AvailableGames;
+            GamePicker.ItemsSource = ViewModel.AvailableGamesToRequest;
             StartDatePicker.MinDate = DateTimeOffset.Now;
             EndDatePicker.MinDate = DateTimeOffset.Now;
         }

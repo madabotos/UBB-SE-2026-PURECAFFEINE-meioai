@@ -13,41 +13,41 @@ namespace Property_and_Management.Src.Mapper
             this.notificationRecipientUserMapper = notificationRecipientUserMapper;
         }
 
-        public NotificationDTO ToDTO(Notification notification)
+        public NotificationDTO ToDTO(Notification notificationModel)
         {
-            if (notification == null)
+            if (notificationModel == null)
             {
                 return null;
             }
 
             return new NotificationDTO
             {
-                Id = notification.Id,
-                User = notificationRecipientUserMapper.ToDTO(notification.User),
-                Timestamp = notification.Timestamp,
-                Title = notification.Title,
-                Body = notification.Body,
-                Type = notification.Type,
-                RelatedRequestId = notification.RelatedRequestId
+                Id = notificationModel.Id,
+                User = notificationRecipientUserMapper.ToDTO(notificationModel.User),
+                Timestamp = notificationModel.Timestamp,
+                Title = notificationModel.Title,
+                Body = notificationModel.Body,
+                Type = notificationModel.Type,
+                RelatedRequestId = notificationModel.RelatedRequestId
             };
         }
 
-        public Notification ToModel(NotificationDTO NotificationDTO)
+        public Notification ToModel(NotificationDTO notificationDto)
         {
-            if (NotificationDTO == null)
+            if (notificationDto == null)
             {
                 return null;
             }
 
             return new Notification
             {
-                Id = NotificationDTO.Id,
-                User = notificationRecipientUserMapper.ToModel(NotificationDTO.User),
-                Timestamp = NotificationDTO.Timestamp,
-                Title = NotificationDTO.Title,
-                Body = NotificationDTO.Body,
-                Type = NotificationDTO.Type,
-                RelatedRequestId = NotificationDTO.RelatedRequestId
+                Id = notificationDto.Id,
+                User = notificationRecipientUserMapper.ToModel(notificationDto.User),
+                Timestamp = notificationDto.Timestamp,
+                Title = notificationDto.Title,
+                Body = notificationDto.Body,
+                Type = notificationDto.Type,
+                RelatedRequestId = notificationDto.RelatedRequestId
             };
         }
     }

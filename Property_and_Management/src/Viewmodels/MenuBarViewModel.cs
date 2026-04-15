@@ -9,13 +9,13 @@ namespace Property_and_Management.Src.Viewmodels
     {
         public event Action<AppPage> RequestNavigation;
 
-        public Dictionary<string, Action> NavigationActions { get; }
+        public Dictionary<string, Action> NavigationActionsByMenuLabel { get; }
 
-        private string selectedPageName;
+        private string selectedMenuPageName;
 
         public MenuBarViewModel()
         {
-            NavigationActions = new Dictionary<string, Action>
+            NavigationActionsByMenuLabel = new Dictionary<string, Action>
             {
                 { "My Games",           () => RequestNavigation?.Invoke(AppPage.Listings) },
                 { "Others' Requests",   () => RequestNavigation?.Invoke(AppPage.RequestsFromOthers) },
@@ -28,24 +28,24 @@ namespace Property_and_Management.Src.Viewmodels
 
         public string SelectedPageName
         {
-            get => selectedPageName;
+            get => selectedMenuPageName;
             set
             {
-                if (selectedPageName != value)
+                if (selectedMenuPageName != value)
                 {
-                    selectedPageName = value;
+                    selectedMenuPageName = value;
                     OnPropertyChanged();
-                    HandleNavigation(value);
+                    HandleMenuNavigation(value);
                 }
             }
         }
 
-        private void HandleNavigation(string pageName)
+        private void HandleMenuNavigation(string selectedMenuLabel)
         {
             OnPropertyChanged();
-            if (!string.IsNullOrEmpty(pageName) && NavigationActions.TryGetValue(pageName, out var action))
+            if (!string.IsNullOrEmpty(selectedMenuLabel) && NavigationActionsByMenuLabel.TryGetValue(selectedMenuLabel, out var navigationAction))
             {
-                action.Invoke();
+                navigationAction.Invoke();
             }
         }
 
