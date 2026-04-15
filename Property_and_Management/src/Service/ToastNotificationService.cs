@@ -6,16 +6,15 @@ namespace Property_and_Management.Src.Service
 {
     public class ToastNotificationService : IToastNotificationService
     {
-        // Must match the key checked in App.xaml.cs NotificationClicked handler
         private const string NavigationKey = "navigate";
         private const string NotificationsPageKey = "NotificationsPage";
 
-        public void Show(string title, string body)
+        public void Show(string notificationTitle, string notificationBody)
         {
             var notification = new AppNotificationBuilder()
                 .AddArgument(NavigationKey, NotificationsPageKey)
-                .AddText(title)
-                .AddText(body)
+                .AddText(notificationTitle)
+                .AddText(notificationBody)
                 .BuildNotification();
 
             AppNotificationManager.Default.Show(notification);

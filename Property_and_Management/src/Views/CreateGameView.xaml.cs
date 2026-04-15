@@ -15,8 +15,6 @@ namespace Property_and_Management.Src.Views
         {
             this.InitializeComponent();
 
-            // Composition root: pull the view model from the DI container. This
-            // is the only place the view knows about <c>App.Services</c>.
             ViewModel = App.Services.GetRequiredService<CreateGameViewModel>();
         }
 
@@ -42,7 +40,6 @@ namespace Property_and_Management.Src.Views
 
         private async void UploadImageButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
-            // 1. Set up the Windows File Picker
             var picker = new Windows.Storage.Pickers.FileOpenPicker();
             picker.ViewMode = Windows.Storage.Pickers.PickerViewMode.Thumbnail;
             picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.PicturesLibrary;
@@ -50,7 +47,6 @@ namespace Property_and_Management.Src.Views
             picker.FileTypeFilter.Add(".jpeg");
             picker.FileTypeFilter.Add(".png");
 
-            // WinUI 3 quirk: the picker has to be explicitly told which window it belongs to.
             var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
             WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
 

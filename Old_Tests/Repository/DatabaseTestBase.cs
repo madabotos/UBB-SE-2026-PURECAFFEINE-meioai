@@ -8,11 +8,6 @@ using Property_and_Management.Src.Repository;
 
 namespace Property_and_Management.Tests.Repository
 {
-    // Base class for repository integration tests. Reads the BoardRent
-    // connection string from the test project's App.config (which points at
-    // BoardRent_Test — a dedicated database that can be freely wiped).
-    // Tests derived from this class must be marked [Category("Integration")]
-    // so they can be filtered out of normal unit test runs.
     public abstract class DatabaseTestBase
     {
         private const string ConnectionStringName = "BoardRent";

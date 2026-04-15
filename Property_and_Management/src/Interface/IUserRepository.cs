@@ -5,6 +5,5 @@ namespace Property_and_Management.Src.Interface
 {
     public interface IUserRepository : IRepository<User>
     {
-        // Additional user-specific methods can go here
     }
 }

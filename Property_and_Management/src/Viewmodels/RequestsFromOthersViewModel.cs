@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Linq;
 using Property_and_Management.Src.DataTransferObjects;
 using Property_and_Management.Src.Interface;
@@ -6,12 +6,12 @@ using Property_and_Management.Src.Model;
 
 namespace Property_and_Management.Src.Viewmodels
 {
-    public class RequestsFromOthersViewModel : PagedViewModel<RequestDataTransferObject>
+    public class RequestsFromOthersViewModel : PagedViewModel<RequestDTO>
     {
         private readonly IRequestService requestService;
         private readonly ICurrentUserContext currentUserContext;
 
-        public int OwnerIdentifier { get; private set; }
+        public int ownerId { get; private set; }
 
         public RequestsFromOthersViewModel(IRequestService requestService, ICurrentUserContext currentUserContext)
         {
@@ -26,23 +26,19 @@ namespace Property_and_Management.Src.Viewmodels
 
         protected override void Reload()
         {
-            OwnerIdentifier = currentUserContext.CurrentUserIdentifier;
-            // Owners only see Open requests here.
+            ownerId = currentUserContext.currentUserId;
+
             var allRequests = requestService
-                .GetRequestsForOwner(OwnerIdentifier)
+                .GetRequestsForOwner(ownerId)
                 .Where(request => request.Status == RequestStatus.Open)
                 .OrderByDescending(request => request.StartDate)
                 .ToImmutableList();
             SetAllItems(allRequests);
         }
 
-        /// <summary>
-        /// Approve a pending request directly (creates a rental atomically).
-        /// Returns null on success or a user-friendly error message on failure.
-        /// </summary>
-        public string? TryApproveRequest(int requestIdentifier)
+        public string? TryApproveRequest(int requestId)
         {
-            var result = requestService.ApproveRequest(requestIdentifier, OwnerIdentifier);
+            var result = requestService.ApproveRequest(requestId, ownerId);
             if (result.IsSuccess)
             {
                 Reload();
@@ -58,12 +54,7 @@ namespace Property_and_Management.Src.Viewmodels
             };
         }
 
-        /// <summary>
-        /// Decline a pending request. The view is free to pass a raw user string;
-        /// we trim and substitute the "no reason provided" placeholder here so
-        /// code-behind stays UI-only.
-        /// </summary>
-        public string? TryDenyRequest(int requestIdentifier, string? rawReason)
+        public string? TryDenyRequest(int requestId, string? rawReason)
         {
             var trimmedReason = (rawReason ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(trimmedReason))
@@ -71,7 +62,7 @@ namespace Property_and_Management.Src.Viewmodels
                 trimmedReason = Constants.DialogMessages.NoReasonProvided;
             }
 
-            var result = requestService.DenyRequest(requestIdentifier, OwnerIdentifier, trimmedReason);
+            var result = requestService.DenyRequest(requestId, ownerId, trimmedReason);
             if (result.IsSuccess)
             {
                 Reload();
@@ -86,13 +77,9 @@ namespace Property_and_Management.Src.Viewmodels
             };
         }
 
-        /// <summary>
-        /// Offer the game to the renter. In the current flow this directly
-        /// approves the request and creates the rental atomically.
-        /// </summary>
-        public string? TryOfferGame(int requestIdentifier)
+        public string? TryOfferGame(int requestId)
         {
-            var result = requestService.OfferGame(requestIdentifier, OwnerIdentifier);
+            var result = requestService.OfferGame(requestId, ownerId);
             if (result.IsSuccess)
             {
                 Reload();

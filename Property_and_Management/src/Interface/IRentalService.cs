@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Immutable;
 using Property_and_Management.Src.DataTransferObjects;
 
@@ -6,26 +6,12 @@ namespace Property_and_Management.Src.Interface
 {
     public interface IRentalService
     {
-        /// <summary>
-        /// Returns all rentals where the user is the renter.
-        /// </summary>
-        ImmutableList<RentalDataTransferObject> GetRentalsForRenter(int renterIdentifier);
+        ImmutableList<RentalDTO> GetRentalsForRenter(int renterUserId);
 
-        /// <summary>
-        /// Returns all rentals where the user is the owner.
-        /// </summary>
-        ImmutableList<RentalDataTransferObject> GetRentalsForOwner(int ownerIdentifier);
+        ImmutableList<RentalDTO> GetRentalsForOwner(int ownerUserId);
 
-        /// <summary>
-        /// Returns true if the time slot is available for the given game.
-        /// </summary>
-        bool IsSlotAvailable(int gameIdentifier, DateTime newStart, DateTime newEnd);
+        bool IsSlotAvailable(int gameId, DateTime requestedStartDate, DateTime requestedEndDate);
 
-        /// <summary>
-        /// Creates a confirmed rental for the given game, renter, owner and dates.
-        /// Throws if the game owner does not match ownerIdentifier or if the slot is taken.
-        /// </summary>
-        void CreateConfirmedRental(int gameIdentifier, int renterIdentifier, int ownerIdentifier, DateTime startDate, DateTime endDate);
+        void CreateConfirmedRental(int gameId, int renterId, int ownerId, DateTime startDate, DateTime endDate);
     }
 }
-

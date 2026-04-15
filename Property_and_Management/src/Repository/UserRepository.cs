@@ -25,9 +25,9 @@ namespace Property_and_Management.Src.Repository
                     {
                         while (reader.Read())
                         {
-                            var id = (int)reader["id"];
+                            var userId = (int)reader["id"];
                             var displayName = reader["display_name"] as string ?? string.Empty;
-                            list.Add(new User(id, displayName));
+                            list.Add(new User(userId, displayName));
                         }
                     }
                 }
@@ -45,12 +45,12 @@ namespace Property_and_Management.Src.Repository
                     command.CommandText = "INSERT INTO Users (display_name) VALUES (@display_name); SELECT SCOPE_IDENTITY();";
                     command.Parameters.AddWithValue("@display_name", newEntity.DisplayName ?? (object)DBNull.Value);
                     var newIdentifier = Convert.ToInt32(command.ExecuteScalar());
-                    newEntity.Identifier = newIdentifier;
+                    newEntity.Id = newIdentifier;
                 }
             }
         }
 
-        public User Delete(int removedEntityIdentifier)
+        public User Delete(int removedEntityId)
         {
             using (var connection = new SqlConnection(connectionString))
             {
@@ -58,7 +58,7 @@ namespace Property_and_Management.Src.Repository
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "DELETE FROM Users OUTPUT deleted.id, deleted.display_name WHERE id = @id";
-                    command.Parameters.AddWithValue("@id", removedEntityIdentifier);
+                    command.Parameters.AddWithValue("@id", removedEntityId);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
@@ -71,9 +71,9 @@ namespace Property_and_Management.Src.Repository
             throw new KeyNotFoundException();
         }
 
-        public void Update(int updatedEntityIdentifier, User newEntity)
+        public void Update(int updatedEntityId, User newEntity)
         {
-            if (updatedEntityIdentifier != newEntity.Identifier)
+            if (updatedEntityId != newEntity.Id)
             {
                 throw new ArgumentException("Id mismatch");
             }
@@ -85,13 +85,13 @@ namespace Property_and_Management.Src.Repository
                 {
                     command.CommandText = "UPDATE Users SET display_name = @display_name WHERE id = @id";
                     command.Parameters.AddWithValue("@display_name", newEntity.DisplayName ?? (object)DBNull.Value);
-                    command.Parameters.AddWithValue("@id", updatedEntityIdentifier);
+                    command.Parameters.AddWithValue("@id", updatedEntityId);
                     command.ExecuteNonQuery();
                 }
             }
         }
 
-        public User Get(int identifier)
+        public User Get(int id)
         {
             using (var connection = new SqlConnection(connectionString))
             {
@@ -99,14 +99,14 @@ namespace Property_and_Management.Src.Repository
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "SELECT * FROM Users WHERE id = @id";
-                    command.Parameters.AddWithValue("@id", identifier);
+                    command.Parameters.AddWithValue("@id", id);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
                         {
-                            var userIdentifier = (int)reader["id"];
+                            var userId = (int)reader["id"];
                             var displayName = reader["display_name"] as string ?? string.Empty;
-                            return new User(userIdentifier, displayName);
+                            return new User(userId, displayName);
                         }
                     }
                 }
@@ -116,6 +116,3 @@ namespace Property_and_Management.Src.Repository
         }
     }
 }
-
-
-

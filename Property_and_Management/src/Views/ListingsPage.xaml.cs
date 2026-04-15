@@ -16,29 +16,26 @@ namespace Property_and_Management.Src.Views
             this.InitializeComponent();
         }
 
-        // UI-LST-05: Redirect to Create Game page
         private void CreateGameButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             this.Frame.Navigate(typeof(CreateGameView));
         }
 
-        // UI-LST-04: Redirect to Edit Game page
         private void EditGameButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             var clickedButton = sender as Button;
-            var gameToEdit = clickedButton?.Tag as GameDataTransferObject;
+            var gameToEdit = clickedButton?.Tag as GameDTO;
 
             if (gameToEdit != null)
             {
-                this.Frame.Navigate(typeof(EditGameView), gameToEdit.Identifier);
+                this.Frame.Navigate(typeof(EditGameView), gameToEdit.Id);
             }
         }
 
-        // UI-LST-03: Prompt for confirmation, then delete
         private async void DeleteGameButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             var clickedButton = sender as Button;
-            var gameToDelete = clickedButton?.Tag as GameDataTransferObject;
+            var gameToDelete = clickedButton?.Tag as GameDTO;
 
             if (gameToDelete == null)
             {
@@ -70,8 +67,6 @@ namespace Property_and_Management.Src.Views
         {
             base.OnNavigatedTo(navigationEventArgs);
 
-            // Composition root: pull the ViewModel from the DI container
-            // whenever the page is navigated to so data is fresh.
             ViewModel = App.Services.GetRequiredService<ListingsViewModel>();
             this.DataContext = ViewModel;
         }
@@ -92,4 +87,3 @@ namespace Property_and_Management.Src.Views
         }
     }
 }
-

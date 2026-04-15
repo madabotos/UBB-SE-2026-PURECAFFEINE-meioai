@@ -1,30 +1,16 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using Property_and_Management.Src.Model;
 
 namespace Property_and_Management.Src.Interface
 {
     public interface IRentalRepository : IRepository<Rental>
     {
-        /// <summary>
-        /// Inserts a rental using repository persistence semantics.
-        /// Availability/business validation is handled in the service layer.
-        /// </summary>
-        void AddConfirmed(Rental entity);
+        void AddConfirmed(Rental confirmedRental);
 
-        /// <summary>
-        /// Gets rentals for which the specified user is the owner.
-        /// </summary>
-        ImmutableList<Rental> GetRentalsByOwner(int ownerIdentifier);
+        ImmutableList<Rental> GetRentalsByOwner(int ownerUserId);
 
-        /// <summary>
-        /// Gets rentals created by the specified renter.
-        /// </summary>
-        ImmutableList<Rental> GetRentalsByRenter(int renterIdentifier);
+        ImmutableList<Rental> GetRentalsByRenter(int renterUserId);
 
-        /// <summary>
-        /// Gets rentals for the specified game.
-        /// </summary>
-        ImmutableList<Rental> GetRentalsByGame(int gameIdentifier);
+        ImmutableList<Rental> GetRentalsByGame(int gameId);
     }
 }
-

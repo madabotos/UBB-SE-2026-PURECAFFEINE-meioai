@@ -5,17 +5,6 @@ using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace Property_and_Management.Src.Views
 {
-    /// <summary>
-    /// Shared <c>ImageFailed</c> fallback logic for the five pages that render
-    /// game thumbnails. Previously each page duplicated the same ~30 lines.
-    ///
-    /// Resolution order:
-    /// 1. If the failing image is already the default placeholder, do nothing
-    ///    (prevents infinite recursion when the asset itself cannot be loaded).
-    /// 2. Try the page's own <c>DefaultGameImage</c> resource.
-    /// 3. Fall back to <see cref="Application.Current"/>'s resource dictionary.
-    /// 4. Last-resort: construct a fresh BitmapImage pointing at the assets URI.
-    /// </summary>
     internal static class ImageFailureHandler
     {
         private const string DefaultGameImageKey = "DefaultGameImage";

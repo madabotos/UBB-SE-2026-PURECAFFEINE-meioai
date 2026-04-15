@@ -4,35 +4,34 @@ using Property_and_Management.Src.Model;
 
 namespace Property_and_Management.Src.Mapper
 {
-    public class UserMapper : IMapper<User, UserDataTransferObject>
+    public class UserMapper : IMapper<User, UserDTO>
     {
-        public UserDataTransferObject ToDataTransferObject(User user)
+        public UserDTO ToDTO(User user)
         {
             if (user == null)
             {
                 return null;
             }
 
-            return new UserDataTransferObject
+            return new UserDTO
             {
-                Identifier = user.Identifier,
+                Id = user.Id,
                 DisplayName = user.DisplayName
             };
         }
 
-        public User ToModel(UserDataTransferObject userDataTransferObject)
+        public User ToModel(UserDTO UserDTO)
         {
-            if (userDataTransferObject == null)
+            if (UserDTO == null)
             {
                 return null;
             }
 
             return new User
             {
-                Identifier = userDataTransferObject.Identifier,
-                DisplayName = userDataTransferObject.DisplayName
+                Id = UserDTO.Id,
+                DisplayName = UserDTO.DisplayName
             };
         }
     }
 }
-

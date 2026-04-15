@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Moq;
 using NUnit.Framework;
 using Property_and_Management.Src.DataTransferObjects;
@@ -26,13 +26,10 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void LoadGame_PopulatesPropertiesFromService()
         {
-            // arrange — this test verifies that the parameter-shadowing bug in
-            // LoadGame is fixed; the public GameIdentifier property must reflect
-            // the loaded game after the call.
-            var existingGame = new GameDataTransferObject
+            var existingGame = new GameDTO
             {
-                Identifier = SampleGameIdentifier,
-                Owner = new UserDataTransferObject { Identifier = SampleOwnerIdentifier },
+                id = SampleGameIdentifier,
+                Owner = new UserDTO { id = SampleOwnerIdentifier },
                 Name = "Existing Game",
                 Price = 15m,
                 MinimumPlayerNumber = 2,
@@ -44,41 +41,35 @@ namespace Property_and_Management.Tests.Viewmodels
                 .Setup(service => service.GetGameByIdentifier(SampleGameIdentifier))
                 .Returns(existingGame);
 
-            // act
             viewModel.LoadGame(SampleGameIdentifier);
 
-            // assert
-            viewModel.GameIdentifier.Should().Be(SampleGameIdentifier);
-            viewModel.OwnerIdentifier.Should().Be(SampleOwnerIdentifier);
+            viewModel.gameId.Should().Be(SampleGameIdentifier);
+            viewModel.ownerId.Should().Be(SampleOwnerIdentifier);
             viewModel.Name.Should().Be("Existing Game");
         }
 
         [Test]
         public void UpdateGame_InvalidInputs_DoesNotCallService()
         {
-            // arrange
             viewModel.Name = string.Empty;
 
-            // act
             viewModel.UpdateGame();
 
-            // assert
             gameServiceMock.Verify(
                 service => service.UpdateGameByIdentifier(
-                    It.IsAny<int>(), It.IsAny<GameDataTransferObject>()),
+                    It.IsAny<int>(), It.IsAny<GameDTO>()),
                 Times.Never);
         }
 
         [Test]
         public void UpdateGame_ValidInputs_CallsUpdateWithCorrectIdentifier()
         {
-            // arrange
             gameServiceMock
                 .Setup(service => service.GetGameByIdentifier(SampleGameIdentifier))
-                .Returns(new GameDataTransferObject
+                .Returns(new GameDTO
                 {
-                    Identifier = SampleGameIdentifier,
-                    Owner = new UserDataTransferObject { Identifier = SampleOwnerIdentifier },
+                    id = SampleGameIdentifier,
+                    Owner = new UserDTO { id = SampleOwnerIdentifier },
                     Name = "Valid Name",
                     Price = 10m,
                     MinimumPlayerNumber = 2,
@@ -88,13 +79,11 @@ namespace Property_and_Management.Tests.Viewmodels
                 });
             viewModel.LoadGame(SampleGameIdentifier);
 
-            // act
             viewModel.UpdateGame();
 
-            // assert
             gameServiceMock.Verify(
                 service => service.UpdateGameByIdentifier(
-                    SampleGameIdentifier, It.IsAny<GameDataTransferObject>()),
+                    SampleGameIdentifier, It.IsAny<GameDTO>()),
                 Times.Once);
         }
     }

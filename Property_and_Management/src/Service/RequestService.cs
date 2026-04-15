@@ -10,16 +10,11 @@ using Property_and_Management.Src.Model;
 
 namespace Property_and_Management.Src.Service
 {
-    /// <summary>
-    /// Orchestrates the rental-request lifecycle: creation, approval, denial,
-    /// offers and cancellations. Business decisions live here; repositories are
-    /// only trusted with persistence primitives.
-    /// </summary>
     public class RequestService : IRequestService
     {
-        private const int NewEntityIdentifier = 0;
-        private const int MissingUserIdentifier = 0;
-        private const int MissingForeignKeyIdentifier = 0;
+        private const int NewEntityId = 0;
+        private const int MissingUserId = 0;
+        private const int MissingForeignKeyId = 0;
         private const int MissingOptionalDatePart = 0;
         private const int AvailabilityWindowMonths = 1;
 
@@ -27,14 +22,14 @@ namespace Property_and_Management.Src.Service
         private readonly IRentalRepository rentalRepository;
         private readonly INotificationService notificationService;
         private readonly IGameRepository gameRepository;
-        private readonly IMapper<Request, RequestDataTransferObject> requestMapper;
+        private readonly IMapper<Request, RequestDTO> requestMapper;
 
         public RequestService(
             IRequestRepository requestRepository,
             IRentalRepository rentalRepository,
             IGameRepository gameRepository,
             INotificationService notificationService,
-            IMapper<Request, RequestDataTransferObject> requestMapper)
+            IMapper<Request, RequestDTO> requestMapper)
         {
             this.requestRepository = requestRepository;
             this.rentalRepository = rentalRepository;
@@ -43,73 +38,69 @@ namespace Property_and_Management.Src.Service
             this.requestMapper = requestMapper;
         }
 
-        public ImmutableList<RequestDataTransferObject> GetRequestsForRenter(int renterIdentifier) =>
+        public ImmutableList<RequestDTO> GetRequestsForRenter(int renterId) =>
             requestRepository
-                .GetRequestsByRenter(renterIdentifier)
-                .Select(request => requestMapper.ToDataTransferObject(request))
+                .GetRequestsByRenter(renterId)
+                .Select(request => requestMapper.ToDTO(request))
                 .ToImmutableList();
 
-        public ImmutableList<RequestDataTransferObject> GetRequestsForOwner(int ownerIdentifier) =>
+        public ImmutableList<RequestDTO> GetRequestsForOwner(int ownerId) =>
             requestRepository
-                .GetRequestsByOwner(ownerIdentifier)
-                .Select(request => requestMapper.ToDataTransferObject(request))
+                .GetRequestsByOwner(ownerId)
+                .Select(request => requestMapper.ToDTO(request))
                 .ToImmutableList();
 
-        // [BL-LFC-01] Create a new pending request.
         public Result<int, CreateRequestError> CreateRequest(
-            int gameIdentifier,
-            int renterIdentifier,
-            int ownerIdentifier,
+            int gameId,
+            int renterId,
+            int ownerId,
             DateTime startDate,
             DateTime endDate)
         {
-            if (renterIdentifier == ownerIdentifier)
+            if (renterId == ownerId)
             {
                 return Result<int, CreateRequestError>.Failure(CreateRequestError.OwnerCannotRent);
             }
 
             try
             {
-                gameRepository.Get(gameIdentifier);
+                gameRepository.Get(gameId);
             }
             catch (KeyNotFoundException)
             {
                 return Result<int, CreateRequestError>.Failure(CreateRequestError.GameDoesNotExist);
             }
 
-            if (!CheckAvailability(gameIdentifier, startDate, endDate))
+            if (!CheckAvailability(gameId, startDate, endDate))
             {
                 return Result<int, CreateRequestError>.Failure(CreateRequestError.DatesUnavailable);
             }
 
             var request = new Request(
-                identifier: NewEntityIdentifier,
-                game: new Game { Identifier = gameIdentifier },
-                renter: new User { Identifier = renterIdentifier },
-                owner: new User { Identifier = ownerIdentifier },
+                id: NewEntityId,
+                game: new Game { Id = gameId },
+                renter: new User { Id = renterId },
+                owner: new User { Id = ownerId },
                 startDate: startDate,
                 endDate: endDate);
 
             requestRepository.Add(request);
-            return Result<int, CreateRequestError>.Success(request.Identifier);
+            return Result<int, CreateRequestError>.Success(request.Id);
         }
 
-        // [BL-LFC-02] Owner directly accepts a request. The service owns the business
-        // decision (find overlaps, notify cancelled renters, schedule reminders); the
-        // repository only commits the transactional mechanics via ApproveAtomically.
-        public Result<int, ApproveRequestError> ApproveRequest(int requestIdentifier, int ownerIdentifier)
+        public Result<int, ApproveRequestError> ApproveRequest(int requestId, int ownerId)
         {
             Request request;
             try
             {
-                request = requestRepository.Get(requestIdentifier);
+                request = requestRepository.Get(requestId);
             }
             catch (KeyNotFoundException)
             {
                 return Result<int, ApproveRequestError>.Failure(ApproveRequestError.NotFound);
             }
 
-            if (request.Owner?.Identifier != ownerIdentifier)
+            if (request.Owner?.Id != ownerId)
             {
                 return Result<int, ApproveRequestError>.Failure(ApproveRequestError.Unauthorized);
             }
@@ -119,94 +110,90 @@ namespace Property_and_Management.Src.Service
                 return Result<int, ApproveRequestError>.Failure(ApproveRequestError.NotFound);
             }
 
-            if (!TryApproveOpenRequestAndNotify(request, out var rentalIdentifier))
+            if (!TryApproveOpenRequestAndNotify(request, out var rentalId))
             {
                 return Result<int, ApproveRequestError>.Failure(ApproveRequestError.TransactionFailed);
             }
 
-            return Result<int, ApproveRequestError>.Success(rentalIdentifier);
+            return Result<int, ApproveRequestError>.Success(rentalId);
         }
 
-        // [BL-LFC-03] Owner declines a request.
-        public Result<int, DenyRequestError> DenyRequest(int requestIdentifier, int ownerIdentifier, string reason)
+        public Result<int, DenyRequestError> DenyRequest(int requestId, int ownerId, string reason)
         {
             Request request;
             try
             {
-                request = requestRepository.Get(requestIdentifier);
+                request = requestRepository.Get(requestId);
             }
             catch (KeyNotFoundException)
             {
                 return Result<int, DenyRequestError>.Failure(DenyRequestError.NotFound);
             }
 
-            if (request.Owner?.Identifier != ownerIdentifier)
+            if (request.Owner?.Id != ownerId)
             {
                 return Result<int, DenyRequestError>.Failure(DenyRequestError.Unauthorized);
             }
 
-            notificationService.DeleteNotificationsByRequestId(requestIdentifier);
-            requestRepository.Delete(requestIdentifier);
+            notificationService.DeleteNotificationsLinkedToRequest(requestId);
+            requestRepository.Delete(requestId);
 
-            var renterIdentifier = request.Renter?.Identifier ?? MissingUserIdentifier;
+            var renterId = request.Renter?.Id ?? MissingUserId;
             var gameName = request.Game?.Name ?? "the selected game";
             SendNotificationToUser(
-                renterIdentifier,
+                renterId,
                 Constants.NotificationTitles.RentalRequestDeclined,
                 $"Your request for {gameName} {FormatRequestPeriod(request.StartDate, request.EndDate)} was declined. Reason: {reason}");
 
-            return Result<int, DenyRequestError>.Success(requestIdentifier);
+            return Result<int, DenyRequestError>.Success(requestId);
         }
 
-        // [BL-LFC-04] Renter cancels their own pending request. Keeps the legacy int
-        // return shape: positive = cancelled request id, negative = CancelRequestError.
-        public int CancelRequest(int requestIdentifier, int cancellingUserIdentifier)
+        public int CancelRequest(int requestId, int cancellingUserId)
         {
             Request request;
             try
             {
-                request = requestRepository.Get(requestIdentifier);
+                request = requestRepository.Get(requestId);
             }
             catch (KeyNotFoundException)
             {
                 return (int)CancelRequestError.NotFound;
             }
 
-            if (request.Renter?.Identifier != cancellingUserIdentifier)
+            if (request.Renter?.Id != cancellingUserId)
             {
                 return (int)CancelRequestError.Unauthorized;
             }
 
-            notificationService.DeleteNotificationsByRequestId(requestIdentifier);
+            notificationService.DeleteNotificationsLinkedToRequest(requestId);
             try
             {
-                requestRepository.Delete(requestIdentifier);
+                requestRepository.Delete(requestId);
             }
             catch (KeyNotFoundException)
             {
                 return (int)CancelRequestError.NotFound;
             }
 
-            return requestIdentifier;
+            return requestId;
         }
 
-        // [BL-LFC-05] Game deactivated — decline all pending requests for it.
-        public void OnGameDeactivated(int gameIdentifier)
+        public void OnGameDeactivated(int gameId)
         {
             var pending = requestRepository
-                .GetRequestsByGame(gameIdentifier)
+                .GetRequestsByGame(gameId)
                 .Where(IsPendingForGameDeactivation)
                 .ToImmutableList();
 
             foreach (var request in pending)
             {
-                notificationService.DeleteNotificationsByRequestId(request.Identifier);
-                requestRepository.Delete(request.Identifier);
+                notificationService.DeleteNotificationsLinkedToRequest(request.Id);
+                requestRepository.Delete(request.Id);
 
-                var renterIdentifier = request.Renter?.Identifier ?? MissingUserIdentifier;
+                var renterId = request.Renter?.Id ?? MissingUserId;
                 var gameName = request.Game?.Name ?? "the selected game";
                 SendNotificationToUser(
-                    renterIdentifier,
+                    renterId,
                     Constants.NotificationTitles.RentalRequestCancelled,
                     $"Your request for {gameName} {FormatRequestPeriod(request.StartDate, request.EndDate)} has been cancelled because the game is no longer available.");
             }
@@ -219,7 +206,7 @@ namespace Property_and_Management.Src.Service
         }
 
         public ImmutableList<(DateTime StartDate, DateTime EndDate)> GetBookedDates(
-            int gameIdentifier,
+            int gameId,
             int month = MissingOptionalDatePart,
             int year = MissingOptionalDatePart)
         {
@@ -234,14 +221,14 @@ namespace Property_and_Management.Src.Service
             }
 
             return requestRepository
-                .GetRequestsByGame(gameIdentifier)
+                .GetRequestsByGame(gameId)
                 .Where(request => request.StartDate.Month == month && request.StartDate.Year == year)
                 .OrderBy(request => request.StartDate)
                 .Select(request => (request.StartDate, request.EndDate.AddHours(DomainConstants.RentalBufferHours)))
                 .ToImmutableList();
         }
 
-        public bool CheckAvailability(int gameIdentifier, DateTime startDate, DateTime endDate)
+        public bool CheckAvailability(int gameId, DateTime startDate, DateTime endDate)
         {
             var oneMonthFromNow = DateTime.UtcNow.AddMonths(AvailabilityWindowMonths);
             if (startDate > oneMonthFromNow || endDate > oneMonthFromNow)
@@ -252,7 +239,7 @@ namespace Property_and_Management.Src.Service
             Game game;
             try
             {
-                game = gameRepository.Get(gameIdentifier);
+                game = gameRepository.Get(gameId);
             }
             catch (KeyNotFoundException)
             {
@@ -264,10 +251,8 @@ namespace Property_and_Management.Src.Service
                 return false;
             }
 
-            // Apply the 48h buffer symmetrically on both sides of existing rentals, matching
-            // RentalService.IsSlotAvailable and RentalRepository.IsSlotAvailableInternal.
             bool rentalConflict = rentalRepository
-                .GetRentalsByGame(gameIdentifier)
+                .GetRentalsByGame(gameId)
                 .Any(rental => startDate < rental.EndDate.AddHours(DomainConstants.RentalBufferHours) &&
                                endDate > rental.StartDate.AddHours(-DomainConstants.RentalBufferHours));
 
@@ -277,29 +262,26 @@ namespace Property_and_Management.Src.Service
             }
 
             bool requestConflict = requestRepository
-                .GetRequestsByGame(gameIdentifier)
+                .GetRequestsByGame(gameId)
                 .Any(request => request.StartDate.AddHours(-DomainConstants.RentalBufferHours) < endDate &&
                                 request.EndDate.AddHours(DomainConstants.RentalBufferHours) > startDate);
 
             return !requestConflict;
         }
 
-        // [BL-OFR-01] Owner offers their game for a pending request. In the current
-        // product flow this is an immediate approval: it creates the rental right away
-        // and notifies the renter that the request was approved.
-        public Result<int, OfferError> OfferGame(int requestIdentifier, int offeringUserIdentifier)
+        public Result<int, OfferError> OfferGame(int requestId, int offeringUserId)
         {
             Request request;
             try
             {
-                request = requestRepository.Get(requestIdentifier);
+                request = requestRepository.Get(requestId);
             }
             catch (KeyNotFoundException)
             {
                 return Result<int, OfferError>.Failure(OfferError.NotFound);
             }
 
-            if (request.Owner?.Identifier != offeringUserIdentifier)
+            if (request.Owner?.Id != offeringUserId)
             {
                 return Result<int, OfferError>.Failure(OfferError.NotOwner);
             }
@@ -309,75 +291,75 @@ namespace Property_and_Management.Src.Service
                 return Result<int, OfferError>.Failure(OfferError.RequestNotOpen);
             }
 
-            if (!TryApproveOpenRequestAndNotify(request, out var rentalIdentifier))
+            if (!TryApproveOpenRequestAndNotify(request, out var rentalId))
             {
                 return Result<int, OfferError>.Failure(OfferError.TransactionFailed);
             }
 
-            return Result<int, OfferError>.Success(rentalIdentifier);
+            return Result<int, OfferError>.Success(rentalId);
         }
 
         private void NotifyOverlappingRequestsUnavailable(ImmutableList<Request> overlappingRequests, string gameName)
         {
             foreach (var overlappingRequest in overlappingRequests)
             {
-                var renterIdentifier = overlappingRequest.Renter?.Identifier ?? MissingUserIdentifier;
+                var renterId = overlappingRequest.Renter?.Id ?? MissingUserId;
                 SendNotificationToUser(
-                    renterIdentifier,
+                    renterId,
                     Constants.NotificationTitles.BookingUnavailable,
                     $"Your request for {gameName} {FormatRequestPeriod(overlappingRequest.StartDate, overlappingRequest.EndDate)} was declined because the game is no longer available in that period.");
             }
         }
 
         private void SendNotificationToUser(
-            int userIdentifier,
+            int userId,
             string title,
             string body,
             NotificationType type = default,
-            int? relatedRequestIdentifier = null)
+            int? relatedRequestId = null)
         {
             notificationService.SendNotificationToUser(
-                userIdentifier,
-                BuildNotification(userIdentifier, title, body, type, relatedRequestIdentifier));
+                userId,
+                BuildNotification(userId, title, body, type, relatedRequestId));
         }
 
-        private NotificationDataTransferObject BuildNotification(
-            int userIdentifier,
+        private NotificationDTO BuildNotification(
+            int userId,
             string title,
             string body,
                 NotificationType type,
-                int? relatedRequestIdentifier)
+                int? relatedRequestId)
         {
-            return new NotificationDataTransferObject
+            return new NotificationDTO
             {
-                Identifier = NewEntityIdentifier,
-                User = new UserDataTransferObject { Identifier = userIdentifier },
+                Id = NewEntityId,
+                User = new UserDTO { Id = userId },
                 Timestamp = DateTime.UtcNow,
                 Title = title,
                 Body = body,
                 Type = type,
-                RelatedRequestIdentifier = relatedRequestIdentifier
+                RelatedRequestId = relatedRequestId
             };
         }
 
-        private bool TryApproveOpenRequestAndNotify(Request request, out int rentalIdentifier)
+        private bool TryApproveOpenRequestAndNotify(Request request, out int rentalId)
         {
-            var bufferedStart = request.StartDate.AddHours(-DomainConstants.RentalBufferHours);
-            var bufferedEnd = request.EndDate.AddHours(DomainConstants.RentalBufferHours);
+            var bufferedStartDate = request.StartDate.AddHours(-DomainConstants.RentalBufferHours);
+            var bufferedEndDate = request.EndDate.AddHours(DomainConstants.RentalBufferHours);
 
             var overlappingRequests = requestRepository.GetOverlappingRequests(
-                request.Game?.Identifier ?? MissingForeignKeyIdentifier,
-                request.Identifier,
-                bufferedStart,
-                bufferedEnd);
+                request.Game?.Id ?? MissingForeignKeyId,
+                request.Id,
+                bufferedStartDate,
+                bufferedEndDate);
 
             try
             {
-                rentalIdentifier = requestRepository.ApproveAtomically(request, overlappingRequests);
+                rentalId = requestRepository.ApproveAtomically(request, overlappingRequests);
             }
             catch
             {
-                rentalIdentifier = MissingForeignKeyIdentifier;
+                rentalId = MissingForeignKeyId;
                 return false;
             }
 
@@ -385,13 +367,13 @@ namespace Property_and_Management.Src.Service
             NotifyOverlappingRequestsUnavailable(overlappingRequests, gameName);
 
             SendNotificationToUser(
-                request.Renter?.Identifier ?? MissingUserIdentifier,
+                request.Renter?.Id ?? MissingUserId,
                 Constants.NotificationTitles.RentalRequestApproved,
                 $"Your request for {gameName} {FormatRequestPeriod(request.StartDate, request.EndDate)} was approved.");
 
             notificationService.ScheduleUpcomingRentalReminder(
-                request.Renter?.Identifier ?? MissingUserIdentifier,
-                request.Owner?.Identifier ?? MissingUserIdentifier,
+                request.Renter?.Id ?? MissingUserId,
+                request.Owner?.Id ?? MissingUserId,
                 request.Game?.Name ?? "your game",
                 request.StartDate);
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -25,12 +25,12 @@ namespace Property_and_Management.Src.Views
 
         private void GamePicker_SelectionChanged(object sender, SelectionChangedEventArgs selectionChangedEventArgs)
         {
-            ViewModel.SelectedGame = GamePicker.SelectedItem as GameDataTransferObject;
+            ViewModel.SelectedGame = GamePicker.SelectedItem as GameDTO;
         }
 
         private void RenterPicker_SelectionChanged(object sender, SelectionChangedEventArgs selectionChangedEventArgs)
         {
-            ViewModel.SelectedRenter = RenterPicker.SelectedItem as UserDataTransferObject;
+            ViewModel.SelectedRenter = RenterPicker.SelectedItem as UserDTO;
         }
 
         private async void SaveButton_Click(object sender, RoutedEventArgs routedEventArgs)

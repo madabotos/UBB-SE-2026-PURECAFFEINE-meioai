@@ -47,7 +47,7 @@ namespace Property_and_Management.Src.Repository
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "INSERT INTO Games(owner_id, name, price, minimum_player_number, maximum_player_number, description, image, is_active) VALUES(@owner_id, @name, @price, @min_players, @max_players, @description, @image, @is_active); SELECT SCOPE_IDENTITY();";
-                    command.Parameters.AddWithValue("@owner_id", newEntity.Owner?.Identifier ?? MissingForeignKeyId);
+                    command.Parameters.AddWithValue("@owner_id", newEntity.Owner?.Id ?? MissingForeignKeyId);
                     command.Parameters.AddWithValue("@name", newEntity.Name ?? string.Empty);
                     command.Parameters.AddWithValue("@price", newEntity.Price);
                     command.Parameters.AddWithValue("@min_players", newEntity.MinimumPlayerNumber);
@@ -59,13 +59,12 @@ namespace Property_and_Management.Src.Repository
                     });
                     command.Parameters.AddWithValue("@is_active", newEntity.IsActive);
 
-                    // Capture SCOPE_IDENTITY so callers can navigate straight to the new game.
-                    newEntity.Identifier = Convert.ToInt32(command.ExecuteScalar());
+                    newEntity.Id = Convert.ToInt32(command.ExecuteScalar());
                 }
             }
         }
 
-        public ImmutableList<Game> GetGamesByOwner(int ownerIdentifier)
+        public ImmutableList<Game> GetGamesByOwner(int ownerId)
         {
             var list = new List<Game>();
             using (var connection = new SqlConnection(connectionString))
@@ -74,7 +73,7 @@ namespace Property_and_Management.Src.Repository
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "SELECT g.*, u.display_name AS owner_display_name FROM Games g LEFT JOIN Users u ON u.id = g.owner_id WHERE g.owner_id = @owner_id";
-                    command.Parameters.AddWithValue("@owner_id", ownerIdentifier);
+                    command.Parameters.AddWithValue("@owner_id", ownerId);
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -90,7 +89,7 @@ namespace Property_and_Management.Src.Repository
             return list.ToImmutableList();
         }
 
-        public void Update(int updatedEntityIdentifier, Game newEntity)
+        public void Update(int updatedEntityId, Game newEntity)
         {
             using (var connection = new SqlConnection(connectionString))
             {
@@ -98,8 +97,8 @@ namespace Property_and_Management.Src.Repository
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "UPDATE Games SET owner_id = @owner_id, name = @name, price = @price, minimum_player_number = @min_players, maximum_player_number = @max_players, description = @description, image = @image, is_active = @is_active WHERE game_id = @id";
-                    command.Parameters.AddWithValue("@id", updatedEntityIdentifier);
-                    command.Parameters.AddWithValue("@owner_id", newEntity.Owner?.Identifier ?? MissingForeignKeyId);
+                    command.Parameters.AddWithValue("@id", updatedEntityId);
+                    command.Parameters.AddWithValue("@owner_id", newEntity.Owner?.Id ?? MissingForeignKeyId);
                     command.Parameters.AddWithValue("@name", newEntity.Name ?? string.Empty);
                     command.Parameters.AddWithValue("@price", newEntity.Price);
                     command.Parameters.AddWithValue("@min_players", newEntity.MinimumPlayerNumber);
@@ -115,7 +114,7 @@ namespace Property_and_Management.Src.Repository
             }
         }
 
-        public Game Get(int identifier)
+        public Game Get(int id)
         {
             using (var connection = new SqlConnection(connectionString))
             {
@@ -123,7 +122,7 @@ namespace Property_and_Management.Src.Repository
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "SELECT g.*, u.display_name AS owner_display_name FROM Games g LEFT JOIN Users u ON u.id = g.owner_id WHERE g.game_id = @id";
-                    command.Parameters.AddWithValue("@id", identifier);
+                    command.Parameters.AddWithValue("@id", id);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
@@ -138,7 +137,7 @@ namespace Property_and_Management.Src.Repository
             throw new KeyNotFoundException();
         }
 
-        public Game Delete(int removedEntityIdentifier)
+        public Game Delete(int removedEntityId)
         {
             using (var connection = new SqlConnection(connectionString))
             {
@@ -150,7 +149,7 @@ namespace Property_and_Management.Src.Repository
                         "deleted.minimum_player_number, deleted.maximum_player_number, deleted.description, " +
                         "deleted.image, deleted.is_active, u.display_name AS owner_display_name " +
                         "FROM Games g LEFT JOIN Users u ON u.id = g.owner_id WHERE g.game_id = @id";
-                    command.Parameters.AddWithValue("@id", removedEntityIdentifier);
+                    command.Parameters.AddWithValue("@id", removedEntityId);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
@@ -168,6 +167,3 @@ namespace Property_and_Management.Src.Repository
         }
     }
 }
-
-
-

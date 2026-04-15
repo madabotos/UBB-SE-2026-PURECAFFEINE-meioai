@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using FluentAssertions;
 using Moq;
 using NUnit.Framework;
@@ -23,37 +23,31 @@ namespace Property_and_Management.Tests.Viewmodels
             gameServiceMock = new Mock<IGameService>();
             gameServiceMock
                 .Setup(service => service.GetGamesForOwner(SampleCurrentUserIdentifier))
-                .Returns(ImmutableList<GameDataTransferObject>.Empty);
+                .Returns(ImmutableList<GameDTO>.Empty);
         }
 
         [Test]
         public void Constructor_LoadsGamesFromServiceForCurrentUser()
         {
-            // arrange
             gameServiceMock
                 .Setup(service => service.GetGamesForOwner(SampleCurrentUserIdentifier))
                 .Returns(ImmutableList.Create(
-                    BuildGame(identifier: 1),
-                    BuildGame(identifier: 2)));
+                    BuildGame(id: 1),
+                    BuildGame(id: 2)));
 
-            // act
             var viewModel = new ListingsViewModel(gameServiceMock.Object, SampleCurrentUserIdentifier);
 
-            // assert
             viewModel.TotalCount.Should().Be(2);
         }
 
         [Test]
         public void LoadGames_ReloadsFromService()
         {
-            // arrange
             var viewModel = new ListingsViewModel(gameServiceMock.Object, SampleCurrentUserIdentifier);
             gameServiceMock.Invocations.Clear();
 
-            // act
             viewModel.LoadGames();
 
-            // assert
             gameServiceMock.Verify(
                 service => service.GetGamesForOwner(SampleCurrentUserIdentifier),
                 Times.Once);
@@ -62,18 +56,15 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void DeleteGame_DelegatesToServiceAndReloads()
         {
-            // arrange
-            var gameToDelete = BuildGame(identifier: SampleGameIdentifier);
+            var gameToDelete = BuildGame(id: SampleGameIdentifier);
             gameServiceMock
                 .Setup(service => service.GetGamesForOwner(SampleCurrentUserIdentifier))
                 .Returns(ImmutableList.Create(gameToDelete));
             var viewModel = new ListingsViewModel(gameServiceMock.Object, SampleCurrentUserIdentifier);
             gameServiceMock.Invocations.Clear();
 
-            // act
             viewModel.DeleteGame(gameToDelete);
 
-            // assert
             gameServiceMock.Verify(
                 service => service.DeleteGameByIdentifier(SampleGameIdentifier),
                 Times.Once);
@@ -85,45 +76,39 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void ShowingText_UsesGameVocabulary()
         {
-            // arrange
             gameServiceMock
                 .Setup(service => service.GetGamesForOwner(SampleCurrentUserIdentifier))
-                .Returns(ImmutableList.Create(BuildGame(identifier: 1)));
+                .Returns(ImmutableList.Create(BuildGame(id: 1)));
             var viewModel = new ListingsViewModel(gameServiceMock.Object, SampleCurrentUserIdentifier);
 
-            // act
             var showingText = viewModel.ShowingText;
 
-            // assert
             showingText.Should().Contain("games");
         }
 
         [Test]
         public void TryDeleteGame_ServiceThrows_ReturnsFailureDialog()
         {
-            // arrange
-            var gameToDelete = BuildGame(identifier: SampleGameIdentifier);
+            var gameToDelete = BuildGame(id: SampleGameIdentifier);
             gameServiceMock
                 .Setup(service => service.DeleteGameByIdentifier(SampleGameIdentifier))
                 .Throws(new System.Exception("delete failed"));
             var viewModel = new ListingsViewModel(gameServiceMock.Object, SampleCurrentUserIdentifier);
 
-            // act
             var result = viewModel.TryDeleteGame(gameToDelete);
 
-            // assert
             result.IsSuccess.Should().BeFalse();
             result.DialogTitle.Should().Be(Constants.DialogTitles.CannotDeleteGame);
             result.DialogMessage.Should().Be("delete failed");
         }
 
-        private static GameDataTransferObject BuildGame(int identifier)
+        private static GameDTO BuildGame(int id)
         {
-            return new GameDataTransferObject
+            return new GameDTO
             {
-                Identifier = identifier,
-                Owner = new UserDataTransferObject { Identifier = SampleCurrentUserIdentifier },
-                Name = $"Game {identifier}",
+                id = id,
+                Owner = new UserDTO { id = SampleCurrentUserIdentifier },
+                Name = $"Game {id}",
                 Price = 10m,
                 MinimumPlayerNumber = 2,
                 MaximumPlayerNumber = 4,

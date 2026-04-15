@@ -13,12 +13,12 @@ namespace Property_and_Management.Src.Viewmodels
         private readonly IRequestService requestService;
         private readonly ICurrentUserContext currentUserContext;
 
-        public int CurrentUserIdentifier => currentUserContext.CurrentUserIdentifier;
+        public int currentUserId => currentUserContext.currentUserId;
 
-        public ObservableCollection<GameDataTransferObject> AvailableGames { get; set; } = new();
+        public ObservableCollection<GameDTO> AvailableGames { get; set; } = new();
 
-        private GameDataTransferObject selectedGame;
-        public GameDataTransferObject SelectedGame
+        private GameDTO selectedGame;
+        public GameDTO SelectedGame
         {
             get => selectedGame;
             set
@@ -63,7 +63,7 @@ namespace Property_and_Management.Src.Viewmodels
         {
             AvailableGames.Clear();
             var games = gameService.GetAllGames()
-                .Where(game => game.IsActive && game.Owner?.Identifier != CurrentUserIdentifier);
+                .Where(game => game.IsActive && game.Owner?.Id != currentUserId);
             foreach (var game in games)
             {
                 AvailableGames.Add(game);
@@ -80,11 +80,6 @@ namespace Property_and_Management.Src.Viewmodels
             return DateRangeValidationHelper.HasValidFutureDateRange(StartDate, EndDate);
         }
 
-        /// <summary>
-        /// Submit the request using the currently selected game and dates.
-        /// Returns a user-friendly error message, or <c>null</c> on success.
-        /// Keeps the service-namespace error enums out of the view layer.
-        /// </summary>
         public ViewOperationResult SubmitRequest()
         {
             if (!ValidateInputs())
@@ -95,9 +90,9 @@ namespace Property_and_Management.Src.Viewmodels
             }
 
             var result = requestService.CreateRequest(
-                SelectedGame.Identifier,
-                CurrentUserIdentifier,
-                SelectedGame.Owner.Identifier,
+                SelectedGame.Id,
+                currentUserId,
+                SelectedGame.Owner.Id,
                 StartDate.Value.DateTime,
                 EndDate.Value.DateTime);
 

@@ -16,13 +16,13 @@ namespace Property_and_Management.Src.Viewmodels
         private readonly IUserService userService;
         private readonly ICurrentUserContext currentUserContext;
 
-        public int CurrentUserIdentifier => currentUserContext.CurrentUserIdentifier;
+        public int currentUserId => currentUserContext.currentUserId;
 
-        public ObservableCollection<GameDataTransferObject> MyGames { get; set; } = new();
-        public ObservableCollection<UserDataTransferObject> AvailableRenters { get; set; } = new();
+        public ObservableCollection<GameDTO> MyGames { get; set; } = new();
+        public ObservableCollection<UserDTO> AvailableRenters { get; set; } = new();
 
-        private GameDataTransferObject selectedGame;
-        public GameDataTransferObject SelectedGame
+        private GameDTO selectedGame;
+        public GameDTO SelectedGame
         {
             get => selectedGame;
             set
@@ -32,8 +32,8 @@ namespace Property_and_Management.Src.Viewmodels
             }
         }
 
-        private UserDataTransferObject selectedRenter;
-        public UserDataTransferObject SelectedRenter
+        private UserDTO selectedRenter;
+        public UserDTO SelectedRenter
         {
             get => selectedRenter;
             set
@@ -78,7 +78,7 @@ namespace Property_and_Management.Src.Viewmodels
         public void LoadData()
         {
             MyGames.Clear();
-            foreach (var game in gameService.GetGamesForOwner(CurrentUserIdentifier))
+            foreach (var game in gameService.GetGamesForOwner(currentUserId))
             {
                 if (game.IsActive)
                 {
@@ -87,7 +87,7 @@ namespace Property_and_Management.Src.Viewmodels
             }
 
             AvailableRenters.Clear();
-            foreach (var user in userService.GetUsersExcept(CurrentUserIdentifier))
+            foreach (var user in userService.GetUsersExcept(currentUserId))
             {
                 AvailableRenters.Add(user);
             }
@@ -120,9 +120,9 @@ namespace Property_and_Management.Src.Viewmodels
             try
             {
                 rentalService.CreateConfirmedRental(
-                    SelectedGame.Identifier,
-                    SelectedRenter.Identifier,
-                    CurrentUserIdentifier,
+                    SelectedGame.Id,
+                    SelectedRenter.Id,
+                    currentUserId,
                     StartDate.Value.DateTime,
                     EndDate.Value.DateTime);
                 return ViewOperationResult.Success();
@@ -156,5 +156,3 @@ namespace Property_and_Management.Src.Viewmodels
         }
     }
 }
-
-

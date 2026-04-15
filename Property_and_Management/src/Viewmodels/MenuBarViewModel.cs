@@ -7,8 +7,6 @@ namespace Property_and_Management.Src.Viewmodels
 {
     public class MenuBarViewModel : INotifyPropertyChanged
     {
-        // The View listens to this event to know which page to navigate to.
-        // Using AppPage enum keeps the ViewModel free of concrete View type references.
         public event Action<AppPage> RequestNavigation;
 
         public Dictionary<string, Action> NavigationActions { get; }

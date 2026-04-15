@@ -34,7 +34,7 @@
                   SelectionMode="None"
                   IsItemClickEnabled="False">
             <ListView.ItemTemplate>
-                <DataTemplate x:DataType="notificationDtoNamespace:NotificationDataTransferObject">
+                <DataTemplate x:DataType="notificationDtoNamespace:NotificationDTO">
                     <Grid Background="#2D2D2D" Margin="0,0,0,10" Padding="15" CornerRadius="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="80"/>

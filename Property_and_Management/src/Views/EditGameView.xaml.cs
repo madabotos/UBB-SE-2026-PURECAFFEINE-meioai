@@ -18,12 +18,9 @@ namespace Property_and_Management.Src.Views
         {
             this.InitializeComponent();
 
-            // Composition root: pull the view model from the DI container. This
-            // is the only place the view knows about <c>App.Services</c>.
             ViewModel = App.Services.GetRequiredService<EditGameViewModel>();
         }
 
-        // Catches the game id passed in from the Listings page.
         protected override async void OnNavigatedTo(NavigationEventArgs navigationEventArgs)
         {
             base.OnNavigatedTo(navigationEventArgs);
@@ -75,7 +72,6 @@ namespace Property_and_Management.Src.Views
             picker.FileTypeFilter.Add(".jpeg");
             picker.FileTypeFilter.Add(".png");
 
-            // WinUI 3 quirk: the picker has to be explicitly told which window it belongs to.
             var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
             WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
 

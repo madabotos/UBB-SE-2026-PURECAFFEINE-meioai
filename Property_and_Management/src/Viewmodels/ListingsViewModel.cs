@@ -4,43 +4,39 @@ using Property_and_Management.Src.Interface;
 
 namespace Property_and_Management.Src.Viewmodels
 {
-    public class ListingsViewModel : PagedViewModel<GameDataTransferObject>
+    public class ListingsViewModel : PagedViewModel<GameDTO>
     {
         private const int NoActiveRentalsCount = 0;
         private const string DeleteSuccessMessageTemplate =
             "There are {0} active rentals for this game. It was removed successfully.";
 
         private readonly IGameService gameService;
-        private readonly int currentUserIdentifier;
+        private readonly int currentUserId;
 
-        public ListingsViewModel(IGameService gameService, int currentUserIdentifier)
+        public ListingsViewModel(IGameService gameService, int currentUserId)
         {
             this.gameService = gameService;
-            this.currentUserIdentifier = currentUserIdentifier;
+            this.currentUserId = currentUserId;
             Reload();
         }
 
-        /// <summary>
-        /// Convenience alias kept because views invoke LoadGames() after external
-        /// mutations (e.g. navigation back from the create/edit pages).
-        /// </summary>
         public void LoadGames() => Reload();
 
         protected override void Reload()
         {
-            var games = gameService.GetGamesForOwner(currentUserIdentifier);
+            var games = gameService.GetGamesForOwner(currentUserId);
             SetAllItems(games.ToImmutableList());
         }
 
         public override string ShowingText => $"Showing {DisplayedCount} of {TotalCount} games";
 
-        public void DeleteGame(GameDataTransferObject game)
+        public void DeleteGame(GameDTO game)
         {
-            gameService.DeleteGameByIdentifier(game.Identifier);
+            gameService.DeleteGameByIdentifier(game.Id);
             Reload();
         }
 
-        public ViewOperationResult TryDeleteGame(GameDataTransferObject game)
+        public ViewOperationResult TryDeleteGame(GameDTO game)
         {
             try
             {

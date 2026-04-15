@@ -1,26 +1,25 @@
-using Property_and_Management.Src.Interface;
+﻿using Property_and_Management.Src.Interface;
 
 namespace Property_and_Management.Src.Model
 {
     public class User : IEntity
     {
-        public int Identifier { get; set; }
+        public int Id { get; set; }
         public string DisplayName { get; set; }
 
         public User()
         {
         }
 
-        public User(int identifier)
+        public User(int id)
         {
-            Identifier = identifier;
+            this.Id = id;
         }
 
-        public User(int identifier, string displayName)
+        public User(int id, string displayName)
         {
-            Identifier = identifier;
+            this.Id = id;
             DisplayName = displayName;
         }
     }
 }
-

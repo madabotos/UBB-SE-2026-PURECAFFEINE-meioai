@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using FluentAssertions;
 using Moq;
 using NUnit.Framework;
@@ -24,11 +24,11 @@ namespace Property_and_Management.Tests.Viewmodels
             requestServiceMock = new Mock<IRequestService>();
             currentUserContextMock = new Mock<ICurrentUserContext>();
             currentUserContextMock
-                .SetupGet(context => context.CurrentUserIdentifier)
+                .SetupGet(context => context.currentUserId)
                 .Returns(SampleRenterIdentifier);
             requestServiceMock
                 .Setup(service => service.GetRequestsForRenter(SampleRenterIdentifier))
-                .Returns(ImmutableList<RequestDataTransferObject>.Empty);
+                .Returns(ImmutableList<RequestDTO>.Empty);
 
             viewModel = new RequestsToOthersViewModel(requestServiceMock.Object, currentUserContextMock.Object);
         }
@@ -36,35 +36,29 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void Constructor_LoadsRequestsForCurrentRenter()
         {
-            // arrange
             requestServiceMock
                 .Setup(service => service.GetRequestsForRenter(SampleRenterIdentifier))
                 .Returns(ImmutableList.Create(
-                    BuildRequest(identifier: 1),
-                    BuildRequest(identifier: 2)));
+                    BuildRequest(id: 1),
+                    BuildRequest(id: 2)));
             var freshViewModel = new RequestsToOthersViewModel(requestServiceMock.Object, currentUserContextMock.Object);
 
-            // act
             var total = freshViewModel.TotalCount;
 
-            // assert
             total.Should().Be(2);
-            freshViewModel.RenterIdentifier.Should().Be(SampleRenterIdentifier);
+            freshViewModel.renterId.Should().Be(SampleRenterIdentifier);
         }
 
         [Test]
         public void TryCancelRequest_HappyPath_ReturnsNullAndReloads()
         {
-            // arrange
             requestServiceMock
                 .Setup(service => service.CancelRequest(SampleRequestIdentifier, SampleRenterIdentifier))
                 .Returns(SampleRequestIdentifier);
             requestServiceMock.Invocations.Clear();
 
-            // act
             var errorMessage = viewModel.TryCancelRequest(SampleRequestIdentifier);
 
-            // assert
             errorMessage.Should().BeNull();
             requestServiceMock.Verify(
                 service => service.GetRequestsForRenter(SampleRenterIdentifier),
@@ -74,15 +68,12 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void TryCancelRequest_NotFound_ReturnsFriendlyMessage()
         {
-            // arrange
             requestServiceMock
                 .Setup(service => service.CancelRequest(SampleRequestIdentifier, SampleRenterIdentifier))
                 .Returns((int)CancelRequestError.NotFound);
 
-            // act
             var errorMessage = viewModel.TryCancelRequest(SampleRequestIdentifier);
 
-            // assert
             errorMessage.Should().NotBeNull();
             errorMessage!.ToLowerInvariant().Should().Contain("not found");
         }
@@ -90,38 +81,31 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void TryCancelRequest_Unauthorized_ReturnsFriendlyMessage()
         {
-            // arrange
             requestServiceMock
                 .Setup(service => service.CancelRequest(SampleRequestIdentifier, SampleRenterIdentifier))
                 .Returns((int)CancelRequestError.Unauthorized);
 
-            // act
             var errorMessage = viewModel.TryCancelRequest(SampleRequestIdentifier);
 
-            // assert
             errorMessage.Should().NotBeNull();
         }
 
         [Test]
         public void ShowingText_UsesRequestsVocabulary()
         {
-            // arrange — constructor-loaded viewModel
-
-            // act
             var text = viewModel.ShowingText;
 
-            // assert
             text.Should().Contain("requests");
         }
 
-        private static RequestDataTransferObject BuildRequest(int identifier)
+        private static RequestDTO BuildRequest(int id)
         {
-            return new RequestDataTransferObject
+            return new RequestDTO
             {
-                Identifier = identifier,
-                Game = new GameDataTransferObject { Identifier = 100 },
-                Renter = new UserDataTransferObject { Identifier = SampleRenterIdentifier },
-                Owner = new UserDataTransferObject { Identifier = 99 },
+                id = id,
+                Game = new GameDTO { id = 100 },
+                Renter = new UserDTO { id = SampleRenterIdentifier },
+                Owner = new UserDTO { id = 99 },
                 StartDate = System.DateTime.UtcNow.AddDays(1),
                 EndDate = System.DateTime.UtcNow.AddDays(3),
             };

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Immutable;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -14,12 +14,12 @@ namespace Property_and_Management.Tests.Service
     [TestFixture]
     public sealed class NotificationServiceTests
     {
-        private const int CurrentUserIdentifier = 1;
+        private const int currentUserId = 1;
         private const int OtherUserIdentifier = 2;
         private const int SampleNotificationIdentifier = 42;
 
         private Mock<INotificationRepository> notificationRepositoryMock = null!;
-        private Mock<IMapper<Notification, NotificationDataTransferObject>> notificationMapperMock = null!;
+        private Mock<IMapper<Notification, NotificationDTO>> notificationMapperMock = null!;
         private Mock<IServerClient> serverClientMock = null!;
         private Mock<ICurrentUserContext> currentUserContextMock = null!;
         private Mock<IToastNotificationService> toastNotificationServiceMock = null!;
@@ -29,17 +29,17 @@ namespace Property_and_Management.Tests.Service
         public void SetUp()
         {
             notificationRepositoryMock = new Mock<INotificationRepository>();
-            notificationMapperMock = new Mock<IMapper<Notification, NotificationDataTransferObject>>();
+            notificationMapperMock = new Mock<IMapper<Notification, NotificationDTO>>();
             serverClientMock = new Mock<IServerClient>();
             currentUserContextMock = new Mock<ICurrentUserContext>();
             toastNotificationServiceMock = new Mock<IToastNotificationService>();
 
             currentUserContextMock
-                .SetupGet(context => context.CurrentUserIdentifier)
-                .Returns(CurrentUserIdentifier);
+                .SetupGet(context => context.currentUserId)
+                .Returns(currentUserId);
             notificationRepositoryMock
                 .Setup(repository => repository.Add(It.IsAny<Notification>()))
-                .Callback<Notification>(added => added.Identifier = SampleNotificationIdentifier);
+                .Callback<Notification>(added => added.id = SampleNotificationIdentifier);
 
             notificationService = new NotificationService(
                 notificationRepositoryMock.Object,
@@ -58,18 +58,15 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void SendNotificationToUser_PersistsAndForwardsToServerClient()
         {
-            // arrange
-            var notification = new NotificationDataTransferObject
+            var notification = new NotificationDTO
             {
-                User = new UserDataTransferObject { Identifier = OtherUserIdentifier },
+                User = new UserDTO { id = OtherUserIdentifier },
                 Title = "Title",
                 Body = "Body",
             };
 
-            // act
             notificationService.SendNotificationToUser(OtherUserIdentifier, notification);
 
-            // assert
             notificationRepositoryMock.Verify(
                 repository => repository.Add(It.IsAny<Notification>()), Times.Once);
             serverClientMock.Verify(
@@ -79,47 +76,41 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void SendNotificationToUser_WhenUserIsCurrent_NotifiesLocalSubscribers()
         {
-            // arrange
-            var subscriberMock = new Mock<IObserver<NotificationDataTransferObject>>();
+            var subscriberMock = new Mock<IObserver<NotificationDTO>>();
             notificationService.Subscribe(subscriberMock.Object);
 
-            var notification = new NotificationDataTransferObject
+            var notification = new NotificationDTO
             {
-                User = new UserDataTransferObject { Identifier = CurrentUserIdentifier },
+                User = new UserDTO { id = currentUserId },
                 Title = "Title",
                 Body = "Body",
             };
 
-            // act
-            notificationService.SendNotificationToUser(CurrentUserIdentifier, notification);
+            notificationService.SendNotificationToUser(currentUserId, notification);
 
-            // assert
             subscriberMock.Verify(
-                observer => observer.OnNext(It.IsAny<NotificationDataTransferObject>()),
+                observer => observer.OnNext(It.IsAny<NotificationDTO>()),
                 Times.Once);
         }
 
         [Test]
         public void OnNext_IncomingNotification_NotifiesSubscribersAndShowsToast()
         {
-            // arrange
-            var subscriberMock = new Mock<IObserver<NotificationDataTransferObject>>();
+            var subscriberMock = new Mock<IObserver<NotificationDTO>>();
             notificationService.Subscribe(subscriberMock.Object);
 
             var incomingNotification = new IncomingNotification
             {
-                UserIdentifier = CurrentUserIdentifier,
+                userId = currentUserId,
                 Timestamp = DateTime.UtcNow,
                 Title = "Incoming",
                 Body = "Body",
             };
 
-            // act
             notificationService.OnNext(incomingNotification);
 
-            // assert
             subscriberMock.Verify(
-                observer => observer.OnNext(It.IsAny<NotificationDataTransferObject>()),
+                observer => observer.OnNext(It.IsAny<NotificationDTO>()),
                 Times.Once);
             toastNotificationServiceMock.Verify(
                 toast => toast.Show("Incoming", "Body"), Times.Once);
@@ -128,49 +119,40 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void ScheduleUpcomingRentalReminder_ReminderTimeAlreadyDue_SendsImmediately()
         {
-            // arrange - start date is upcoming, but less than 24 hours away, so the reminder is due now
             var soonStartDate = DateTime.UtcNow.AddHours(1);
 
-            // act
             notificationService.ScheduleUpcomingRentalReminder(
-                CurrentUserIdentifier, OtherUserIdentifier, "Catan", soonStartDate);
+                currentUserId, OtherUserIdentifier, "Catan", soonStartDate);
 
-            // assert - because delay <= 0, service calls SendNotificationToUser for each party
             notificationRepositoryMock.Verify(
                 repository => repository.Add(It.IsAny<Notification>()), Times.AtLeast(2));
         }
 
         [Test]
-        public void DeleteNotificationsByRequestId_DelegatesToRepository()
+        public void DeleteNotificationsLinkedToRequest_DelegatesToRepository()
         {
-            // arrange
-            const int RelatedRequestIdentifier = 77;
+            const int relatedRequestId = 77;
 
-            // act
-            notificationService.DeleteNotificationsByRequestId(RelatedRequestIdentifier);
+            notificationService.DeleteNotificationsLinkedToRequest(relatedRequestId);
 
-            // assert
             notificationRepositoryMock.Verify(
-                repository => repository.DeleteByRequestId(RelatedRequestIdentifier), Times.Once);
+                repository => repository.DeleteNotificationsLinkedToRequest(relatedRequestId), Times.Once);
         }
 
         [Test]
         public void Subscribers_ThreadSafe_MultipleConcurrentSubscribeCallsDoNotThrow()
         {
-            // arrange
             const int ConcurrentSubscribers = 16;
             var tasks = new Task[ConcurrentSubscribers];
 
-            // act
             for (var index = 0; index < ConcurrentSubscribers; index++)
             {
                 tasks[index] = Task.Run(() =>
-                    notificationService.Subscribe(Mock.Of<IObserver<NotificationDataTransferObject>>()));
+                    notificationService.Subscribe(Mock.Of<IObserver<NotificationDTO>>()));
             }
 
             var subscribeAction = () => Task.WaitAll(tasks);
 
-            // assert
             subscribeAction.Should().NotThrow();
         }
     }

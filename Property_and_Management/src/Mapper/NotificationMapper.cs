@@ -4,53 +4,51 @@ using Property_and_Management.Src.Model;
 
 namespace Property_and_Management.Src.Mapper
 {
-    public class NotificationMapper : IMapper<Notification, NotificationDataTransferObject>
+    public class NotificationMapper : IMapper<Notification, NotificationDTO>
     {
-        private readonly IMapper<User, UserDataTransferObject> userMapper;
+        private readonly IMapper<User, UserDTO> notificationRecipientUserMapper;
 
-        public NotificationMapper(IMapper<User, UserDataTransferObject> userMapper)
+        public NotificationMapper(IMapper<User, UserDTO> notificationRecipientUserMapper)
         {
-            this.userMapper = userMapper;
+            this.notificationRecipientUserMapper = notificationRecipientUserMapper;
         }
 
-        public NotificationDataTransferObject ToDataTransferObject(Notification notification)
+        public NotificationDTO ToDTO(Notification notification)
         {
             if (notification == null)
             {
                 return null;
             }
 
-            return new NotificationDataTransferObject
+            return new NotificationDTO
             {
-                Identifier = notification.Identifier,
-                User = userMapper.ToDataTransferObject(notification.User),
+                Id = notification.Id,
+                User = notificationRecipientUserMapper.ToDTO(notification.User),
                 Timestamp = notification.Timestamp,
                 Title = notification.Title,
                 Body = notification.Body,
                 Type = notification.Type,
-                RelatedRequestIdentifier = notification.RelatedRequestIdentifier
+                RelatedRequestId = notification.RelatedRequestId
             };
         }
 
-        public Notification ToModel(NotificationDataTransferObject notificationDataTransferObject)
+        public Notification ToModel(NotificationDTO NotificationDTO)
         {
-            if (notificationDataTransferObject == null)
+            if (NotificationDTO == null)
             {
                 return null;
             }
 
             return new Notification
             {
-                Identifier = notificationDataTransferObject.Identifier,
-                User = userMapper.ToModel(notificationDataTransferObject.User),
-                Timestamp = notificationDataTransferObject.Timestamp,
-                Title = notificationDataTransferObject.Title,
-                Body = notificationDataTransferObject.Body,
-                Type = notificationDataTransferObject.Type,
-                RelatedRequestIdentifier = notificationDataTransferObject.RelatedRequestIdentifier
+                Id = NotificationDTO.Id,
+                User = notificationRecipientUserMapper.ToModel(NotificationDTO.User),
+                Timestamp = NotificationDTO.Timestamp,
+                Title = NotificationDTO.Title,
+                Body = NotificationDTO.Body,
+                Type = NotificationDTO.Type,
+                RelatedRequestId = NotificationDTO.RelatedRequestId
             };
         }
     }
 }
-
-

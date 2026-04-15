@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -33,7 +33,7 @@ namespace Property_and_Management.Src.Service.Listeners
 
         public NotificationClient()
         {
-            udpClient = new UdpClient(AutoAssignLocalUdpPort); // OS will auto-assign
+            udpClient = new UdpClient(AutoAssignLocalUdpPort);
         }
 
         private void HandleMessagePacket(MessageWrapper wrappedMessage)
@@ -65,11 +65,9 @@ namespace Property_and_Management.Src.Service.Listeners
                 throw new ArgumentNullException(nameof(message));
             }
 
-            // Translate infrastructure message to domain Data Transfer Object before notifying subscribers,
-            // so callers never need to know about ServerCommunication types.
             var incoming = new IncomingNotification
             {
-                UserIdentifier = message.UserIdentifier,
+                UserId = message.UserId,
                 Timestamp = message.Timestamp,
                 Title = message.Title,
                 Body = message.Body
@@ -142,11 +140,11 @@ namespace Property_and_Management.Src.Service.Listeners
             return new Unsubscriber(subscribers, observer);
         }
 
-        public void SendNotification(int userIdentifier, string title, string body)
+        public void SendNotification(int userId, string title, string body)
         {
             var message = new SendNotificationMessage
             {
-                UserIdentifier = userIdentifier,
+                UserId = userId,
                 Timestamp = DateTime.UtcNow,
                 Title = title,
                 Body = body
@@ -156,9 +154,9 @@ namespace Property_and_Management.Src.Service.Listeners
             udpClient.Send(data, data.Length, ServerEndpoint);
         }
 
-        public void SubscribeToServer(int userIdentifier)
+        public void SubscribeToServer(int userId)
         {
-            var message = new SubscribeToServerMessage { UserIdentifier = userIdentifier };
+            var message = new SubscribeToServerMessage { UserId = userId };
             byte[] data = CommunicationHelper.SerializeMessage(message);
             udpClient.Send(data, data.Length, ServerEndpoint);
         }
@@ -192,4 +190,3 @@ namespace Property_and_Management.Src.Service.Listeners
         }
     }
 }
-

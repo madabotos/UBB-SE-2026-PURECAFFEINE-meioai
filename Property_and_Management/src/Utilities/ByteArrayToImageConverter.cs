@@ -16,8 +16,6 @@ namespace Property_and_Management.Src.Utilities
             {
                 try
                 {
-                    // Keep the stream alive for the BitmapImage lifetime to avoid intermittent
-                    // decode failures when list items are recycled during paging/virtualization.
                     var imageStream = new MemoryStream(bytes);
                     var image = new BitmapImage();
                     image.SetSource(imageStream.AsRandomAccessStream());
@@ -25,11 +23,9 @@ namespace Property_and_Management.Src.Utilities
                 }
                 catch
                 {
-                    // Fall through to placeholder if bytes are invalid/corrupted.
                 }
             }
 
-            // UI-LST-02: Default placeholder if none is uploaded
             return new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.jpg"));
         }
 

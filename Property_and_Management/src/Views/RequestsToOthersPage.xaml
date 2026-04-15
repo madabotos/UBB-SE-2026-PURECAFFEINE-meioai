@@ -35,13 +35,13 @@
                     Style="{StaticResource AccentButtonStyle}" Click="CreateRequestButton_Click"/>
         </Grid>
 
-        <!-- ListView for requests [REQ-REQ-05] -->
+        
         <ListView x:Name="ItemsListView" Grid.Row="1"
                   ItemsSource="{Binding PagedItems}"
                   SelectionMode="None"
                   IsItemClickEnabled="False">
             <ListView.ItemTemplate>
-                <DataTemplate x:DataType="local:RequestDataTransferObject">
+                <DataTemplate x:DataType="local:RequestDTO">
                     <Grid Background="#2D2D2D" Margin="0,0,0,10" Padding="15" CornerRadius="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="80"/>
@@ -49,7 +49,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Game picture [REQ-REQ-05] -->
+                        
                         <Image Grid.Column="0" Source="{Binding Game.Image, Converter={StaticResource ImageConverter}}"
                                Width="72" Height="72" Stretch="UniformToFill"
                                ImageFailed="Image_ImageFailed">
@@ -60,7 +60,7 @@
                             </Image.Style>
                         </Image>
 
-                        <!-- Game name, owner name, dates [REQ-REQ-05] -->
+                        
                         <StackPanel Grid.Column="1" Margin="12,0,0,0">
                             <TextBlock Text="{Binding Game.Name}" Style="{StaticResource BaseTextBlockStyle}" FontWeight="SemiBold"/>
                             <TextBlock Text="{Binding Owner.DisplayName}" Style="{StaticResource BodyTextBlockStyle}" Opacity="0.8"/>
@@ -68,10 +68,10 @@
                             <TextBlock Text="{Binding EndDateDisplayLong}" Style="{StaticResource CaptionTextBlockStyle}"/>
                         </StackPanel>
 
-                        <!-- Cancel button [REQ-REQ-06] -->
+                        
                         <Button Grid.Column="2"
                                 Content="Cancel"
-                                Tag="{Binding Identifier}"
+                                Tag="{Binding Id}"
                                 Click="CancelButton_Click"
                                 Tapped="CancelButton_Tapped"
                                 Margin="8,0,0,0"
@@ -83,7 +83,7 @@
             </ListView.ItemTemplate>
         </ListView>
 
-        <!-- Paging -->
+        
         <Grid Grid.Row="2" Margin="12">
             <TextBlock Text="{Binding ShowingText}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

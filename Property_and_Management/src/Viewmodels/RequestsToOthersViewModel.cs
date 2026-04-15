@@ -1,18 +1,18 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Linq;
 using Property_and_Management.Src.DataTransferObjects;
 using Property_and_Management.Src.Interface;
 
 namespace Property_and_Management.Src.Viewmodels
 {
-    public class RequestsToOthersViewModel : PagedViewModel<RequestDataTransferObject>
+    public class RequestsToOthersViewModel : PagedViewModel<RequestDTO>
     {
-        private const int MinimumSuccessfulEntityIdentifier = 1;
+        private const int MinimumSuccessfulEntityId = 1;
 
         private readonly IRequestService requestService;
         private readonly ICurrentUserContext currentUserContext;
 
-        public int RenterIdentifier { get; private set; }
+        public int renterId { get; private set; }
 
         public RequestsToOthersViewModel(IRequestService requestService, ICurrentUserContext currentUserContext)
         {
@@ -27,23 +27,18 @@ namespace Property_and_Management.Src.Viewmodels
 
         protected override void Reload()
         {
-            RenterIdentifier = currentUserContext.CurrentUserIdentifier;
+            renterId = currentUserContext.currentUserId;
             var allRequests = requestService
-                .GetRequestsForRenter(RenterIdentifier)
+                .GetRequestsForRenter(renterId)
                 .OrderByDescending(request => request.StartDate)
                 .ToImmutableList();
             SetAllItems(allRequests);
         }
 
-        /// <summary>
-        /// Attempt to cancel the given request on behalf of the current renter.
-        /// Returns <c>null</c> on success, or a user-friendly error message on failure.
-        /// Keeps the <c>Service</c> namespace out of the view layer.
-        /// </summary>
-        public string? TryCancelRequest(int requestIdentifier)
+        public string? TryCancelRequest(int requestId)
         {
-            var rawResult = requestService.CancelRequest(requestIdentifier, RenterIdentifier);
-            if (rawResult >= MinimumSuccessfulEntityIdentifier)
+            var rawResult = requestService.CancelRequest(requestId, renterId);
+            if (rawResult >= MinimumSuccessfulEntityId)
             {
                 Reload();
                 return null;

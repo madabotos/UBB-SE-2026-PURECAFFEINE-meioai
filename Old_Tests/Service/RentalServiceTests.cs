@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Immutable;
 using FluentAssertions;
 using Moq;
@@ -20,7 +20,7 @@ namespace Property_and_Management.Tests.Service
 
         private Mock<IRentalRepository> rentalRepositoryMock = null!;
         private Mock<IGameRepository> gameRepositoryMock = null!;
-        private Mock<IMapper<Rental, RentalDataTransferObject>> rentalMapperMock = null!;
+        private Mock<IMapper<Rental, RentalDTO>> rentalMapperMock = null!;
         private RentalService rentalService = null!;
 
         [SetUp]
@@ -28,13 +28,13 @@ namespace Property_and_Management.Tests.Service
         {
             rentalRepositoryMock = new Mock<IRentalRepository>();
             gameRepositoryMock = new Mock<IGameRepository>();
-            rentalMapperMock = new Mock<IMapper<Rental, RentalDataTransferObject>>();
+            rentalMapperMock = new Mock<IMapper<Rental, RentalDTO>>();
 
             gameRepositoryMock
                 .Setup(repository => repository.Get(SampleGameIdentifier))
                 .Returns(new Game
                 {
-                    Identifier = SampleGameIdentifier,
+                    id = SampleGameIdentifier,
                     Owner = new User(SampleOwnerIdentifier, "Owner"),
                     IsActive = true,
                 });
@@ -79,8 +79,8 @@ namespace Property_and_Management.Tests.Service
         public void CreateConfirmedRental_WhenSlotUnavailable_ThrowsAndDoesNotPersist()
         {
             var existingRental = new Rental(
-                identifier: 1,
-                game: new Game { Identifier = SampleGameIdentifier },
+                id: 1,
+                game: new Game { id = SampleGameIdentifier },
                 renter: new User(SampleRenterIdentifier, "Renter"),
                 owner: new User(SampleOwnerIdentifier, "Owner"),
                 startDate: DateTime.UtcNow.AddDays(1),
@@ -105,8 +105,8 @@ namespace Property_and_Management.Tests.Service
         public void IsSlotAvailable_WithinBufferOfExistingRental_ReturnsFalse()
         {
             var existingRental = new Rental(
-                identifier: 1,
-                game: new Game { Identifier = SampleGameIdentifier },
+                id: 1,
+                game: new Game { id = SampleGameIdentifier },
                 renter: new User(SampleRenterIdentifier, "Renter"),
                 owner: new User(SampleOwnerIdentifier, "Owner"),
                 startDate: DateTime.UtcNow.AddDays(10),
@@ -127,8 +127,8 @@ namespace Property_and_Management.Tests.Service
         public void IsSlotAvailable_OutsideBuffer_ReturnsTrue()
         {
             var existingRental = new Rental(
-                identifier: 1,
-                game: new Game { Identifier = SampleGameIdentifier },
+                id: 1,
+                game: new Game { id = SampleGameIdentifier },
                 renter: new User(SampleRenterIdentifier, "Renter"),
                 owner: new User(SampleOwnerIdentifier, "Owner"),
                 startDate: DateTime.UtcNow.AddDays(1),

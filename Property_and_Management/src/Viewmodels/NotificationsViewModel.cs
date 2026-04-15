@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -8,23 +8,19 @@ using Property_and_Management.Src.Interface;
 
 namespace Property_and_Management.Src.Viewmodels
 {
-    public class NotificationsViewModel : PagedViewModel<NotificationDataTransferObject>,
-                                           IObserver<NotificationDataTransferObject>,
+    public class NotificationsViewModel : PagedViewModel<NotificationDTO>,
+                                           IObserver<NotificationDTO>,
                                            IDisposable
     {
-        private const int InvalidUserIdentifier = 0;
-        private const int DefaultUserIdentifier = 1;
+        private const int InvalidUserId = 0;
+        private const int DefaultUserId = 1;
 
         private readonly INotificationService notificationService;
         private readonly IDisposable subscription;
 
-        // Captured at construction (on the UI thread via DI) so we can marshal
-        // OnNext calls back to the UI thread. Incoming notifications arrive on a
-        // thread-pool thread from the UDP listener and WinUI ObservableCollection
-        // writes from a non-UI thread either throw or silently drop updates.
         private readonly DispatcherQueue? dispatcherQueue;
 
-        public int CurrentUserIdentifier { get; private set; }
+        public int currentUserId { get; private set; }
 
         public NotificationsViewModel(
             INotificationService notificationService,
@@ -32,42 +28,37 @@ namespace Property_and_Management.Src.Viewmodels
         {
             this.notificationService = notificationService;
 
-            // DI resolution happens from App.InitializeServices on the UI thread,
-            // so GetForCurrentThread() returns the UI dispatcher. If ever
-            // constructed off the UI thread this will be null and OnNext will
-            // fall back to in-place.
             dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
-            LoadNotificationsForUser(currentUserContext.CurrentUserIdentifier);
+            LoadNotificationsForUser(currentUserContext.currentUserId);
 
             subscription = notificationService.Subscribe(this);
         }
 
-        public void LoadNotificationsForUser(int userIdentifier)
+        public void LoadNotificationsForUser(int userId)
         {
-            CurrentUserIdentifier = userIdentifier;
+            currentUserId = userId;
             Reload();
         }
 
         protected override void Reload()
         {
             var notifications = notificationService
-                .GetNotificationsForUser(CurrentUserIdentifier)
-                .OrderByDescending(notification => notification.Identifier)
+                .GetNotificationsForUser(currentUserId)
+                .OrderByDescending(notification => notification.Id)
                 .ToImmutableList();
 
             SetAllItems(notifications);
         }
 
-        public void DeleteNotificationByIdentifier(int notificationIdentifier)
+        public void DeleteNotificationByIdentifier(int notificationId)
         {
             try
             {
-                notificationService.DeleteNotificationByIdentifier(notificationIdentifier);
+                notificationService.DeleteNotificationByIdentifier(notificationId);
             }
             catch (KeyNotFoundException)
             {
-                // The row may already have been removed by another app instance.
             }
 
             Reload();
@@ -82,22 +73,19 @@ namespace Property_and_Management.Src.Viewmodels
             System.Diagnostics.Debug.WriteLine($"Notification observable error: {error.Message}");
         }
 
-        public void OnNext(NotificationDataTransferObject value)
+        public void OnNext(NotificationDTO value)
         {
-            // Incoming notifications are published from the UDP listener's
-            // thread-pool thread. All downstream work updates ObservableCollection
-            // bindings and must run on the UI thread.
-            var targetUserIdentifier = CurrentUserIdentifier == InvalidUserIdentifier
-                ? DefaultUserIdentifier
-                : CurrentUserIdentifier;
+            var targetUserId = currentUserId == InvalidUserId
+                ? DefaultUserId
+                : currentUserId;
 
             if (dispatcherQueue != null && !dispatcherQueue.HasThreadAccess)
             {
-                dispatcherQueue.TryEnqueue(() => LoadNotificationsForUser(targetUserIdentifier));
+                dispatcherQueue.TryEnqueue(() => LoadNotificationsForUser(targetUserId));
                 return;
             }
 
-            LoadNotificationsForUser(targetUserIdentifier);
+            LoadNotificationsForUser(targetUserId);
         }
 
         public void Dispose() => subscription?.Dispose();

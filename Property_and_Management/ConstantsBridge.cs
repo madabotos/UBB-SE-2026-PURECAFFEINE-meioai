@@ -1,24 +1,3 @@
-// Merge-glue between:
-//   - Property_and_Management.Constants (existing static class at the root)
-//   - Property_and_Management.Src.Constants (new namespace introduced to
-//     host DomainConstants.RentalBufferHours and other cross-layer domain
-//     constants)
-//
-// Inside files under Property_and_Management.Src.* an unqualified reference
-// like `Constants.DialogTitles.ValidationError` resolves to the nearest
-// enclosing namespace that owns a symbol named `Constants`. Since
-// Property_and_Management.Src.Constants exists as a namespace, the lookup
-// stops there and never finds the Constants class at the root.
-//
-// To avoid modifying dozens of src/ files just to add fully-qualified names
-// or extra `using` directives, this file injects forwarder types into the
-// Property_and_Management.Src.Constants namespace. Each one is a thin alias
-// for the corresponding nested type in the root Constants class, so there
-// is a single source of truth (the root class) and references continue to
-// work naturally from within src.*.
-//
-// NOTE: this file lives at the Property_and_Management project root, not
-// under src/, so it doesn't clash with Agents 1 & 2's file ownership.
 namespace Property_and_Management.Src.Constants
 {
     internal static class DialogTitles

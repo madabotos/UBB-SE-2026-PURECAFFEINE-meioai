@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Immutable;
 using FluentAssertions;
 using Moq;
@@ -25,11 +25,11 @@ namespace Property_and_Management.Tests.Viewmodels
             requestServiceMock = new Mock<IRequestService>();
             currentUserContextMock = new Mock<ICurrentUserContext>();
             currentUserContextMock
-                .SetupGet(context => context.CurrentUserIdentifier)
+                .SetupGet(context => context.currentUserId)
                 .Returns(SampleOwnerIdentifier);
             requestServiceMock
                 .Setup(service => service.GetRequestsForOwner(SampleOwnerIdentifier))
-                .Returns(ImmutableList<RequestDataTransferObject>.Empty);
+                .Returns(ImmutableList<RequestDTO>.Empty);
 
             viewModel = new RequestsFromOthersViewModel(
                 requestServiceMock.Object, currentUserContextMock.Object);
@@ -38,16 +38,13 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void TryApproveRequest_HappyPath_ReturnsNullAndReloadsCurrentPage()
         {
-            // arrange
             requestServiceMock
                 .Setup(service => service.ApproveRequest(SampleRequestIdentifier, SampleOwnerIdentifier))
                 .Returns(Result<int, ApproveRequestError>.Success(500));
             requestServiceMock.Invocations.Clear();
 
-            // act
             var errorMessage = viewModel.TryApproveRequest(SampleRequestIdentifier);
 
-            // assert
             errorMessage.Should().BeNull();
             requestServiceMock.Verify(
                 service => service.GetRequestsForOwner(SampleOwnerIdentifier),
@@ -57,31 +54,25 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void TryDenyRequest_Unauthorized_ReturnsFriendlyMessage()
         {
-            // arrange
             requestServiceMock
                 .Setup(service => service.DenyRequest(
                     SampleRequestIdentifier, SampleOwnerIdentifier, It.IsAny<string>()))
                 .Returns(Result<int, DenyRequestError>.Failure(DenyRequestError.Unauthorized));
 
-            // act
             var errorMessage = viewModel.TryDenyRequest(SampleRequestIdentifier, "unavailable");
 
-            // assert
             errorMessage.Should().NotBeNull();
         }
 
         [Test]
         public void TryOfferGame_RequestNotOpen_ReturnsFriendlyMessage()
         {
-            // arrange
             requestServiceMock
                 .Setup(service => service.OfferGame(SampleRequestIdentifier, SampleOwnerIdentifier))
                 .Returns(Result<int, OfferError>.Failure(OfferError.RequestNotOpen));
 
-            // act
             var errorMessage = viewModel.TryOfferGame(SampleRequestIdentifier);
 
-            // assert
             errorMessage.Should().NotBeNull();
         }
     }

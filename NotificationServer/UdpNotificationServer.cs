@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -15,7 +15,6 @@ namespace NotificationServer
 
         private static UdpClient? notificationServerUdpClient;
 
-        // Maps each subscribed user identifier to the latest known UDP endpoint.
         private static readonly Dictionary<int, IPEndPoint> UserEndpointByIdentifierMap = [];
 
         private static async Task SendMessageToSubscribedUser(int destinationUserIdentifier, MessageBase notificationMessagePayload)
@@ -27,7 +26,7 @@ namespace NotificationServer
 
             if (!UserEndpointByIdentifierMap.TryGetValue(destinationUserIdentifier, out var destinationUserEndpoint))
             {
-                throw new InvalidDataException("Target user identifier was not present in the endpoint map.");
+                throw new InvalidDataException("Target user id was not present in the endpoint map.");
             }
 
             byte[] serializedMessageBytes = CommunicationHelper.SerializeMessage(notificationMessagePayload);
@@ -43,8 +42,8 @@ namespace NotificationServer
                 throw new InvalidCastException("Expected message was not " + nameof(SubscribeToServerMessage));
             }
 
-            UserEndpointByIdentifierMap[userSubscriptionMessagePayload.UserIdentifier] = receivedRemoteEndpoint;
-            Console.WriteLine($"{userSubscriptionMessagePayload.UserIdentifier} -> {receivedRemoteEndpoint.Address}:{receivedRemoteEndpoint.Port}");
+            UserEndpointByIdentifierMap[userSubscriptionMessagePayload.UserId] = receivedRemoteEndpoint;
+            Console.WriteLine($"{userSubscriptionMessagePayload.UserId} -> {receivedRemoteEndpoint.Address}:{receivedRemoteEndpoint.Port}");
         }
 
         private static async Task HandleSendNotificationMessagePacket(MessageWrapper receivedMessageWrapper)
@@ -56,16 +55,15 @@ namespace NotificationServer
                 throw new InvalidCastException("Expected message was not " + nameof(SendNotificationMessage));
             }
 
-            var deliveryEndpointDiagnosticDescription = UserEndpointByIdentifierMap.TryGetValue(outboundNotificationMessagePayload.UserIdentifier, out var subscribedUserEndpoint)
+            var deliveryEndpointDiagnosticDescription = UserEndpointByIdentifierMap.TryGetValue(outboundNotificationMessagePayload.UserId, out var subscribedUserEndpoint)
                 ? subscribedUserEndpoint.ToString()
                 : NotSubscribedEndpointDescription;
 
             Console.WriteLine(
-                $"Sending notification to user: {outboundNotificationMessagePayload.UserIdentifier}({deliveryEndpointDiagnosticDescription}) " +
+                $"Sending notification to user: {outboundNotificationMessagePayload.UserId}({deliveryEndpointDiagnosticDescription}) " +
                 $"[{outboundNotificationMessagePayload.Title} - {outboundNotificationMessagePayload.Body}]");
 
-            // Resend the UDP packet to the target user identifier.
-            await SendMessageToSubscribedUser(outboundNotificationMessagePayload.UserIdentifier, outboundNotificationMessagePayload);
+            await SendMessageToSubscribedUser(outboundNotificationMessagePayload.UserId, outboundNotificationMessagePayload);
         }
 
         private static async Task HandleIncomingMessagePacket(IPEndPoint receivedRemoteEndpoint, MessageWrapper receivedMessageWrapper)
@@ -110,13 +108,10 @@ namespace NotificationServer
             {
                 while (!listenerShutdownCancellationToken.IsCancellationRequested)
                 {
-                    // Receive the serialized object.
                     UdpReceiveResult receivedUdpPacketResult = await notificationServerUdpClient.ReceiveAsync(listenerShutdownCancellationToken);
 
-                    // Deserialize the wrapper.
                     MessageWrapper? receivedMessageWrapper = CommunicationHelper.GetMessageWrapper(receivedUdpPacketResult.Buffer);
 
-                    // If null, drop the message and print a hint.
                     if (receivedMessageWrapper == null)
                     {
                         Console.WriteLine($"Null message received from json: {Encoding.UTF8.GetString(receivedUdpPacketResult.Buffer)}");
@@ -147,4 +142,3 @@ namespace NotificationServer
         }
     }
 }
-

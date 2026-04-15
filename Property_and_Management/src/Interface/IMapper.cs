@@ -1,20 +1,11 @@
-namespace Property_and_Management.Src.Interface
+﻿namespace Property_and_Management.Src.Interface
 {
-    public interface IMapper<TEntity, TDataTransferObject>
-        where TEntity : IEntity
-        where TDataTransferObject : IDataTransferObject<TEntity>
+    public interface IMapper<TDomainModel, TDTO>
+        where TDomainModel : IEntity
+        where TDTO : IDTO<TDomainModel>
     {
-        /// <summary>
-        /// Method for creating a Data Transfer Object from a model
-        /// </summary>
-        /// <param name="model"></param>
-        /// <returns>The newly created Data Transfer Object</returns>
-        TDataTransferObject ToDataTransferObject(TEntity entity);
+        TDTO ToDTO(TDomainModel sourceModel);
 
-        /// <summary>
-        /// Converts the current instance to a model of type <typeparamref name="TEntity"/>.
-        /// </summary>
-        /// <returns>An object of type <typeparamref name="TEntity"/> representing the model equivalent of the current instance.</returns>
-        TEntity ToModel(TDataTransferObject dataTransferObject);
+        TDomainModel ToModel(TDTO sourceDataTransferObject);
     }
 }

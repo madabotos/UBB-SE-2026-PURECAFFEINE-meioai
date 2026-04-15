@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,8 +17,6 @@ namespace ServerCommunication
         public static MessageWrapper? GetMessageWrapper(byte[] resultBytes)
         {
             string recivedJson = Encoding.UTF8.GetString(resultBytes);
-
-            // Deserialize
             return JsonSerializer.Deserialize<MessageWrapper>(recivedJson);
         }
     }

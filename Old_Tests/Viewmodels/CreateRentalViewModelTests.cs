@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Immutable;
 using FluentAssertions;
 using Moq;
@@ -31,14 +31,14 @@ namespace Property_and_Management.Tests.Viewmodels
             currentUserContextMock = new Mock<ICurrentUserContext>();
 
             currentUserContextMock
-                .SetupGet(context => context.CurrentUserIdentifier)
+                .SetupGet(context => context.currentUserId)
                 .Returns(SampleCurrentUserIdentifier);
             gameServiceMock
                 .Setup(service => service.GetGamesForOwner(SampleCurrentUserIdentifier))
-                .Returns(ImmutableList<GameDataTransferObject>.Empty);
+                .Returns(ImmutableList<GameDTO>.Empty);
             userServiceMock
                 .Setup(service => service.GetUsersExcept(SampleCurrentUserIdentifier))
-                .Returns(ImmutableList<UserDataTransferObject>.Empty);
+                .Returns(ImmutableList<UserDTO>.Empty);
 
             viewModel = new CreateRentalViewModel(
                 gameServiceMock.Object,
@@ -46,12 +46,12 @@ namespace Property_and_Management.Tests.Viewmodels
                 userServiceMock.Object,
                 currentUserContextMock.Object)
             {
-                SelectedGame = new GameDataTransferObject
+                SelectedGame = new GameDTO
                 {
-                    Identifier = SampleGameIdentifier,
+                    id = SampleGameIdentifier,
                     IsActive = true,
                 },
-                SelectedRenter = new UserDataTransferObject { Identifier = SampleRenterIdentifier },
+                SelectedRenter = new UserDTO { id = SampleRenterIdentifier },
                 StartDate = DateTimeOffset.Now.AddDays(1),
                 EndDate = DateTimeOffset.Now.AddDays(3),
             };
@@ -60,57 +60,45 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void LoadData_OnlyExposesActiveGames()
         {
-            // arrange
-            var activeGame = new GameDataTransferObject { Identifier = 1, IsActive = true };
-            var inactiveGame = new GameDataTransferObject { Identifier = 2, IsActive = false };
+            var activeGame = new GameDTO { id = 1, IsActive = true };
+            var inactiveGame = new GameDTO { id = 2, IsActive = false };
             gameServiceMock
                 .Setup(service => service.GetGamesForOwner(SampleCurrentUserIdentifier))
                 .Returns(ImmutableList.Create(activeGame, inactiveGame));
 
-            // act
             viewModel.LoadData();
 
-            // assert
-            viewModel.MyGames.Should().Contain(game => game.Identifier == 1);
-            viewModel.MyGames.Should().NotContain(game => game.Identifier == 2);
+            viewModel.MyGames.Should().Contain(game => game.id == 1);
+            viewModel.MyGames.Should().NotContain(game => game.id == 2);
         }
 
         [Test]
         public void ValidateInputs_MissingSelectedGame_ReturnsFalse()
         {
-            // arrange
             viewModel.SelectedGame = null!;
 
-            // act
             var isValid = viewModel.ValidateInputs();
 
-            // assert
             isValid.Should().BeFalse();
         }
 
         [Test]
         public void ValidateInputs_MissingSelectedRenter_ReturnsFalse()
         {
-            // arrange
             viewModel.SelectedRenter = null!;
 
-            // act
             var isValid = viewModel.ValidateInputs();
 
-            // assert
             isValid.Should().BeFalse();
         }
 
         [Test]
         public void SaveRental_InvalidInputs_ReturnsValidationMessage()
         {
-            // arrange
             viewModel.StartDate = null;
 
-            // act
             var errorMessage = viewModel.SaveRental();
 
-            // assert
             errorMessage.Should().NotBeNull();
             rentalServiceMock.Verify(
                 service => service.CreateConfirmedRental(
@@ -122,12 +110,8 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void SaveRental_HappyPath_ReturnsNullAndCallsService()
         {
-            // arrange — defaults are valid
-
-            // act
             var errorMessage = viewModel.SaveRental();
 
-            // assert
             errorMessage.Should().BeNull();
             rentalServiceMock.Verify(
                 service => service.CreateConfirmedRental(
@@ -142,17 +126,14 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void SaveRental_ServiceThrows_ReturnsExceptionMessage()
         {
-            // arrange
             rentalServiceMock
                 .Setup(service => service.CreateConfirmedRental(
                     It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
                     It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                 .Throws(new InvalidOperationException("slot taken"));
 
-            // act
             var errorMessage = viewModel.SaveRental();
 
-            // assert
             errorMessage.Should().Be("slot taken");
         }
     }

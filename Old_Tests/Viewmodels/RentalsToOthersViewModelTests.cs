@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Immutable;
 using FluentAssertions;
 using Moq;
@@ -23,40 +23,34 @@ namespace Property_and_Management.Tests.Viewmodels
             rentalServiceMock = new Mock<IRentalService>();
             currentUserContextMock = new Mock<ICurrentUserContext>();
             currentUserContextMock
-                .SetupGet(context => context.CurrentUserIdentifier)
+                .SetupGet(context => context.currentUserId)
                 .Returns(SampleOwnerIdentifier);
             rentalServiceMock
                 .Setup(service => service.GetRentalsForOwner(SampleOwnerIdentifier))
-                .Returns(ImmutableList<RentalDataTransferObject>.Empty);
+                .Returns(ImmutableList<RentalDTO>.Empty);
         }
 
         [Test]
         public void Constructor_LoadsRentalsForCurrentOwner()
         {
-            // arrange
             rentalServiceMock
                 .Setup(service => service.GetRentalsForOwner(SampleOwnerIdentifier))
                 .Returns(ImmutableList.Create(BuildRental(1), BuildRental(2), BuildRental(3)));
 
-            // act
             var viewModel = new RentalsToOthersViewModel(rentalServiceMock.Object, currentUserContextMock.Object);
 
-            // assert
             viewModel.TotalCount.Should().Be(3);
-            viewModel.OwnerIdentifier.Should().Be(SampleOwnerIdentifier);
+            viewModel.ownerId.Should().Be(SampleOwnerIdentifier);
         }
 
         [Test]
         public void LoadRentals_ReloadsFromService()
         {
-            // arrange
             var viewModel = new RentalsToOthersViewModel(rentalServiceMock.Object, currentUserContextMock.Object);
             rentalServiceMock.Invocations.Clear();
 
-            // act
             viewModel.LoadRentals();
 
-            // assert
             rentalServiceMock.Verify(
                 service => service.GetRentalsForOwner(SampleOwnerIdentifier),
                 Times.Once);
@@ -65,24 +59,21 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void ShowingText_UsesRentalsVocabulary()
         {
-            // arrange
             var viewModel = new RentalsToOthersViewModel(rentalServiceMock.Object, currentUserContextMock.Object);
 
-            // act
             var text = viewModel.ShowingText;
 
-            // assert
             text.Should().Contain("rentals");
         }
 
-        private static RentalDataTransferObject BuildRental(int identifier)
+        private static RentalDTO BuildRental(int id)
         {
-            return new RentalDataTransferObject
+            return new RentalDTO
             {
-                Identifier = identifier,
-                Game = new GameDataTransferObject { Identifier = 100 },
-                Renter = new UserDataTransferObject { Identifier = 99 },
-                Owner = new UserDataTransferObject { Identifier = SampleOwnerIdentifier },
+                id = id,
+                Game = new GameDTO { id = 100 },
+                Renter = new UserDTO { id = 99 },
+                Owner = new UserDTO { id = SampleOwnerIdentifier },
                 StartDate = DateTime.UtcNow.AddDays(1),
                 EndDate = DateTime.UtcNow.AddDays(3),
             };

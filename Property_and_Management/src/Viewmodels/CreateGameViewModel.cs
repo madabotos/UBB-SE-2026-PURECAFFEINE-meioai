@@ -8,7 +8,7 @@ namespace Property_and_Management.Src.Viewmodels
     public class CreateGameViewModel
     {
         private const int NoValidationErrors = 0;
-        private const int NewEntityIdentifier = 0;
+        private const int NewEntityId = 0;
         private const decimal InvalidOrEmptyPriceValue = 0m;
 
         private readonly IGameService gameService;
@@ -27,7 +27,7 @@ namespace Property_and_Management.Src.Viewmodels
         public bool IsActive { get; set; } = true;
         public byte[] Image { get; set; } = null;
 
-        public int CurrentUserIdentifier => currentUserContext.CurrentUserIdentifier;
+        public int currentUserId => currentUserContext.currentUserId;
 
         public CreateGameViewModel(IGameService gameService, ICurrentUserContext currentUserContext)
         {
@@ -65,11 +65,6 @@ namespace Property_and_Management.Src.Viewmodels
             return ViewOperationResult.Success();
         }
 
-        /// <summary>
-        /// Parse a raw price string from the view's NumberBox and update the
-        /// bound <see cref="Price"/> / <see cref="PriceDouble"/>. Falls back
-        /// to zero so validation rejects empty/unparseable input.
-        /// </summary>
         public void SetPriceFromText(string priceText)
         {
             if (PriceInputParser.TryParsePriceInput(priceText, out var parsedPrice))
@@ -81,7 +76,7 @@ namespace Property_and_Management.Src.Viewmodels
             Price = InvalidOrEmptyPriceValue;
         }
 
-        public GameDataTransferObject SaveGame()
+        public GameDTO SaveGame()
         {
             if (ValidateInputs().Count > NoValidationErrors)
             {
@@ -90,10 +85,10 @@ namespace Property_and_Management.Src.Viewmodels
 
             Image = GameInputHelper.EnsureImageOrDefault(Image, AppDomain.CurrentDomain.BaseDirectory);
 
-            var newgameDataTransferObject = new GameDataTransferObject
+            var newGameDTO = new GameDTO
             {
-                Identifier = NewEntityIdentifier,
-                Owner = new UserDataTransferObject { Identifier = CurrentUserIdentifier },
+                Id = NewEntityId,
+                Owner = new UserDTO { Id = currentUserId },
                 Name = Name,
                 Price = Price,
                 MinimumPlayerNumber = MinimumPlayers,
@@ -103,8 +98,8 @@ namespace Property_and_Management.Src.Viewmodels
                 IsActive = IsActive
             };
 
-            gameService.AddGame(newgameDataTransferObject);
-            return newgameDataTransferObject;
+            gameService.AddGame(newGameDTO);
+            return newGameDTO;
         }
     }
 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Immutable;
 using FluentAssertions;
 using Moq;
@@ -23,67 +23,58 @@ namespace Property_and_Management.Tests.Viewmodels
             rentalServiceMock = new Mock<IRentalService>();
             currentUserContextMock = new Mock<ICurrentUserContext>();
             currentUserContextMock
-                .SetupGet(context => context.CurrentUserIdentifier)
+                .SetupGet(context => context.currentUserId)
                 .Returns(SampleRenterIdentifier);
             rentalServiceMock
                 .Setup(service => service.GetRentalsForRenter(SampleRenterIdentifier))
-                .Returns(ImmutableList<RentalDataTransferObject>.Empty);
+                .Returns(ImmutableList<RentalDTO>.Empty);
         }
 
         [Test]
         public void Constructor_LoadsRentalsForCurrentRenter()
         {
-            // arrange
             rentalServiceMock
                 .Setup(service => service.GetRentalsForRenter(SampleRenterIdentifier))
                 .Returns(ImmutableList.Create(BuildRental(1), BuildRental(2)));
 
-            // act
             var viewModel = new RentalsFromOthersViewModel(rentalServiceMock.Object, currentUserContextMock.Object);
 
-            // assert
             viewModel.TotalCount.Should().Be(2);
-            viewModel.RenterIdentifier.Should().Be(SampleRenterIdentifier);
+            viewModel.renterId.Should().Be(SampleRenterIdentifier);
         }
 
         [Test]
         public void Reload_OrdersRentalsByStartDateDescending()
         {
-            // arrange
-            var olderRental = BuildRental(identifier: 1, startDate: DateTime.UtcNow.AddDays(2));
-            var newerRental = BuildRental(identifier: 2, startDate: DateTime.UtcNow.AddDays(10));
+            var olderRental = BuildRental(id: 1, startDate: DateTime.UtcNow.AddDays(2));
+            var newerRental = BuildRental(id: 2, startDate: DateTime.UtcNow.AddDays(10));
             rentalServiceMock
                 .Setup(service => service.GetRentalsForRenter(SampleRenterIdentifier))
                 .Returns(ImmutableList.Create(olderRental, newerRental));
 
-            // act
             var viewModel = new RentalsFromOthersViewModel(rentalServiceMock.Object, currentUserContextMock.Object);
 
-            // assert — newest rental should come first
-            viewModel.PagedItems[0].Identifier.Should().Be(2);
+            viewModel.PagedItems[0].id.Should().Be(2);
         }
 
         [Test]
         public void ShowingText_UsesRentalsVocabulary()
         {
-            // arrange
             var viewModel = new RentalsFromOthersViewModel(rentalServiceMock.Object, currentUserContextMock.Object);
 
-            // act
             var text = viewModel.ShowingText;
 
-            // assert
             text.Should().Contain("rentals");
         }
 
-        private static RentalDataTransferObject BuildRental(int identifier, DateTime? startDate = null)
+        private static RentalDTO BuildRental(int id, DateTime? startDate = null)
         {
-            return new RentalDataTransferObject
+            return new RentalDTO
             {
-                Identifier = identifier,
-                Game = new GameDataTransferObject { Identifier = 100 },
-                Renter = new UserDataTransferObject { Identifier = SampleRenterIdentifier },
-                Owner = new UserDataTransferObject { Identifier = 99 },
+                id = id,
+                Game = new GameDTO { id = 100 },
+                Renter = new UserDTO { id = SampleRenterIdentifier },
+                Owner = new UserDTO { id = 99 },
                 StartDate = startDate ?? DateTime.UtcNow.AddDays(1),
                 EndDate = (startDate ?? DateTime.UtcNow.AddDays(1)).AddDays(2),
             };

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Immutable;
 using System.Linq;
 using Property_and_Management.Src.DataTransferObjects;
@@ -11,7 +11,7 @@ namespace Property_and_Management.Src.Service
     {
         private readonly IGameRepository gameRepository;
         private readonly IRentalRepository rentalRepository;
-        private readonly IMapper<Game, GameDataTransferObject> gameMapper;
+        private readonly IMapper<Game, GameDTO> gameMapper;
         private readonly IRequestService requestService;
         private const int NoActiveOrUpcomingRentals = 0;
         private const int SingularRentalCount = 1;
@@ -19,7 +19,7 @@ namespace Property_and_Management.Src.Service
         public GameService(
             IGameRepository gameRepository,
             IRentalRepository rentalRepository,
-            IMapper<Game, GameDataTransferObject> gameMapper,
+            IMapper<Game, GameDTO> gameMapper,
             IRequestService requestService)
         {
             this.gameRepository = gameRepository;
@@ -28,19 +28,19 @@ namespace Property_and_Management.Src.Service
             this.requestService = requestService;
         }
 
-        public void AddGame(GameDataTransferObject game)
+        public void AddGame(GameDTO game)
         {
             gameRepository.Add(gameMapper.ToModel(game));
         }
 
-        public void UpdateGameByIdentifier(int gameIdentifier, GameDataTransferObject game)
+        public void UpdateGameByIdentifier(int gameId, GameDTO game)
         {
-            gameRepository.Update(gameIdentifier, gameMapper.ToModel(game));
+            gameRepository.Update(gameId, gameMapper.ToModel(game));
         }
 
-        public GameDataTransferObject DeleteGameByIdentifier(int gameIdentifier)
+        public GameDTO DeleteGameByIdentifier(int gameId)
         {
-            var rentals = rentalRepository.GetRentalsByGame(gameIdentifier);
+            var rentals = rentalRepository.GetRentalsByGame(gameId);
             var now = DateTime.Now;
             var activeOrUpcomingRentalsCount = rentals.Count(rental => rental.EndDate >= now);
             if (activeOrUpcomingRentalsCount > NoActiveOrUpcomingRentals)
@@ -52,35 +52,32 @@ namespace Property_and_Management.Src.Service
 
             foreach (var rental in rentals)
             {
-                rentalRepository.Delete(rental.Identifier);
+                rentalRepository.Delete(rental.Id);
             }
 
-            // Deleting a game invalidates pending requests for that game.
-            // Reuse the existing deactivation flow to notify renters and clean requests first.
-            requestService.OnGameDeactivated(gameIdentifier);
-            return gameMapper.ToDataTransferObject(gameRepository.Delete(gameIdentifier));
+            requestService.OnGameDeactivated(gameId);
+            return gameMapper.ToDTO(gameRepository.Delete(gameId));
         }
 
-        public GameDataTransferObject GetGameByIdentifier(int gameIdentifier)
+        public GameDTO GetGameByIdentifier(int gameId)
         {
-            return gameMapper.ToDataTransferObject(gameRepository.Get(gameIdentifier));
+            return gameMapper.ToDTO(gameRepository.Get(gameId));
         }
 
-        public ImmutableList<GameDataTransferObject> GetGamesForOwner(int ownerIdentifier)
+        public ImmutableList<GameDTO> GetGamesForOwner(int ownerId)
         {
             return gameRepository
-                .GetGamesByOwner(ownerIdentifier)
-                .Select(game => gameMapper.ToDataTransferObject(game))
+                .GetGamesByOwner(ownerId)
+                .Select(game => gameMapper.ToDTO(game))
                 .ToImmutableList();
         }
 
-        public ImmutableList<GameDataTransferObject> GetAllGames()
+        public ImmutableList<GameDTO> GetAllGames()
         {
             return gameRepository
                 .GetAll()
-                .Select(game => gameMapper.ToDataTransferObject(game))
+                .Select(game => gameMapper.ToDTO(game))
                 .ToImmutableList();
         }
     }
 }
-

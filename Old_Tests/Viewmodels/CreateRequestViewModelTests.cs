@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Immutable;
 using FluentAssertions;
 using Moq;
@@ -9,10 +9,6 @@ using Property_and_Management.Src.Viewmodels;
 
 namespace Property_and_Management.Tests.Viewmodels
 {
-    // These tests target the refactored CreateRequestViewModel that exposes a
-    // TrySubmitRequest() method returning the user-facing error string (or null
-    // on success). Agent 2 adds this method so the View can stop importing the
-    // service namespace and stop doing its own error-code → message mapping.
     [TestFixture]
     public sealed class CreateRequestViewModelTests
     {
@@ -34,9 +30,9 @@ namespace Property_and_Management.Tests.Viewmodels
 
             gameServiceMock
                 .Setup(service => service.GetAllGames())
-                .Returns(ImmutableList<GameDataTransferObject>.Empty);
+                .Returns(ImmutableList<GameDTO>.Empty);
             currentUserContextMock
-                .SetupGet(context => context.CurrentUserIdentifier)
+                .SetupGet(context => context.currentUserId)
                 .Returns(SampleCurrentUserIdentifier);
 
             viewModel = new CreateRequestViewModel(
@@ -44,10 +40,10 @@ namespace Property_and_Management.Tests.Viewmodels
                 requestServiceMock.Object,
                 currentUserContextMock.Object)
             {
-                SelectedGame = new GameDataTransferObject
+                SelectedGame = new GameDTO
                 {
-                    Identifier = SampleGameIdentifier,
-                    Owner = new UserDataTransferObject { Identifier = SampleOwnerIdentifier },
+                    id = SampleGameIdentifier,
+                    Owner = new UserDTO { id = SampleOwnerIdentifier },
                     IsActive = true,
                 },
                 StartDate = DateTime.Now.AddDays(2),
@@ -58,17 +54,14 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void TrySubmitRequest_OwnerCannotRent_ReturnsFriendlyMessage()
         {
-            // arrange
             requestServiceMock
                 .Setup(service => service.CreateRequest(
                     It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
                     It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                 .Returns(Result<int, CreateRequestError>.Failure(CreateRequestError.OwnerCannotRent));
 
-            // act
             var errorMessage = viewModel.TrySubmitRequest();
 
-            // assert
             errorMessage.Should().NotBeNull();
             errorMessage.Should().Contain("own");
         }
@@ -76,17 +69,14 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void TrySubmitRequest_DatesUnavailable_ReturnsFriendlyMessage()
         {
-            // arrange
             requestServiceMock
                 .Setup(service => service.CreateRequest(
                     It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
                     It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                 .Returns(Result<int, CreateRequestError>.Failure(CreateRequestError.DatesUnavailable));
 
-            // act
             var errorMessage = viewModel.TrySubmitRequest();
 
-            // assert
             errorMessage.Should().NotBeNull();
             errorMessage.Should().Contain("dates");
         }
@@ -94,17 +84,14 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void TrySubmitRequest_GameDoesNotExist_ReturnsFriendlyMessage()
         {
-            // arrange
             requestServiceMock
                 .Setup(service => service.CreateRequest(
                     It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
                     It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                 .Returns(Result<int, CreateRequestError>.Failure(CreateRequestError.GameDoesNotExist));
 
-            // act
             var errorMessage = viewModel.TrySubmitRequest();
 
-            // assert
             errorMessage.Should().NotBeNull();
             errorMessage.Should().Contain("game");
         }
@@ -112,17 +99,14 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void TrySubmitRequest_HappyPath_ReturnsNull()
         {
-            // arrange
             requestServiceMock
                 .Setup(service => service.CreateRequest(
                     It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
                     It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                 .Returns(Result<int, CreateRequestError>.Success(123));
 
-            // act
             var errorMessage = viewModel.TrySubmitRequest();
 
-            // assert
             errorMessage.Should().BeNull();
         }
     }

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -30,8 +30,6 @@ namespace Property_and_Management.Src.Views
 
             if (DataContext is not RequestsFromOthersViewModel)
             {
-                // Composition root: fall back to the DI container when no
-                // navigation parameter was passed.
                 DataContext = App.Services.GetRequiredService<RequestsFromOthersViewModel>();
             }
         }
@@ -48,12 +46,12 @@ namespace Property_and_Management.Src.Views
 
         private async void OfferButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
-            if (sender is not Button clickedButton || clickedButton.Tag is not int requestIdentifier)
+            if (sender is not Button clickedButton || clickedButton.Tag is not int requestId)
             {
                 return;
             }
 
-            var request = clickedButton.DataContext as RequestDataTransferObject;
+            var request = clickedButton.DataContext as RequestDTO;
             var gameName = request?.Game?.Name ?? "this game";
             var renterName = request?.Renter?.DisplayName ?? "the requester";
 
@@ -71,7 +69,7 @@ namespace Property_and_Management.Src.Views
             }
 
             var requestsFromOthersViewModel = DataContext as RequestsFromOthersViewModel;
-            var error = requestsFromOthersViewModel?.TryOfferGame(requestIdentifier);
+            var error = requestsFromOthersViewModel?.TryOfferGame(requestId);
             if (error != null)
             {
                 await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.OfferFailed, error);
@@ -80,12 +78,12 @@ namespace Property_and_Management.Src.Views
 
         private async void DenyButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
-            if (sender is not Button clickedButton || clickedButton.Tag is not int requestIdentifier)
+            if (sender is not Button clickedButton || clickedButton.Tag is not int requestId)
             {
                 return;
             }
 
-            var request = clickedButton.DataContext as RequestDataTransferObject;
+            var request = clickedButton.DataContext as RequestDTO;
             var gameName = request?.Game?.Name ?? "this game";
             var renterName = request?.Renter?.DisplayName ?? "the requester";
 
@@ -116,11 +114,8 @@ namespace Property_and_Management.Src.Views
                 return;
             }
 
-            // Raw reason is handed straight to the ViewModel; trimming and the
-            // "no reason provided" fallback live there so the code-behind stays
-            // UI-only.
             var requestsFromOthersViewModel = DataContext as RequestsFromOthersViewModel;
-            var error = requestsFromOthersViewModel?.TryDenyRequest(requestIdentifier, reasonBox.Text);
+            var error = requestsFromOthersViewModel?.TryDenyRequest(requestId, reasonBox.Text);
             if (error != null)
             {
                 await DialogHelper.ShowMessageAsync(this.XamlRoot, Constants.DialogTitles.DeclineFailed, error);

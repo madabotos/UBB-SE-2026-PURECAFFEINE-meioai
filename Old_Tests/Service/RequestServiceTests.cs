@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using FluentAssertions;
@@ -11,9 +11,6 @@ using Property_and_Management.Src.Service;
 
 namespace Property_and_Management.Tests.Service
 {
-    // Osherove-style mocked unit tests for RequestService.
-    // Contract expectation (Agent 1): fallible operations return Result<int, TError>
-    // and error enums use PascalCase (OwnerCannotRent, DatesUnavailable, etc.).
     [TestFixture]
     public sealed class RequestServiceTests
     {
@@ -28,7 +25,7 @@ namespace Property_and_Management.Tests.Service
         private Mock<IRentalRepository> rentalRepositoryMock = null!;
         private Mock<IGameRepository> gameRepositoryMock = null!;
         private Mock<INotificationService> notificationServiceMock = null!;
-        private Mock<IMapper<Request, RequestDataTransferObject>> requestMapperMock = null!;
+        private Mock<IMapper<Request, RequestDTO>> requestMapperMock = null!;
         private RequestService requestService = null!;
 
         [SetUp]
@@ -38,11 +35,11 @@ namespace Property_and_Management.Tests.Service
             rentalRepositoryMock = new Mock<IRentalRepository>();
             gameRepositoryMock = new Mock<IGameRepository>();
             notificationServiceMock = new Mock<INotificationService>();
-            requestMapperMock = new Mock<IMapper<Request, RequestDataTransferObject>>();
+            requestMapperMock = new Mock<IMapper<Request, RequestDTO>>();
 
             gameRepositoryMock
                 .Setup(repository => repository.Get(It.IsAny<int>()))
-                .Returns<int>(identifier => BuildGame(identifier));
+                .Returns<int>(id => BuildGame(id));
             rentalRepositoryMock
                 .Setup(repository => repository.GetRentalsByGame(It.IsAny<int>()))
                 .Returns(ImmutableList<Rental>.Empty);
@@ -61,10 +58,8 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void CreateRequest_RenterEqualsOwner_ReturnsFailureOwnerCannotRent()
         {
-            // arrange
             var sharedUserIdentifier = SampleRenterIdentifier;
 
-            // act
             var result = requestService.CreateRequest(
                 SampleGameIdentifier,
                 sharedUserIdentifier,
@@ -72,7 +67,6 @@ namespace Property_and_Management.Tests.Service
                 DateTime.UtcNow.AddDays(2),
                 DateTime.UtcNow.AddDays(4));
 
-            // assert
             result.IsSuccess.Should().BeFalse();
             result.Error.Should().Be(CreateRequestError.OwnerCannotRent);
         }
@@ -80,12 +74,10 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void CreateRequest_GameNotFound_ReturnsFailureGameDoesNotExist()
         {
-            // arrange
             gameRepositoryMock
                 .Setup(repository => repository.Get(SampleGameIdentifier))
                 .Throws<KeyNotFoundException>();
 
-            // act
             var result = requestService.CreateRequest(
                 SampleGameIdentifier,
                 SampleRenterIdentifier,
@@ -93,16 +85,14 @@ namespace Property_and_Management.Tests.Service
                 DateTime.UtcNow.AddDays(2),
                 DateTime.UtcNow.AddDays(4));
 
-            // assert
             result.Error.Should().Be(CreateRequestError.GameDoesNotExist);
         }
 
         [Test]
         public void CreateRequest_DatesUnavailable_ReturnsFailureDatesUnavailable()
         {
-            // arrange — existing rental overlaps the requested window
             var overlappingRental = new Rental(
-                identifier: 1,
+                id: 1,
                 game: BuildGame(),
                 renter: new User(SampleRenterIdentifier, "Renter"),
                 owner: new User(SampleOwnerIdentifier, "Owner"),
@@ -112,7 +102,6 @@ namespace Property_and_Management.Tests.Service
                 .Setup(repository => repository.GetRentalsByGame(SampleGameIdentifier))
                 .Returns(ImmutableList.Create(overlappingRental));
 
-            // act
             var result = requestService.CreateRequest(
                 SampleGameIdentifier,
                 SampleRenterIdentifier,
@@ -120,19 +109,16 @@ namespace Property_and_Management.Tests.Service
                 DateTime.UtcNow.AddDays(3),
                 DateTime.UtcNow.AddDays(6));
 
-            // assert
             result.Error.Should().Be(CreateRequestError.DatesUnavailable);
         }
 
         [Test]
         public void CreateRequest_HappyPath_ReturnsSuccessAndPersistsRequest()
         {
-            // arrange
             requestRepositoryMock
                 .Setup(repository => repository.Add(It.IsAny<Request>()))
-                .Callback<Request>(added => added.Identifier = SampleRequestIdentifier);
+                .Callback<Request>(added => added.id = SampleRequestIdentifier);
 
-            // act
             var result = requestService.CreateRequest(
                 SampleGameIdentifier,
                 SampleRenterIdentifier,
@@ -140,7 +126,6 @@ namespace Property_and_Management.Tests.Service
                 DateTime.UtcNow.AddDays(2),
                 DateTime.UtcNow.AddDays(4));
 
-            // assert
             result.IsSuccess.Should().BeTrue();
             result.Value.Should().Be(SampleRequestIdentifier);
             requestRepositoryMock.Verify(repository => repository.Add(It.IsAny<Request>()), Times.Once);
@@ -149,37 +134,30 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void ApproveRequest_NotFound_ReturnsFailureNotFound()
         {
-            // arrange
             requestRepositoryMock
                 .Setup(repository => repository.Get(SampleRequestIdentifier))
                 .Throws<KeyNotFoundException>();
 
-            // act
             var result = requestService.ApproveRequest(SampleRequestIdentifier, SampleOwnerIdentifier);
 
-            // assert
             result.Error.Should().Be(ApproveRequestError.NotFound);
         }
 
         [Test]
         public void ApproveRequest_WrongOwner_ReturnsFailureUnauthorized()
         {
-            // arrange
             requestRepositoryMock
                 .Setup(repository => repository.Get(SampleRequestIdentifier))
                 .Returns(BuildRequest());
 
-            // act
             var result = requestService.ApproveRequest(SampleRequestIdentifier, UnrelatedUserIdentifier);
 
-            // assert
             result.Error.Should().Be(ApproveRequestError.Unauthorized);
         }
 
         [Test]
         public void ApproveRequest_TransactionThrows_ReturnsFailureTransactionFailed()
         {
-            // arrange
             requestRepositoryMock
                 .Setup(repository => repository.Get(SampleRequestIdentifier))
                 .Returns(BuildRequest());
@@ -192,21 +170,18 @@ namespace Property_and_Management.Tests.Service
                     It.IsAny<Request>(), It.IsAny<ImmutableList<Request>>()))
                 .Throws(new InvalidOperationException("boom"));
 
-            // act
             var result = requestService.ApproveRequest(SampleRequestIdentifier, SampleOwnerIdentifier);
 
-            // assert
             result.Error.Should().Be(ApproveRequestError.TransactionFailed);
         }
 
         [Test]
         public void ApproveRequest_HappyPath_ReturnsRentalIdAndSendsNotifications()
         {
-            // arrange
             requestRepositoryMock
                 .Setup(repository => repository.Get(SampleRequestIdentifier))
                 .Returns(BuildRequest());
-            var overlappingRequest = BuildRequest(identifier: 200, renterIdentifier: UnrelatedUserIdentifier);
+            var overlappingRequest = BuildRequest(id: 200, renterId: UnrelatedUserIdentifier);
             requestRepositoryMock
                 .Setup(repository => repository.GetOverlappingRequests(
                     It.IsAny<int>(), It.IsAny<int>(), It.IsAny<DateTime>(), It.IsAny<DateTime>()))
@@ -216,15 +191,13 @@ namespace Property_and_Management.Tests.Service
                     It.IsAny<Request>(), It.IsAny<ImmutableList<Request>>()))
                 .Returns(SampleRentalIdentifier);
 
-            // act
             var result = requestService.ApproveRequest(SampleRequestIdentifier, SampleOwnerIdentifier);
 
-            // assert
             result.IsSuccess.Should().BeTrue();
             result.Value.Should().Be(SampleRentalIdentifier);
             notificationServiceMock.Verify(
                 service => service.SendNotificationToUser(
-                    UnrelatedUserIdentifier, It.IsAny<NotificationDataTransferObject>()),
+                    UnrelatedUserIdentifier, It.IsAny<NotificationDTO>()),
                 Times.AtLeastOnce);
             notificationServiceMock.Verify(
                 service => service.ScheduleUpcomingRentalReminder(
@@ -235,56 +208,47 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void DenyRequest_NotFound_ReturnsFailureNotFound()
         {
-            // arrange
             requestRepositoryMock
                 .Setup(repository => repository.Get(SampleRequestIdentifier))
                 .Throws<KeyNotFoundException>();
 
-            // act
             var result = requestService.DenyRequest(
                 SampleRequestIdentifier, SampleOwnerIdentifier, "not available");
 
-            // assert
             result.Error.Should().Be(DenyRequestError.NotFound);
         }
 
         [Test]
         public void DenyRequest_HappyPath_DeletesRequestAndSendsDeclineNotification()
         {
-            // arrange
             requestRepositoryMock
                 .Setup(repository => repository.Get(SampleRequestIdentifier))
                 .Returns(BuildRequest());
 
-            // act
             var result = requestService.DenyRequest(
                 SampleRequestIdentifier, SampleOwnerIdentifier, "not available");
 
-            // assert
             result.IsSuccess.Should().BeTrue();
             requestRepositoryMock.Verify(
                 repository => repository.Delete(SampleRequestIdentifier), Times.Once);
             notificationServiceMock.Verify(
                 service => service.SendNotificationToUser(
-                    SampleRenterIdentifier, It.IsAny<NotificationDataTransferObject>()),
+                    SampleRenterIdentifier, It.IsAny<NotificationDTO>()),
                 Times.Once);
         }
 
         [Test]
         public void CancelRequest_HappyPath_DeletesNotificationsAndRequest()
         {
-            // arrange — caller must be the renter; service also deletes notifications and the request.
             requestRepositoryMock
                 .Setup(repository => repository.Get(SampleRequestIdentifier))
                 .Returns(BuildRequest());
 
-            // act
             var result = requestService.CancelRequest(SampleRequestIdentifier, SampleRenterIdentifier);
 
-            // assert
             result.Should().Be(SampleRequestIdentifier);
             notificationServiceMock.Verify(
-                service => service.DeleteNotificationsByRequestId(SampleRequestIdentifier), Times.Once);
+                service => service.DeleteNotificationsLinkedToRequest(SampleRequestIdentifier), Times.Once);
             requestRepositoryMock.Verify(
                 repository => repository.Delete(SampleRequestIdentifier), Times.Once);
         }
@@ -292,53 +256,46 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void OnGameDeactivated_CancelsAllPendingAndNotifiesRenters()
         {
-            // arrange
             var pendingRequest = BuildRequest();
-            var pendingRequestOther = BuildRequest(identifier: 200);
+            var pendingRequestOther = BuildRequest(id: 200);
             requestRepositoryMock
                 .Setup(repository => repository.GetRequestsByGame(SampleGameIdentifier))
                 .Returns(ImmutableList.Create(pendingRequest, pendingRequestOther));
 
-            // act
             requestService.OnGameDeactivated(SampleGameIdentifier);
 
-            // assert
             requestRepositoryMock.Verify(repository => repository.Delete(It.IsAny<int>()), Times.Exactly(2));
             notificationServiceMock.Verify(
                 service => service.SendNotificationToUser(
-                    SampleRenterIdentifier, It.IsAny<NotificationDataTransferObject>()),
+                    SampleRenterIdentifier, It.IsAny<NotificationDTO>()),
                 Times.Exactly(2));
         }
 
         [Test]
         public void OnGameDeactivated_CancelsOfferPendingRequests()
         {
-            // arrange
-            var openRequest = BuildRequest(identifier: 101, status: RequestStatus.Open);
-            var offerPendingRequest = BuildRequest(identifier: 102, status: RequestStatus.OfferPending);
-            var acceptedRequest = BuildRequest(identifier: 103, status: RequestStatus.Accepted);
+            var openRequest = BuildRequest(id: 101, status: RequestStatus.Open);
+            var offerPendingRequest = BuildRequest(id: 102, status: RequestStatus.OfferPending);
+            var acceptedRequest = BuildRequest(id: 103, status: RequestStatus.Accepted);
             requestRepositoryMock
                 .Setup(repository => repository.GetRequestsByGame(SampleGameIdentifier))
                 .Returns(ImmutableList.Create(openRequest, offerPendingRequest, acceptedRequest));
 
-            // act
             requestService.OnGameDeactivated(SampleGameIdentifier);
 
-            // assert
             requestRepositoryMock.Verify(repository => repository.Delete(101), Times.Once);
             requestRepositoryMock.Verify(repository => repository.Delete(102), Times.Once);
             requestRepositoryMock.Verify(repository => repository.Delete(103), Times.Never);
             notificationServiceMock.Verify(
-                service => service.DeleteNotificationsByRequestId(102),
+                service => service.DeleteNotificationsLinkedToRequest(102),
                 Times.Once);
         }
 
         [Test]
         public void CheckAvailability_ExistingRentalOverlaps_ReturnsFalse()
         {
-            // arrange
             var overlappingRental = new Rental(
-                identifier: 1,
+                id: 1,
                 game: BuildGame(),
                 renter: new User(SampleRenterIdentifier, "Renter"),
                 owner: new User(SampleOwnerIdentifier, "Owner"),
@@ -348,103 +305,83 @@ namespace Property_and_Management.Tests.Service
                 .Setup(repository => repository.GetRentalsByGame(SampleGameIdentifier))
                 .Returns(ImmutableList.Create(overlappingRental));
 
-            // act
             var isAvailable = requestService.CheckAvailability(
                 SampleGameIdentifier,
                 DateTime.UtcNow.AddDays(3),
                 DateTime.UtcNow.AddDays(6));
 
-            // assert
             isAvailable.Should().BeFalse();
         }
 
         [Test]
         public void CheckAvailability_ExistingRequestOverlaps_ReturnsFalse()
         {
-            // arrange
             var overlappingRequest = BuildRequest(
-                identifier: 11, renterIdentifier: UnrelatedUserIdentifier);
+                id: 11, renterId: UnrelatedUserIdentifier);
             overlappingRequest.StartDate = DateTime.UtcNow.AddDays(2);
             overlappingRequest.EndDate = DateTime.UtcNow.AddDays(5);
             requestRepositoryMock
                 .Setup(repository => repository.GetRequestsByGame(SampleGameIdentifier))
                 .Returns(ImmutableList.Create(overlappingRequest));
 
-            // act
             var isAvailable = requestService.CheckAvailability(
                 SampleGameIdentifier,
                 DateTime.UtcNow.AddDays(3),
                 DateTime.UtcNow.AddDays(6));
 
-            // assert
             isAvailable.Should().BeFalse();
         }
 
         [Test]
         public void CheckAvailability_DateBeyondOneMonth_ReturnsFalse()
         {
-            // arrange — nothing to prepare, fails before touching repositories
-
-            // act
             var isAvailable = requestService.CheckAvailability(
                 SampleGameIdentifier,
                 DateTime.UtcNow.AddMonths(2),
                 DateTime.UtcNow.AddMonths(2).AddDays(1));
 
-            // assert
             isAvailable.Should().BeFalse();
         }
 
         [Test]
         public void CheckAvailability_HappyPath_ReturnsTrue()
         {
-            // arrange — no rentals, no requests, game is active (default)
-
-            // act
             var isAvailable = requestService.CheckAvailability(
                 SampleGameIdentifier,
                 DateTime.UtcNow.AddDays(2),
                 DateTime.UtcNow.AddDays(4));
 
-            // assert
             isAvailable.Should().BeTrue();
         }
 
         [Test]
         public void OfferGame_NotOwner_ReturnsFailureNotOwner()
         {
-            // arrange
             requestRepositoryMock
                 .Setup(repository => repository.Get(SampleRequestIdentifier))
                 .Returns(BuildRequest());
 
-            // act
             var result = requestService.OfferGame(SampleRequestIdentifier, UnrelatedUserIdentifier);
 
-            // assert
             result.Error.Should().Be(OfferError.NotOwner);
         }
 
         [Test]
         public void OfferGame_RequestNotOpen_ReturnsFailureRequestNotOpen()
         {
-            // arrange
             var request = BuildRequest(status: RequestStatus.OfferPending);
             requestRepositoryMock
                 .Setup(repository => repository.Get(SampleRequestIdentifier))
                 .Returns(request);
 
-            // act
             var result = requestService.OfferGame(SampleRequestIdentifier, SampleOwnerIdentifier);
 
-            // assert
             result.Error.Should().Be(OfferError.RequestNotOpen);
         }
 
         [Test]
         public void OfferGame_HappyPath_ReturnsRentalId()
         {
-            // arrange
             var request = BuildRequest();
             requestRepositoryMock
                 .Setup(repository => repository.Get(SampleRequestIdentifier))
@@ -458,10 +395,8 @@ namespace Property_and_Management.Tests.Service
                     It.IsAny<Request>(), It.IsAny<ImmutableList<Request>>()))
                 .Returns(SampleRentalIdentifier);
 
-            // act
             var result = requestService.OfferGame(SampleRequestIdentifier, SampleOwnerIdentifier);
 
-            // assert
             result.IsSuccess.Should().BeTrue();
             result.Value.Should().Be(SampleRentalIdentifier);
         }
@@ -469,7 +404,6 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void OfferGame_TransactionThrows_ReturnsFailureTransactionFailed()
         {
-            // arrange
             requestRepositoryMock
                 .Setup(repository => repository.Get(SampleRequestIdentifier))
                 .Returns(BuildRequest());
@@ -482,18 +416,16 @@ namespace Property_and_Management.Tests.Service
                     It.IsAny<Request>(), It.IsAny<ImmutableList<Request>>()))
                 .Throws(new InvalidOperationException("boom"));
 
-            // act
             var result = requestService.OfferGame(SampleRequestIdentifier, SampleOwnerIdentifier);
 
-            // assert
             result.Error.Should().Be(OfferError.TransactionFailed);
         }
 
-        private static Game BuildGame(int identifier = SampleGameIdentifier, bool isActive = true)
+        private static Game BuildGame(int id = SampleGameIdentifier, bool isActive = true)
         {
             return new Game
             {
-                Identifier = identifier,
+                id = id,
                 Owner = new User(SampleOwnerIdentifier, "Owner"),
                 Name = "Some Game",
                 Price = 10m,
@@ -506,17 +438,17 @@ namespace Property_and_Management.Tests.Service
         }
 
         private static Request BuildRequest(
-            int identifier = SampleRequestIdentifier,
-            int renterIdentifier = SampleRenterIdentifier,
-            int ownerIdentifier = SampleOwnerIdentifier,
+            int id = SampleRequestIdentifier,
+            int renterId = SampleRenterIdentifier,
+            int ownerId = SampleOwnerIdentifier,
             RequestStatus status = RequestStatus.Open)
         {
             return new Request
             {
-                Identifier = identifier,
+                id = id,
                 Game = BuildGame(),
-                Renter = new User(renterIdentifier, "Renter"),
-                Owner = new User(ownerIdentifier, "Owner"),
+                Renter = new User(renterId, "Renter"),
+                Owner = new User(ownerId, "Owner"),
                 StartDate = DateTime.UtcNow.AddDays(5),
                 EndDate = DateTime.UtcNow.AddDays(7),
                 Status = status,

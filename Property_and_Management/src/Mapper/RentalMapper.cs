@@ -4,52 +4,51 @@ using Property_and_Management.Src.Model;
 
 namespace Property_and_Management.Src.Mapper
 {
-    public class RentalMapper : IMapper<Rental, RentalDataTransferObject>
+    public class RentalMapper : IMapper<Rental, RentalDTO>
     {
-        private readonly IMapper<Game, GameDataTransferObject> gameMapper;
-        private readonly IMapper<User, UserDataTransferObject> userMapper;
+        private readonly IMapper<Game, GameDTO> gameMapper;
+        private readonly IMapper<User, UserDTO> userMapper;
 
-        public RentalMapper(IMapper<Game, GameDataTransferObject> gameMapper, IMapper<User, UserDataTransferObject> userMapper)
+        public RentalMapper(IMapper<Game, GameDTO> gameMapper, IMapper<User, UserDTO> userMapper)
         {
             this.gameMapper = gameMapper;
             this.userMapper = userMapper;
         }
 
-        public RentalDataTransferObject ToDataTransferObject(Rental rental)
+        public RentalDTO ToDTO(Rental rental)
         {
             if (rental == null)
             {
                 return null;
             }
 
-            return new RentalDataTransferObject
+            return new RentalDTO
             {
-                Identifier = rental.Identifier,
-                Game = gameMapper.ToDataTransferObject(rental.Game),
-                Renter = userMapper.ToDataTransferObject(rental.Renter),
-                Owner = userMapper.ToDataTransferObject(rental.Owner),
+                Id = rental.Id,
+                Game = gameMapper.ToDTO(rental.Game),
+                Renter = userMapper.ToDTO(rental.Renter),
+                Owner = userMapper.ToDTO(rental.Owner),
                 StartDate = rental.StartDate,
                 EndDate = rental.EndDate
             };
         }
 
-        public Rental ToModel(RentalDataTransferObject rentalDataTransferObject)
+        public Rental ToModel(RentalDTO RentalDTO)
         {
-            if (rentalDataTransferObject == null)
+            if (RentalDTO == null)
             {
                 return null;
             }
 
             return new Rental
             {
-                Identifier = rentalDataTransferObject.Identifier,
-                Game = gameMapper.ToModel(rentalDataTransferObject.Game),
-                Renter = userMapper.ToModel(rentalDataTransferObject.Renter),
-                Owner = userMapper.ToModel(rentalDataTransferObject.Owner),
-                StartDate = rentalDataTransferObject.StartDate,
-                EndDate = rentalDataTransferObject.EndDate
+                Id = RentalDTO.Id,
+                Game = gameMapper.ToModel(RentalDTO.Game),
+                Renter = userMapper.ToModel(RentalDTO.Renter),
+                Owner = userMapper.ToModel(RentalDTO.Owner),
+                StartDate = RentalDTO.StartDate,
+                EndDate = RentalDTO.EndDate
             };
         }
     }
 }
-

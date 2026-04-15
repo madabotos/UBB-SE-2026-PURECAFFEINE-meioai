@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -13,8 +13,6 @@ namespace Property_and_Management.Src.Views
 
         public CreateRequestView()
         {
-            // Composition root: pull the view model from the DI container. This
-            // is the only place the view knows about <c>App.Services</c>.
             ViewModel = App.Services.GetRequiredService<CreateRequestViewModel>();
             this.InitializeComponent();
 
@@ -25,7 +23,7 @@ namespace Property_and_Management.Src.Views
 
         private void GamePicker_SelectionChanged(object sender, SelectionChangedEventArgs selectionChangedEventArgs)
         {
-            ViewModel.SelectedGame = GamePicker.SelectedItem as GameDataTransferObject;
+            ViewModel.SelectedGame = GamePicker.SelectedItem as GameDTO;
         }
 
         private async void SaveButton_Click(object sender, RoutedEventArgs routedEventArgs)

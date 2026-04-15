@@ -1,16 +1,16 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Linq;
 using Property_and_Management.Src.DataTransferObjects;
 using Property_and_Management.Src.Interface;
 
 namespace Property_and_Management.Src.Viewmodels
 {
-    public class RentalsToOthersViewModel : PagedViewModel<RentalDataTransferObject>
+    public class RentalsToOthersViewModel : PagedViewModel<RentalDTO>
     {
         private readonly IRentalService rentalService;
         private readonly ICurrentUserContext currentUserContext;
 
-        public int OwnerIdentifier { get; private set; }
+        public int ownerId { get; private set; }
 
         public RentalsToOthersViewModel(IRentalService rentalService, ICurrentUserContext currentUserContext)
         {
@@ -25,9 +25,9 @@ namespace Property_and_Management.Src.Viewmodels
 
         protected override void Reload()
         {
-            OwnerIdentifier = currentUserContext.CurrentUserIdentifier;
+            ownerId = currentUserContext.currentUserId;
             var allRentals = rentalService
-                .GetRentalsForOwner(OwnerIdentifier)
+                .GetRentalsForOwner(ownerId)
                 .OrderByDescending(rental => rental.StartDate)
                 .ToImmutableList();
             SetAllItems(allRentals);

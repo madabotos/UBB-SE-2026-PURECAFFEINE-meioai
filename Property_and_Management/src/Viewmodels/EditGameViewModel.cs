@@ -7,17 +7,15 @@ namespace Property_and_Management.Src.Viewmodels
 {
     public class EditGameViewModel
     {
-        private const int MissingOwnerIdentifier = 0;
+        private const int MissingOwnerId = 0;
         private const int NoValidationErrors = 0;
         private const decimal InvalidOrEmptyPriceValue = 0m;
 
         private readonly IGameService gameService;
 
-        /// <summary>Identifier of the loaded game. Read-only (per UI-EDG-03).</summary>
-        public int GameIdentifier { get; private set; }
+        public int gameId { get; private set; }
 
-        /// <summary>Identifier of the game's owner. Read-only (per UI-EDG-03).</summary>
-        public int OwnerIdentifier { get; private set; }
+        public int ownerId { get; private set; }
 
         public string Name { get; set; } = string.Empty;
         public decimal Price { get; set; }
@@ -37,19 +35,16 @@ namespace Property_and_Management.Src.Viewmodels
             this.gameService = gameService;
         }
 
-        public void LoadGame(int incomingGameIdentifier)
+        public void LoadGame(int incomingGameId)
         {
-            // Parameter is intentionally named 'incomingGameIdentifier' so it
-            // does not shadow the GameIdentifier property. The old parameter
-            // name silently caused every save to target game_id = 0.
-            var existingGame = gameService.GetGameByIdentifier(incomingGameIdentifier);
+            var existingGame = gameService.GetGameByIdentifier(incomingGameId);
             if (existingGame == null)
             {
                 return;
             }
 
-            GameIdentifier = existingGame.Identifier;
-            OwnerIdentifier = existingGame.Owner?.Identifier ?? MissingOwnerIdentifier;
+            gameId = existingGame.Id;
+            ownerId = existingGame.Owner?.Id ?? MissingOwnerId;
 
             Name = existingGame.Name;
             Price = existingGame.Price;
@@ -90,12 +85,6 @@ namespace Property_and_Management.Src.Viewmodels
             return ViewOperationResult.Success();
         }
 
-        /// <summary>
-        /// Parse a raw price string from the view's NumberBox and update the
-        /// bound <see cref="Price"/> / <see cref="PriceDouble"/>. Falls back
-        /// to zero when the input cannot be parsed so downstream validation
-        /// reports it as an invalid price rather than a stale value.
-        /// </summary>
         public void SetPriceFromText(string priceText)
         {
             if (PriceInputParser.TryParsePriceInput(priceText, out var parsedPrice))
@@ -107,7 +96,7 @@ namespace Property_and_Management.Src.Viewmodels
             Price = InvalidOrEmptyPriceValue;
         }
 
-        public GameDataTransferObject UpdateGame()
+        public GameDTO UpdateGame()
         {
             if (ValidateInputs().Count > NoValidationErrors)
             {
@@ -116,10 +105,10 @@ namespace Property_and_Management.Src.Viewmodels
 
             Image = GameInputHelper.EnsureImageOrDefault(Image, AppDomain.CurrentDomain.BaseDirectory);
 
-            var updatedGameDataTransferObject = new GameDataTransferObject
+            var updatedGameDTO = new GameDTO
             {
-                Identifier = GameIdentifier,
-                Owner = new UserDataTransferObject { Identifier = OwnerIdentifier },
+                Id = gameId,
+                Owner = new UserDTO { Id = ownerId },
                 Name = Name,
                 Price = Price,
                 MinimumPlayerNumber = MinimumPlayers,
@@ -129,8 +118,8 @@ namespace Property_and_Management.Src.Viewmodels
                 IsActive = IsActive
             };
 
-            gameService.UpdateGameByIdentifier(GameIdentifier, updatedGameDataTransferObject);
-            return updatedGameDataTransferObject;
+            gameService.UpdateGameByIdentifier(gameId, updatedGameDTO);
+            return updatedGameDTO;
         }
     }
 }

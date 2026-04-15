@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -26,8 +26,6 @@ namespace Property_and_Management.Src.Views
 
             if (DataContext is not RequestsToOthersViewModel)
             {
-                // Composition root: fall back to the DI container when no
-                // navigation parameter was passed.
                 DataContext = App.Services.GetRequiredService<RequestsToOthersViewModel>();
             }
         }
@@ -39,7 +37,7 @@ namespace Property_and_Management.Src.Views
 
         private async void CancelButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
-            if (sender is not Button clickedButton || clickedButton.Tag is not int requestIdentifier)
+            if (sender is not Button clickedButton || clickedButton.Tag is not int requestId)
             {
                 return;
             }
@@ -58,7 +56,7 @@ namespace Property_and_Management.Src.Views
             }
 
             var requestsToOthersViewModel = DataContext as RequestsToOthersViewModel;
-            var error = requestsToOthersViewModel?.TryCancelRequest(requestIdentifier);
+            var error = requestsToOthersViewModel?.TryCancelRequest(requestId);
             if (error != null)
             {
                 await DialogHelper.ShowMessageAsync(
