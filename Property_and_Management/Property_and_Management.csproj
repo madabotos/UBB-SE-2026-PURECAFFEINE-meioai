@@ -67,6 +67,11 @@
         <AdditionalFiles Include="..\SE.ruleset" />
     </ItemGroup>
     <ItemGroup>
+      <None Include="..\App.config" Link="App.config">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+    <ItemGroup>
 		<Folder Include="NotificationServer.TestClient\" />
 		<Folder Include="NotificationServer\" />
 	    <ProjectReference Include="..\ServerCommunication\ServerCommunication.csproj" />
