@@ -5,6 +5,9 @@
 [Bb]in/
 [Oo]bj/
 [Oo]ut/
+**/TestResults/
+**/.dotnet/
+.dotnet_home/
 *.user
 *.userosscache
 *.sln.docstates
