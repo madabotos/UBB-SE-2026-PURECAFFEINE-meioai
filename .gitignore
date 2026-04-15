@@ -79,3 +79,12 @@ _ReSharper*/
 Thumbs.db
 ehthumbs.db
 $RECYCLE.BIN/
+
+# ==========================================
+# Local AI / Tooling Workspace Folders
+# ==========================================
+.claude/
+.superpowers/
+.superpowers.dotnet/
+.dotnet/
+.vs/
