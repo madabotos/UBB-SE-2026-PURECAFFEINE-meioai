@@ -8,21 +8,19 @@ namespace Property_and_Management.Src.Service
 {
     public class UserService : IUserService
     {
-        private readonly IUserRepository userRepository;
-        private readonly IMapper<User, UserDataTransferObject> userMapper;
+        private readonly IUserRepository userDataRepository;
+        private readonly IMapper<User, UserDTO> userDtoMapper;
 
-        public UserService(IUserRepository userRepository, IMapper<User, UserDataTransferObject> userMapper)
+        public UserService(IUserRepository userRepository, IMapper<User, UserDTO> userMapper)
         {
-            this.userRepository = userRepository;
-            this.userMapper = userMapper;
+            this.userDataRepository = userRepository;
+            this.userDtoMapper = userMapper;
         }
 
-        public ImmutableList<UserDataTransferObject> GetUsersExcept(int excludeUserIdentifier) =>
-            userRepository.GetAll()
-                .Where(user => user.Identifier != excludeUserIdentifier)
-                .Select(user => userMapper.ToDataTransferObject(user))
+        public ImmutableList<UserDTO> GetUsersExcept(int excludedUserId) =>
+            userDataRepository.GetAll()
+                .Where(user => user.Id != excludedUserId)
+                .Select(user => userDtoMapper.ToDTO(user))
                 .ToImmutableList();
     }
 }
-
-

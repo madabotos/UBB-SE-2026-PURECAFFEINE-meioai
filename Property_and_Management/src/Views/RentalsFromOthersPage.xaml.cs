@@ -25,8 +25,6 @@ namespace Property_and_Management.Src.Views
 
             if (DataContext is not RentalsFromOthersViewModel)
             {
-                // Composition root: fall back to the DI container when no
-                // navigation parameter was passed.
                 DataContext = App.Services.GetRequiredService<RentalsFromOthersViewModel>();
             }
         }

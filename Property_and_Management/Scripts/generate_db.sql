@@ -1,14 +1,3 @@
-/*
-This script should be run when setting up the project, so that you actually have access to the database.
-
-Run in SSMS.
-*/
-
-/*
-Corrected Database Script
-*/
-
--- 1. Create the Database
 IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'BoardRent')
 BEGIN
     CREATE DATABASE BoardRent;
@@ -17,8 +6,6 @@ GO
 
 USE BoardRent;
 GO
-
--- 2. Create the Users table
 IF OBJECT_ID(N'[dbo].[Users]', 'U') IS NULL
 BEGIN
     CREATE TABLE Users (
@@ -27,8 +14,6 @@ BEGIN
         CONSTRAINT PK_User PRIMARY KEY (id)
     );
 END;
-
--- 3. Create the Games table
 IF OBJECT_ID(N'[dbo].[Games]', 'U') IS NULL
 BEGIN
     CREATE TABLE Games (
@@ -44,15 +29,11 @@ BEGIN
         
         CONSTRAINT PK_Games PRIMARY KEY (game_id),
         CONSTRAINT FK_Games_Owner FOREIGN KEY (owner_id) REFERENCES [Users](id),
-        
-        -- Business Logic Constraints
         CONSTRAINT CHK_Game_Price CHECK (price > 0),
         CONSTRAINT CHK_Min_Players CHECK (minimum_player_number >= 1), 
         CONSTRAINT CHK_Max_Players CHECK (maximum_player_number >= 1 AND maximum_player_number >= minimum_player_number)
     );
 END;
-
--- 4. Create the Requests table (Pending Inquiries)
 IF OBJECT_ID(N'[dbo].[Requests]', 'U') IS NULL
 BEGIN
     CREATE TABLE Requests (
@@ -73,8 +54,6 @@ BEGIN
         CONSTRAINT CHK_Request_DateRange CHECK (end_date >= start_date)
     );
 END;
-
--- 5. Create the Rentals table (Confirmed Bookings)
 IF OBJECT_ID(N'[dbo].[Rentals]', 'U') IS NULL
 BEGIN
     CREATE TABLE Rentals (
@@ -92,8 +71,6 @@ BEGIN
         CONSTRAINT CHK_Rentals_DateRange CHECK (end_date >= start_date)
     );
 END;
-
--- 6. Create the Notifications table
 IF OBJECT_ID(N'[dbo].[Notifications]', 'U') IS NULL
 BEGIN
     CREATE TABLE Notifications (

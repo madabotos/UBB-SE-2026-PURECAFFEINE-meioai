@@ -13,8 +13,6 @@ namespace Property_and_Management.Src.Views
     {
         public MenuBarViewModel ViewModel { get; }
 
-        // Maps page keys emitted by the ViewModel to concrete View types.
-        // Concrete type knowledge belongs in the View layer, not in ViewModels.
         private static readonly Dictionary<AppPage, Type> PageTypeMap = new()
         {
             { AppPage.Listings,            typeof(ListingsPage) },
@@ -25,8 +23,7 @@ namespace Property_and_Management.Src.Views
             { AppPage.Notifications,       typeof(NotificationsPage) }
         };
 
-        // The Menu keeps a reference to IGameService so it can pass it to pages that need it.
-        private IGameService passedGameService;
+        private IGameService injectedGameService;
 
         public MenuBarView()
         {
@@ -43,7 +40,7 @@ namespace Property_and_Management.Src.Views
 
             if (navigationEventArgs.Parameter is IGameService gameService)
             {
-                passedGameService = gameService;
+                injectedGameService = gameService;
             }
         }
 
@@ -54,15 +51,13 @@ namespace Property_and_Management.Src.Views
                 return;
             }
 
-            ContentFrame.Navigate(pageType, passedGameService);
+            ContentFrame.Navigate(pageType, injectedGameService);
         }
 
         public void NavigateToNotifications()
         {
-            // Composition root: fetch the singleton NotificationsViewModel from
-            // the DI container instead of reaching into Application.Current.
-            var notificationsViewModel = App.Services.GetRequiredService<NotificationsViewModel>();
-            ContentFrame.Navigate(typeof(NotificationsPage), notificationsViewModel);
+            var resolvedNotificationsViewModel = App.Services.GetRequiredService<NotificationsViewModel>();
+            ContentFrame.Navigate(typeof(NotificationsPage), resolvedNotificationsViewModel);
             ViewModel.SelectedPageName = "Notifications";
         }
     }

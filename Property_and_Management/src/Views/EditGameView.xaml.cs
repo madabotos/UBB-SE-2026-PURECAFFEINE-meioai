@@ -18,12 +18,9 @@ namespace Property_and_Management.Src.Views
         {
             this.InitializeComponent();
 
-            // Composition root: pull the view model from the DI container. This
-            // is the only place the view knows about <c>App.Services</c>.
             ViewModel = App.Services.GetRequiredService<EditGameViewModel>();
         }
 
-        // Catches the game id passed in from the Listings page.
         protected override async void OnNavigatedTo(NavigationEventArgs navigationEventArgs)
         {
             base.OnNavigatedTo(navigationEventArgs);
@@ -34,24 +31,24 @@ namespace Property_and_Management.Src.Views
                 this.Bindings.Update();
             }
 
-            if (ViewModel.Image != null && ViewModel.Image.Length > EmptyImageLength)
+            if (ViewModel.GameImage != null && ViewModel.GameImage.Length > EmptyImageLength)
             {
-                using (var memoryStream = new System.IO.MemoryStream(ViewModel.Image))
+                using (var existingImageMemoryStream = new System.IO.MemoryStream(ViewModel.GameImage))
                 {
-                    var randomAccessStream = memoryStream.AsRandomAccessStream();
-                    var bitmapImage = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage();
-                    await bitmapImage.SetSourceAsync(randomAccessStream);
-                    ImagePreview.Source = bitmapImage;
+                    var existingImageStream = existingImageMemoryStream.AsRandomAccessStream();
+                    var existingGameImageBitmap = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage();
+                    await existingGameImageBitmap.SetSourceAsync(existingImageStream);
+                    ImagePreview.Source = existingGameImageBitmap;
                 }
             }
         }
 
         private async void SaveButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
-            ViewModel.SetPriceFromText(PriceNumberBox.Text);
+            ViewModel.SetGamePriceFromText(PriceNumberBox.Text);
 
-            var submitResult = ViewModel.SubmitGameUpdate();
-            if (submitResult.IsSuccess)
+            var gameUpdateResult = ViewModel.SubmitGameUpdate();
+            if (gameUpdateResult.IsSuccess)
             {
                 if (Frame.CanGoBack)
                 {
@@ -62,46 +59,45 @@ namespace Property_and_Management.Src.Views
 
             await DialogHelper.ShowMessageAsync(
                 this.XamlRoot,
-                submitResult.DialogTitle,
-                submitResult.DialogMessage);
+                gameUpdateResult.DialogTitle,
+                gameUpdateResult.DialogMessage);
         }
 
         private async void UploadImageButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
-            var picker = new Windows.Storage.Pickers.FileOpenPicker();
-            picker.ViewMode = Windows.Storage.Pickers.PickerViewMode.Thumbnail;
-            picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.PicturesLibrary;
-            picker.FileTypeFilter.Add(".jpg");
-            picker.FileTypeFilter.Add(".jpeg");
-            picker.FileTypeFilter.Add(".png");
+            var imageFilePicker = new Windows.Storage.Pickers.FileOpenPicker();
+            imageFilePicker.ViewMode = Windows.Storage.Pickers.PickerViewMode.Thumbnail;
+            imageFilePicker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.PicturesLibrary;
+            imageFilePicker.FileTypeFilter.Add(".jpg");
+            imageFilePicker.FileTypeFilter.Add(".jpeg");
+            imageFilePicker.FileTypeFilter.Add(".png");
 
-            // WinUI 3 quirk: the picker has to be explicitly told which window it belongs to.
-            var windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
-            WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
+            var mainWindowHandle = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+            WinRT.Interop.InitializeWithWindow.Initialize(imageFilePicker, mainWindowHandle);
 
-            var file = await picker.PickSingleFileAsync();
-            if (file == null)
+            var selectedImageFile = await imageFilePicker.PickSingleFileAsync();
+            if (selectedImageFile == null)
             {
                 return;
             }
 
-            FileNameTextBlock.Text = file.Name;
+            FileNameTextBlock.Text = selectedImageFile.Name;
 
-            using (var stream = await file.OpenStreamForReadAsync())
+            using (var fileReadStream = await selectedImageFile.OpenStreamForReadAsync())
             {
-                using (var memoryStream = new System.IO.MemoryStream())
+                using (var imageMemoryStream = new System.IO.MemoryStream())
                 {
-                    await stream.CopyToAsync(memoryStream);
-                    ViewModel.Image = memoryStream.ToArray();
+                    await fileReadStream.CopyToAsync(imageMemoryStream);
+                    ViewModel.GameImage = imageMemoryStream.ToArray();
                 }
             }
 
-            var bitmapImage = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage();
-            using (var randomAccessStream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read))
+            var previewBitmapImage = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage();
+            using (var imageRandomAccessStream = await selectedImageFile.OpenAsync(Windows.Storage.FileAccessMode.Read))
             {
-                await bitmapImage.SetSourceAsync(randomAccessStream);
+                await previewBitmapImage.SetSourceAsync(imageRandomAccessStream);
             }
-            ImagePreview.Source = bitmapImage;
+            ImagePreview.Source = previewBitmapImage;
         }
     }
 }

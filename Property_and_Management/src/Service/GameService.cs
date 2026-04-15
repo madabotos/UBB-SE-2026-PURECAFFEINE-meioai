@@ -9,40 +9,40 @@ namespace Property_and_Management.Src.Service
 {
     public class GameService : IGameService
     {
-        private readonly IGameRepository gameRepository;
-        private readonly IRentalRepository rentalRepository;
-        private readonly IMapper<Game, GameDataTransferObject> gameMapper;
-        private readonly IRequestService requestService;
+        private readonly IGameRepository gameListingRepository;
+        private readonly IRentalRepository gameRentalRepository;
+        private readonly IMapper<Game, GameDTO> gameDtoMapper;
+        private readonly IRequestService rentalRequestService;
         private const int NoActiveOrUpcomingRentals = 0;
         private const int SingularRentalCount = 1;
 
         public GameService(
             IGameRepository gameRepository,
             IRentalRepository rentalRepository,
-            IMapper<Game, GameDataTransferObject> gameMapper,
+            IMapper<Game, GameDTO> gameMapper,
             IRequestService requestService)
         {
-            this.gameRepository = gameRepository;
-            this.rentalRepository = rentalRepository;
-            this.gameMapper = gameMapper;
-            this.requestService = requestService;
+            this.gameListingRepository = gameRepository;
+            this.gameRentalRepository = rentalRepository;
+            this.gameDtoMapper = gameMapper;
+            this.rentalRequestService = requestService;
         }
 
-        public void AddGame(GameDataTransferObject game)
+        public void AddGame(GameDTO gameToAdd)
         {
-            gameRepository.Add(gameMapper.ToModel(game));
+            gameListingRepository.Add(gameDtoMapper.ToModel(gameToAdd));
         }
 
-        public void UpdateGameByIdentifier(int gameIdentifier, GameDataTransferObject game)
+        public void UpdateGameByIdentifier(int gameId, GameDTO updatedGameData)
         {
-            gameRepository.Update(gameIdentifier, gameMapper.ToModel(game));
+            gameListingRepository.Update(gameId, gameDtoMapper.ToModel(updatedGameData));
         }
 
-        public GameDataTransferObject DeleteGameByIdentifier(int gameIdentifier)
+        public GameDTO DeleteGameByIdentifier(int gameId)
         {
-            var rentals = rentalRepository.GetRentalsByGame(gameIdentifier);
-            var now = DateTime.Now;
-            var activeOrUpcomingRentalsCount = rentals.Count(rental => rental.EndDate >= now);
+            var gameRentals = gameRentalRepository.GetRentalsByGame(gameId);
+            var currentTime = DateTime.Now;
+            var activeOrUpcomingRentalsCount = gameRentals.Count(rental => rental.EndDate >= currentTime);
             if (activeOrUpcomingRentalsCount > NoActiveOrUpcomingRentals)
             {
                 var rentalWord = activeOrUpcomingRentalsCount == SingularRentalCount ? "rental" : "rentals";
@@ -50,37 +50,34 @@ namespace Property_and_Management.Src.Service
                     $"There are {activeOrUpcomingRentalsCount} active {rentalWord} for this game and it cannot be removed now.");
             }
 
-            foreach (var rental in rentals)
+            foreach (var pastRental in gameRentals)
             {
-                rentalRepository.Delete(rental.Identifier);
+                gameRentalRepository.Delete(pastRental.Id);
             }
 
-            // Deleting a game invalidates pending requests for that game.
-            // Reuse the existing deactivation flow to notify renters and clean requests first.
-            requestService.OnGameDeactivated(gameIdentifier);
-            return gameMapper.ToDataTransferObject(gameRepository.Delete(gameIdentifier));
+            rentalRequestService.OnGameDeactivated(gameId);
+            return gameDtoMapper.ToDTO(gameListingRepository.Delete(gameId));
         }
 
-        public GameDataTransferObject GetGameByIdentifier(int gameIdentifier)
+        public GameDTO GetGameByIdentifier(int gameId)
         {
-            return gameMapper.ToDataTransferObject(gameRepository.Get(gameIdentifier));
+            return gameDtoMapper.ToDTO(gameListingRepository.Get(gameId));
         }
 
-        public ImmutableList<GameDataTransferObject> GetGamesForOwner(int ownerIdentifier)
+        public ImmutableList<GameDTO> GetGamesForOwner(int ownerUserId)
         {
-            return gameRepository
-                .GetGamesByOwner(ownerIdentifier)
-                .Select(game => gameMapper.ToDataTransferObject(game))
+            return gameListingRepository
+                .GetGamesByOwner(ownerUserId)
+                .Select(game => gameDtoMapper.ToDTO(game))
                 .ToImmutableList();
         }
 
-        public ImmutableList<GameDataTransferObject> GetAllGames()
+        public ImmutableList<GameDTO> GetAllGames()
         {
-            return gameRepository
+            return gameListingRepository
                 .GetAll()
-                .Select(game => gameMapper.ToDataTransferObject(game))
+                .Select(game => gameDtoMapper.ToDTO(game))
                 .ToImmutableList();
         }
     }
 }
-

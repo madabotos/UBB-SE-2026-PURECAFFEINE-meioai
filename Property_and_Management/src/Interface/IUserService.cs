@@ -1,11 +1,10 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using Property_and_Management.Src.DataTransferObjects;
 
 namespace Property_and_Management.Src.Interface
 {
     public interface IUserService
     {
-        ImmutableList<UserDataTransferObject> GetUsersExcept(int excludeUserIdentifier);
+        ImmutableList<UserDTO> GetUsersExcept(int excludeUserId);
     }
 }
-

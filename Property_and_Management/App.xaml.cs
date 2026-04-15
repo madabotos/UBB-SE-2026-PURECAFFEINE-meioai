@@ -38,12 +38,9 @@ using Windows.Foundation.Collections;
 
 namespace Property_and_Management
 {
-    /// <summary>
-    /// Provides application-specific behavior to supplement the default Application class.
-    /// </summary>
     public partial class App : Application
     {
-        private const int DefaultUserIdentifier = 1;
+        private const int DefaultUserId = 1;
         private const int UserIdentifierArgumentIndex = 1;
         private const int KeyPartIndex = 0;
         private const int ValuePartIndex = 1;
@@ -59,23 +56,17 @@ namespace Property_and_Management
 
         public static IServiceProvider Services { get; private set; } = default!;
 
-        // Public application state
         public static Window MainWindow { get; set; }
         public Frame RootFrame { get; set; }
         public string AppUserModelId { get; }
-        public int CurrentUserIdentifier { get; }
+        public int CurrentUserId { get; }
         public NotificationsViewModel NotificationsViewModel { get; private set; }
 
-        // Tray icon
         private TaskbarIcon trayIcon;
 
-        // Handles for processes spawned by two-window dev mode. Retained so the
-        // ProcessExit cleanup handler can kill them; otherwise closing user 1's
-        // window leaves the NotificationServer and user 2 client as orphans.
         private static Process? notificationServerProcess;
         private static Process? secondClientProcess;
 
-        // Private dependencies and state
         private Window? mainWindow;
         private INotificationRepository notificationRepository;
         private INotificationService notificationService;
@@ -83,27 +74,20 @@ namespace Property_and_Management
         private IGameService gameService;
         private readonly NotificationManager notificationManager;
 
-        /// <summary>
-        /// Initializes the singleton application object.
-        /// </summary>
         public App()
         {
-            CurrentUserIdentifier = GetUserIdFromArgs();
+            CurrentUserId = GetUserIdFromArgs();
 
-            // Ensure the database, tables, and demo data exist before anything
-            // else (DI resolution, ViewModel constructors) touches the DB.
             DatabaseInitializer.EnsureDatabaseInitialized();
 
-            // Two-window dev mode: user 1 spawns the notification server + a second client
-            if (CurrentUserIdentifier == DevModePrimaryUserIdentifier && IsTwoWindowsEnabled())
+            if (CurrentUserId == DevModePrimaryUserIdentifier && IsTwoWindowsEnabled())
             {
                 StartNotificationServer();
                 LaunchSecondClient();
             }
 
-            AppUserModelId = $"BoardRent -- user-{CurrentUserIdentifier}";
+            AppUserModelId = $"BoardRent -- user-{CurrentUserId}";
 
-            // Create manager and wire its generic handlers (handlers may reference fields initialized later)
             notificationManager = new NotificationManager();
 
             SetupNotificationManager();
@@ -111,67 +95,63 @@ namespace Property_and_Management
             EnsureSingleInstance(AppUserModelId);
 
             ConfigureServices();
-            InitializeServices(CurrentUserIdentifier);
+            InitializeServices(CurrentUserId);
 
             InitializeComponent();
         }
 
         private void ConfigureServices()
         {
-            var serviceCollection = new ServiceCollection();
+            var applicationServiceCollection = new ServiceCollection();
 
-            serviceCollection.AddSingleton<IMapper<User, UserDataTransferObject>, UserMapper>();
-            serviceCollection.AddSingleton<IMapper<Game, GameDataTransferObject>, GameMapper>();
-            serviceCollection.AddSingleton<IMapper<Notification, NotificationDataTransferObject>, NotificationMapper>();
-            serviceCollection.AddSingleton<IMapper<Rental, RentalDataTransferObject>, RentalMapper>();
-            serviceCollection.AddSingleton<IMapper<Request, RequestDataTransferObject>, RequestMapper>();
+            applicationServiceCollection.AddSingleton<IMapper<User, UserDTO>, UserMapper>();
+            applicationServiceCollection.AddSingleton<IMapper<Game, GameDTO>, GameMapper>();
+            applicationServiceCollection.AddSingleton<IMapper<Notification, NotificationDTO>, NotificationMapper>();
+            applicationServiceCollection.AddSingleton<IMapper<Rental, RentalDTO>, RentalMapper>();
+            applicationServiceCollection.AddSingleton<IMapper<Request, RequestDTO>, RequestMapper>();
 
-            // Infrastructure
-            serviceCollection.AddSingleton<ICurrentUserContext>(new CurrentUserContext(CurrentUserIdentifier));
-            serviceCollection.AddSingleton<IToastNotificationService, ToastNotificationService>();
-            serviceCollection.AddSingleton<IServerClient, NotificationClient>();
+            applicationServiceCollection.AddSingleton<ICurrentUserContext>(new CurrentUserContext(CurrentUserId));
+            applicationServiceCollection.AddSingleton<IToastNotificationService, ToastNotificationService>();
+            applicationServiceCollection.AddSingleton<IServerClient, NotificationClient>();
 
-            // Repositories
-            serviceCollection.AddSingleton<IUserRepository, UserRepository>();
-            serviceCollection.AddSingleton<IGameRepository, GameRepository>();
-            serviceCollection.AddSingleton<IRequestRepository, RequestRepository>();
-            serviceCollection.AddSingleton<IRentalRepository, RentalRepository>();
-            serviceCollection.AddSingleton<INotificationRepository, NotificationRepository>();
+            applicationServiceCollection.AddSingleton<IUserRepository, UserRepository>();
+            applicationServiceCollection.AddSingleton<IGameRepository, GameRepository>();
+            applicationServiceCollection.AddSingleton<IRequestRepository, RequestRepository>();
+            applicationServiceCollection.AddSingleton<IRentalRepository, RentalRepository>();
+            applicationServiceCollection.AddSingleton<INotificationRepository, NotificationRepository>();
 
-            // Services
-            serviceCollection.AddSingleton<IUserService, UserService>();
-            serviceCollection.AddSingleton<IGameService, GameService>();
-            serviceCollection.AddSingleton<IRentalService, RentalService>();
-            serviceCollection.AddSingleton<INotificationService, NotificationService>();
-            serviceCollection.AddSingleton<IRequestService, RequestService>();
+            applicationServiceCollection.AddSingleton<IUserService, UserService>();
+            applicationServiceCollection.AddSingleton<IGameService, GameService>();
+            applicationServiceCollection.AddSingleton<IRentalService, RentalService>();
+            applicationServiceCollection.AddSingleton<INotificationService, NotificationService>();
+            applicationServiceCollection.AddSingleton<IRequestService, RequestService>();
 
-            // ViewModels
-            serviceCollection.AddSingleton<NotificationsViewModel>();
-            serviceCollection.AddSingleton<MenuBarViewModel>();
-            serviceCollection.AddTransient(serviceProvider => new ListingsViewModel(
+            applicationServiceCollection.AddSingleton<NotificationsViewModel>();
+            applicationServiceCollection.AddSingleton<MenuBarViewModel>();
+            applicationServiceCollection.AddTransient(serviceProvider => new ListingsViewModel(
                 serviceProvider.GetRequiredService<IGameService>(),
-                serviceProvider.GetRequiredService<ICurrentUserContext>().CurrentUserIdentifier));
-            serviceCollection.AddTransient<CreateGameViewModel>();
-            serviceCollection.AddTransient<EditGameViewModel>();
-            serviceCollection.AddTransient<CreateRequestViewModel>();
-            serviceCollection.AddTransient<CreateRentalViewModel>();
-            serviceCollection.AddTransient<RequestsFromOthersViewModel>();
-            serviceCollection.AddTransient<RequestsToOthersViewModel>();
-            serviceCollection.AddTransient<RentalsFromOthersViewModel>();
-            serviceCollection.AddTransient<RentalsToOthersViewModel>();
+                serviceProvider.GetRequiredService<ICurrentUserContext>().CurrentUserId));
+            applicationServiceCollection.AddTransient<CreateGameViewModel>();
+            applicationServiceCollection.AddTransient<EditGameViewModel>();
+            applicationServiceCollection.AddTransient<CreateRequestViewModel>();
+            applicationServiceCollection.AddTransient<CreateRentalViewModel>();
+            applicationServiceCollection.AddTransient<RequestsFromOthersViewModel>();
+            applicationServiceCollection.AddTransient<RequestsToOthersViewModel>();
+            applicationServiceCollection.AddTransient<RentalsFromOthersViewModel>();
+            applicationServiceCollection.AddTransient<RentalsToOthersViewModel>();
 
-            Services = serviceCollection.BuildServiceProvider();
+            Services = applicationServiceCollection.BuildServiceProvider();
         }
 
         private int GetUserIdFromArgs()
         {
-            string[] commandLineArgs = Environment.GetCommandLineArgs(); // first arg is the executable path
+            string[] commandLineArgs = Environment.GetCommandLineArgs();
             if (commandLineArgs.Length > UserIdentifierArgumentIndex && int.TryParse(commandLineArgs[UserIdentifierArgumentIndex], out int parsedUserIdentifier))
             {
                 return parsedUserIdentifier;
             }
 
-            return DefaultUserIdentifier;
+            return DefaultUserId;
         }
 
         #region Two-window dev mode
@@ -320,7 +300,6 @@ namespace Property_and_Management
 
         private void SetupNotificationManager()
         {
-            // Ensure the manager is unregistered when the process exits
             AppDomain.CurrentDomain.ProcessExit += (sender, eventArgs) =>
             {
                 notificationManager.Unregister();
@@ -328,15 +307,14 @@ namespace Property_and_Management
                 KillSpawnedChildProcesses();
             };
 
-            // When a notification is clicked, bring the window to foreground and optionally navigate
-            notificationManager.NotificationClicked += (sender, eventArguments) =>
+            notificationManager.NotificationClicked += (sender, notificationActivationArgs) =>
             {
                 mainWindow?.DispatcherQueue.TryEnqueue(() =>
                 {
                     mainWindow?.Activate();
 
-                    if (eventArguments.Arguments.ContainsKey(NotificationNavigationArgumentKey) &&
-                        eventArguments.Arguments[NotificationNavigationArgumentKey] == nameof(NotificationsPage))
+                    if (notificationActivationArgs.Arguments.ContainsKey(NotificationNavigationArgumentKey) &&
+                        notificationActivationArgs.Arguments[NotificationNavigationArgumentKey] == nameof(NotificationsPage))
                     {
                         ActivateWindow();
                         NavigateToNotificationsWithinShell();
@@ -377,42 +355,33 @@ namespace Property_and_Management
                 Environment.Exit(SuccessExitCode);
             }
 
-            // Get the current instance and activate the window
             appInstance.Activated += (sender, activationEventArgs) =>
             {
                 ActivateWindow();
             };
         }
 
-        private void InitializeServices(int userIdentifier)
+        private void InitializeServices(int startupUserId)
         {
-            // Initialize navigation frame
             RootFrame = new Frame();
 
-            // Resolve repository/service/viewmodel from DI container
             notificationRepository = Services.GetRequiredService<INotificationRepository>();
             notificationService = Services.GetRequiredService<INotificationService>();
             gameRepository = Services.GetRequiredService<IGameRepository>();
             gameService = Services.GetRequiredService<IGameService>();
             NotificationsViewModel = Services.GetRequiredService<NotificationsViewModel>();
 
-            // Start listening and subscribe for the configured user
             notificationService.StartListening();
-            notificationService.SubscribeToServer(userIdentifier);
+            notificationService.SubscribeToServer(startupUserId);
         }
 
-        /// <summary>
-        /// Invoked when the application is launched.
-        /// </summary>
-        /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
             CreateAndShowMainWindow();
 
-            // Wrap your Frame in a Grid so the tray icon can be added later
             Grid rootGrid = new Grid();
-            rootGrid.Children.Add(RootFrame);  // Your navigation frame
-            MainWindow.Content = rootGrid;            // Set Grid as window content
+            rootGrid.Children.Add(RootFrame);
+            MainWindow.Content = rootGrid;
 
             RootFrame.Navigate(typeof(MenuBarView), gameService);
 
@@ -425,7 +394,6 @@ namespace Property_and_Management
             mainWindow.Content = RootFrame;
             mainWindow.Activate();
 
-            // Display the AppUserModelId in the window title for debugging / identification
             mainWindow.Title = AppUserModelId;
         }
 
@@ -433,9 +401,9 @@ namespace Property_and_Management
         {
             mainWindow?.DispatcherQueue.TryEnqueue(() =>
             {
-                if (mainWindow is MainWindow win)
+                if (mainWindow is MainWindow activatedMainWindow)
                 {
-                    win.AppWindow.Show();
+                    activatedMainWindow.AppWindow.Show();
                 }
                 mainWindow.Activate();
             });
@@ -449,38 +417,36 @@ namespace Property_and_Management
                 IconSource = new BitmapImage(new Uri(Constants.AppTrayIconUri)),
             };
 
-            // 1. Create a Command for Open
-            var openCommand = new XamlUICommand();
-            openCommand.ExecuteRequested += (commandSender, executeRequestedEventArgs) =>
+            var trayOpenCommand = new XamlUICommand();
+            trayOpenCommand.ExecuteRequested += (commandSender, executeRequestedEventArgs) =>
             {
                 ActivateWindow();
             };
 
-            var openItem = new MenuFlyoutItem
+            var trayOpenMenuItem = new MenuFlyoutItem
             {
                 Text = "Open",
-                Command = openCommand // Bind to Command instead of Click
+                Command = trayOpenCommand
             };
 
-            // 2. Create a Command for Exit
-            var exitCommand = new XamlUICommand();
-            exitCommand.ExecuteRequested += (commandSender, executeRequestedEventArgs) =>
+            var trayExitCommand = new XamlUICommand();
+            trayExitCommand.ExecuteRequested += (commandSender, executeRequestedEventArgs) =>
             {
                 trayIcon.Dispose();
                 Environment.Exit(SuccessExitCode);
             };
 
-            var exitItem = new MenuFlyoutItem
+            var trayExitMenuItem = new MenuFlyoutItem
             {
                 Text = "Exit",
-                Command = exitCommand // Bind to Command instead of Click
+                Command = trayExitCommand
             };
 
             trayIcon.ContextFlyout = new MenuFlyout
             {
                 Items =
                 {
-                    openItem, exitItem
+                    trayOpenMenuItem, trayExitMenuItem
                 }
             };
 
@@ -491,5 +457,3 @@ namespace Property_and_Management
         }
     }
 }
-
-

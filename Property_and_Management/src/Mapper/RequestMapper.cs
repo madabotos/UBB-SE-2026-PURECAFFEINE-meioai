@@ -4,56 +4,55 @@ using Property_and_Management.Src.Model;
 
 namespace Property_and_Management.Src.Mapper
 {
-    public class RequestMapper : IMapper<Request, RequestDataTransferObject>
+    public class RequestMapper : IMapper<Request, RequestDTO>
     {
-        private readonly IMapper<Game, GameDataTransferObject> gameMapper;
-        private readonly IMapper<User, UserDataTransferObject> userMapper;
+        private readonly IMapper<Game, GameDTO> requestedGameMapper;
+        private readonly IMapper<User, UserDTO> requestParticipantUserMapper;
 
-        public RequestMapper(IMapper<Game, GameDataTransferObject> gameMapper, IMapper<User, UserDataTransferObject> userMapper)
+        public RequestMapper(IMapper<Game, GameDTO> gameMapper, IMapper<User, UserDTO> userMapper)
         {
-            this.gameMapper = gameMapper;
-            this.userMapper = userMapper;
+            this.requestedGameMapper = gameMapper;
+            this.requestParticipantUserMapper = userMapper;
         }
 
-        public RequestDataTransferObject ToDataTransferObject(Request request)
+        public RequestDTO ToDTO(Request requestModel)
         {
-            if (request == null)
+            if (requestModel == null)
             {
                 return null;
             }
 
-            return new RequestDataTransferObject
+            return new RequestDTO
             {
-                Identifier = request.Identifier,
-                Game = gameMapper.ToDataTransferObject(request.Game),
-                Renter = userMapper.ToDataTransferObject(request.Renter),
-                Owner = userMapper.ToDataTransferObject(request.Owner),
-                StartDate = request.StartDate,
-                EndDate = request.EndDate,
-                Status = request.Status,
-                OfferingUser = request.OfferingUser != null ? userMapper.ToDataTransferObject(request.OfferingUser) : null
+                Id = requestModel.Id,
+                Game = requestedGameMapper.ToDTO(requestModel.Game),
+                Renter = requestParticipantUserMapper.ToDTO(requestModel.Renter),
+                Owner = requestParticipantUserMapper.ToDTO(requestModel.Owner),
+                StartDate = requestModel.StartDate,
+                EndDate = requestModel.EndDate,
+                Status = requestModel.Status,
+                OfferingUser = requestModel.OfferingUser != null ? requestParticipantUserMapper.ToDTO(requestModel.OfferingUser) : null
             };
         }
 
-        public Request ToModel(RequestDataTransferObject requestDataTransferObject)
+        public Request ToModel(RequestDTO requestDto)
         {
-            if (requestDataTransferObject == null)
+            if (requestDto == null)
             {
                 return null;
             }
 
             return new Request
             {
-                Identifier = requestDataTransferObject.Identifier,
-                Game = gameMapper.ToModel(requestDataTransferObject.Game),
-                Renter = userMapper.ToModel(requestDataTransferObject.Renter),
-                Owner = userMapper.ToModel(requestDataTransferObject.Owner),
-                StartDate = requestDataTransferObject.StartDate,
-                EndDate = requestDataTransferObject.EndDate,
-                Status = requestDataTransferObject.Status,
-                OfferingUser = requestDataTransferObject.OfferingUser != null ? userMapper.ToModel(requestDataTransferObject.OfferingUser) : null
+                Id = requestDto.Id,
+                Game = requestedGameMapper.ToModel(requestDto.Game),
+                Renter = requestParticipantUserMapper.ToModel(requestDto.Renter),
+                Owner = requestParticipantUserMapper.ToModel(requestDto.Owner),
+                StartDate = requestDto.StartDate,
+                EndDate = requestDto.EndDate,
+                Status = requestDto.Status,
+                OfferingUser = requestDto.OfferingUser != null ? requestParticipantUserMapper.ToModel(requestDto.OfferingUser) : null
             };
         }
     }
 }
-

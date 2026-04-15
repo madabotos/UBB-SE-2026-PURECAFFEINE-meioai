@@ -10,166 +10,165 @@ namespace Property_and_Management.Src.Repository
 {
     public class RentalRepository : IRentalRepository
     {
-        private const int MissingForeignKeyIdentifier = 0;
+        private const int MissingForeignKeyId = 0;
         private const string ConnectionStringName = "BoardRent";
 
-        private readonly string connectionString =
+        private readonly string boardRentConnectionString =
             System.Configuration.ConfigurationManager.ConnectionStrings[ConnectionStringName]?.ConnectionString ?? string.Empty;
 
-        private const string SelectAllSql =
+        private const string SelectAllRentalsSql =
             "SELECT r.*, renterUser.display_name AS renter_display_name, ownerUser.display_name AS owner_display_name, " +
             "g.name AS game_name, g.image AS game_image " +
             "FROM Rentals r " +
-            "LEFT JOIN Users renterUser ON renterUser.id = r.renter_id " +
-            "LEFT JOIN Users ownerUser ON ownerUser.id = r.owner_id " +
+            "LEFT JOIN Users renterUser ON renterUser.Id = r.renter_id " +
+            "LEFT JOIN Users ownerUser ON ownerUser.Id = r.owner_id " +
             "LEFT JOIN Games g ON g.game_id = r.game_id";
 
-        private static Rental ReadRentalFromReader(SqlDataReader reader)
+        private static Rental ReadRentalFromReader(SqlDataReader databaseReader)
         {
-            var game = new Game
+            var rentalGame = new Game
             {
-                Identifier = (int)reader["game_id"],
-                Name = reader["game_name"] as string ?? string.Empty,
-                Image = reader["game_image"] as byte[] ?? Array.Empty<byte>()
+                Id = (int)databaseReader["game_id"],
+                Name = databaseReader["game_name"] as string ?? string.Empty,
+                Image = databaseReader["game_image"] as byte[] ?? Array.Empty<byte>()
             };
-            var renter = new User((int)reader["renter_id"], reader["renter_display_name"] as string ?? string.Empty);
-            var owner = new User((int)reader["owner_id"], reader["owner_display_name"] as string ?? string.Empty);
-            return new Rental((int)reader["rental_id"], game, renter, owner,
-                (DateTime)reader["start_date"], (DateTime)reader["end_date"]);
+            var renterUser = new User((int)databaseReader["renter_id"], databaseReader["renter_display_name"] as string ?? string.Empty);
+            var ownerUser = new User((int)databaseReader["owner_id"], databaseReader["owner_display_name"] as string ?? string.Empty);
+            return new Rental((int)databaseReader["rental_id"], rentalGame, renterUser, ownerUser,
+                (DateTime)databaseReader["start_date"], (DateTime)databaseReader["end_date"]);
         }
 
         public ImmutableList<Rental> GetAll()
         {
-            var list = new List<Rental>();
-            using (var connection = new SqlConnection(connectionString))
+            var allRetrievedRentals = new List<Rental>();
+            using (var connection = new SqlConnection(boardRentConnectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = SelectAllSql;
+                    command.CommandText = SelectAllRentalsSql;
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            list.Add(ReadRentalFromReader(reader));
+                            allRetrievedRentals.Add(ReadRentalFromReader(reader));
                         }
                     }
                 }
             }
-            return list.ToImmutableList();
+            return allRetrievedRentals.ToImmutableList();
         }
 
-        public void Add(Rental rental)
+        public void Add(Rental rentalToInsert)
         {
-            using (var connection = new SqlConnection(connectionString))
+            using (var connection = new SqlConnection(boardRentConnectionString))
             {
                 connection.Open();
                 using (var transaction = connection.BeginTransaction())
                 {
-                    AddInternal(rental, connection, transaction);
+                    AddRentalWithinTransaction(rentalToInsert, connection, transaction);
                     transaction.Commit();
                 }
             }
         }
 
-        private static void AddInternal(Rental rental, SqlConnection connection, SqlTransaction transaction)
+        private static void AddRentalWithinTransaction(Rental rentalToInsert, SqlConnection connection, SqlTransaction transaction)
         {
             using var command = connection.CreateCommand();
             command.Transaction = transaction;
             command.CommandText =
                 "INSERT INTO Rentals(game_id, renter_id, owner_id, start_date, end_date) " +
                 "VALUES(@game_id, @renter_id, @owner_id, @start_date, @end_date); SELECT SCOPE_IDENTITY();";
-            command.Parameters.AddWithValue("@game_id", rental.Game?.Identifier ?? MissingForeignKeyIdentifier);
-            command.Parameters.AddWithValue("@renter_id", rental.Renter?.Identifier ?? MissingForeignKeyIdentifier);
-            command.Parameters.AddWithValue("@owner_id", rental.Owner?.Identifier ?? MissingForeignKeyIdentifier);
-            command.Parameters.AddWithValue("@start_date", rental.StartDate);
-            command.Parameters.AddWithValue("@end_date", rental.EndDate);
-            rental.Identifier = Convert.ToInt32(command.ExecuteScalar());
+            command.Parameters.AddWithValue("@game_id", rentalToInsert.Game?.Id ?? MissingForeignKeyId);
+            command.Parameters.AddWithValue("@renter_id", rentalToInsert.Renter?.Id ?? MissingForeignKeyId);
+            command.Parameters.AddWithValue("@owner_id", rentalToInsert.Owner?.Id ?? MissingForeignKeyId);
+            command.Parameters.AddWithValue("@start_date", rentalToInsert.StartDate);
+            command.Parameters.AddWithValue("@end_date", rentalToInsert.EndDate);
+            rentalToInsert.Id = Convert.ToInt32(command.ExecuteScalar());
         }
 
-        public void AddConfirmed(Rental rental)
+        public void AddConfirmed(Rental confirmedRentalToInsert)
         {
-            // Persistence only. Slot validation lives in the service layer.
-            using (var connection = new SqlConnection(connectionString))
+            using (var connection = new SqlConnection(boardRentConnectionString))
             {
                 connection.Open();
                 using (var transaction = connection.BeginTransaction())
                 {
-                    AddInternal(rental, connection, transaction);
+                    AddRentalWithinTransaction(confirmedRentalToInsert, connection, transaction);
                     transaction.Commit();
                 }
             }
         }
 
-        public ImmutableList<Rental> GetRentalsByOwner(int ownerIdentifier)
+        public ImmutableList<Rental> GetRentalsByOwner(int ownerUserId)
         {
-            var list = new List<Rental>();
-            using (var connection = new SqlConnection(connectionString))
+            var ownerRentals = new List<Rental>();
+            using (var connection = new SqlConnection(boardRentConnectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = SelectAllSql + " WHERE r.owner_id = @owner_id";
-                    command.Parameters.AddWithValue("@owner_id", ownerIdentifier);
+                    command.CommandText = SelectAllRentalsSql + " WHERE r.owner_id = @owner_id";
+                    command.Parameters.AddWithValue("@owner_id", ownerUserId);
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            list.Add(ReadRentalFromReader(reader));
+                            ownerRentals.Add(ReadRentalFromReader(reader));
                         }
                     }
                 }
             }
-            return list.ToImmutableList();
+            return ownerRentals.ToImmutableList();
         }
 
-        public ImmutableList<Rental> GetRentalsByRenter(int renterIdentifier)
+        public ImmutableList<Rental> GetRentalsByRenter(int renterUserId)
         {
-            var list = new List<Rental>();
-            using (var connection = new SqlConnection(connectionString))
+            var renterRentals = new List<Rental>();
+            using (var connection = new SqlConnection(boardRentConnectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = SelectAllSql + " WHERE r.renter_id = @renter_id";
-                    command.Parameters.AddWithValue("@renter_id", renterIdentifier);
+                    command.CommandText = SelectAllRentalsSql + " WHERE r.renter_id = @renter_id";
+                    command.Parameters.AddWithValue("@renter_id", renterUserId);
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            list.Add(ReadRentalFromReader(reader));
+                            renterRentals.Add(ReadRentalFromReader(reader));
                         }
                     }
                 }
             }
-            return list.ToImmutableList();
+            return renterRentals.ToImmutableList();
         }
 
-        public ImmutableList<Rental> GetRentalsByGame(int gameIdentifier)
+        public ImmutableList<Rental> GetRentalsByGame(int rentalGameId)
         {
-            var list = new List<Rental>();
-            using (var connection = new SqlConnection(connectionString))
+            var gameRentals = new List<Rental>();
+            using (var connection = new SqlConnection(boardRentConnectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = SelectAllSql + " WHERE r.game_id = @game_id";
-                    command.Parameters.AddWithValue("@game_id", gameIdentifier);
+                    command.CommandText = SelectAllRentalsSql + " WHERE r.game_id = @game_id";
+                    command.Parameters.AddWithValue("@game_id", rentalGameId);
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            list.Add(ReadRentalFromReader(reader));
+                            gameRentals.Add(ReadRentalFromReader(reader));
                         }
                     }
                 }
             }
-            return list.ToImmutableList();
+            return gameRentals.ToImmutableList();
         }
 
-        public Rental Delete(int removedEntityIdentifier)
+        public Rental Delete(int rentalIdToRemove)
         {
-            using (var connection = new SqlConnection(connectionString))
+            using (var connection = new SqlConnection(boardRentConnectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -180,11 +179,11 @@ namespace Property_and_Management.Src.Repository
                         "renterUser.display_name AS renter_display_name, ownerUser.display_name AS owner_display_name, " +
                         "g.name AS game_name, g.image AS game_image " +
                         "FROM Rentals r " +
-                        "LEFT JOIN Users renterUser ON renterUser.id = r.renter_id " +
-                        "LEFT JOIN Users ownerUser ON ownerUser.id = r.owner_id " +
+                        "LEFT JOIN Users renterUser ON renterUser.Id = r.renter_id " +
+                        "LEFT JOIN Users ownerUser ON ownerUser.Id = r.owner_id " +
                         "LEFT JOIN Games g ON g.game_id = r.game_id " +
                         "WHERE r.rental_id = @id";
-                    command.Parameters.AddWithValue("@id", removedEntityIdentifier);
+                    command.Parameters.AddWithValue("@id", rentalIdToRemove);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
@@ -197,9 +196,9 @@ namespace Property_and_Management.Src.Repository
             throw new KeyNotFoundException();
         }
 
-        public void Update(int updatedEntityIdentifier, Rental newEntity)
+        public void Update(int rentalIdToUpdate, Rental rentalDataToUpdate)
         {
-            using (var connection = new SqlConnection(connectionString))
+            using (var connection = new SqlConnection(boardRentConnectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -207,26 +206,26 @@ namespace Property_and_Management.Src.Repository
                     command.CommandText =
                         "UPDATE Rentals SET game_id = @game_id, renter_id = @renter_id, owner_id = @owner_id, " +
                         "start_date = @start_date, end_date = @end_date WHERE rental_id = @id";
-                    command.Parameters.AddWithValue("@id", updatedEntityIdentifier);
-                    command.Parameters.AddWithValue("@game_id", newEntity.Game?.Identifier ?? MissingForeignKeyIdentifier);
-                    command.Parameters.AddWithValue("@renter_id", newEntity.Renter?.Identifier ?? MissingForeignKeyIdentifier);
-                    command.Parameters.AddWithValue("@owner_id", newEntity.Owner?.Identifier ?? MissingForeignKeyIdentifier);
-                    command.Parameters.AddWithValue("@start_date", newEntity.StartDate);
-                    command.Parameters.AddWithValue("@end_date", newEntity.EndDate);
+                    command.Parameters.AddWithValue("@id", rentalIdToUpdate);
+                    command.Parameters.AddWithValue("@game_id", rentalDataToUpdate.Game?.Id ?? MissingForeignKeyId);
+                    command.Parameters.AddWithValue("@renter_id", rentalDataToUpdate.Renter?.Id ?? MissingForeignKeyId);
+                    command.Parameters.AddWithValue("@owner_id", rentalDataToUpdate.Owner?.Id ?? MissingForeignKeyId);
+                    command.Parameters.AddWithValue("@start_date", rentalDataToUpdate.StartDate);
+                    command.Parameters.AddWithValue("@end_date", rentalDataToUpdate.EndDate);
                     command.ExecuteNonQuery();
                 }
             }
         }
 
-        public Rental Get(int identifier)
+        public Rental Get(int rentalIdToFind)
         {
-            using (var connection = new SqlConnection(connectionString))
+            using (var connection = new SqlConnection(boardRentConnectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = SelectAllSql + " WHERE r.rental_id = @id";
-                    command.Parameters.AddWithValue("@id", identifier);
+                    command.CommandText = SelectAllRentalsSql + " WHERE r.rental_id = @id";
+                    command.Parameters.AddWithValue("@id", rentalIdToFind);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
@@ -240,8 +239,3 @@ namespace Property_and_Management.Src.Repository
         }
     }
 }
-
-
-
-
-

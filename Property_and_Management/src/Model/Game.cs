@@ -4,7 +4,7 @@ namespace Property_and_Management.Src.Model
 {
     public class Game : IEntity
     {
-        public int Identifier { get; set; }
+        public int Id { get; set; }
         public User Owner { get; set; }
         public string Name { get; set; }
         public decimal Price { get; set; }
@@ -18,12 +18,12 @@ namespace Property_and_Management.Src.Model
         {
         }
 
-        public Game(int identifier, User owner, string name, decimal price,
+        public Game(int id, User gameOwner, string name, decimal price,
                     int minimumPlayerNumber, int maximumPlayerNumber,
                     string description, byte[] image, bool isActive)
         {
-            Identifier = identifier;
-            Owner = owner;
+            this.Id = id;
+            Owner = gameOwner;
             Name = name;
             Price = price;
             MinimumPlayerNumber = minimumPlayerNumber;
@@ -34,4 +34,3 @@ namespace Property_and_Management.Src.Model
         }
     }
 }
-

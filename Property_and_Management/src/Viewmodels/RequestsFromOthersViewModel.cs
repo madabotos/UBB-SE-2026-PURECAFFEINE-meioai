@@ -6,16 +6,16 @@ using Property_and_Management.Src.Model;
 
 namespace Property_and_Management.Src.Viewmodels
 {
-    public class RequestsFromOthersViewModel : PagedViewModel<RequestDataTransferObject>
+    public class RequestsFromOthersViewModel : PagedViewModel<RequestDTO>
     {
-        private readonly IRequestService requestService;
+        private readonly IRequestService rentalRequestService;
         private readonly ICurrentUserContext currentUserContext;
 
-        public int OwnerIdentifier { get; private set; }
+        public int CurrentGameOwnerUserId { get; private set; }
 
-        public RequestsFromOthersViewModel(IRequestService requestService, ICurrentUserContext currentUserContext)
+        public RequestsFromOthersViewModel(IRequestService rentalRequestService, ICurrentUserContext currentUserContext)
         {
-            this.requestService = requestService;
+            this.rentalRequestService = rentalRequestService;
             this.currentUserContext = currentUserContext;
             Reload();
         }
@@ -26,30 +26,26 @@ namespace Property_and_Management.Src.Viewmodels
 
         protected override void Reload()
         {
-            OwnerIdentifier = currentUserContext.CurrentUserIdentifier;
-            // Owners only see Open requests here.
-            var allRequests = requestService
-                .GetRequestsForOwner(OwnerIdentifier)
+            CurrentGameOwnerUserId = currentUserContext.CurrentUserId;
+
+            var openRequestsForOwnerSortedByNewest = rentalRequestService
+                .GetRequestsForOwner(CurrentGameOwnerUserId)
                 .Where(request => request.Status == RequestStatus.Open)
                 .OrderByDescending(request => request.StartDate)
                 .ToImmutableList();
-            SetAllItems(allRequests);
+            SetAllItems(openRequestsForOwnerSortedByNewest);
         }
 
-        /// <summary>
-        /// Approve a pending request directly (creates a rental atomically).
-        /// Returns null on success or a user-friendly error message on failure.
-        /// </summary>
-        public string? TryApproveRequest(int requestIdentifier)
+        public string? TryApproveRequest(int requestIdToApprove)
         {
-            var result = requestService.ApproveRequest(requestIdentifier, OwnerIdentifier);
-            if (result.IsSuccess)
+            var approvalResult = rentalRequestService.ApproveRequest(requestIdToApprove, CurrentGameOwnerUserId);
+            if (approvalResult.IsSuccess)
             {
                 Reload();
                 return null;
             }
 
-            return result.Error switch
+            return approvalResult.Error switch
             {
                 ApproveRequestError.Unauthorized => "You are not authorized to approve this request.",
                 ApproveRequestError.NotFound => "Request not found.",
@@ -58,27 +54,22 @@ namespace Property_and_Management.Src.Viewmodels
             };
         }
 
-        /// <summary>
-        /// Decline a pending request. The view is free to pass a raw user string;
-        /// we trim and substitute the "no reason provided" placeholder here so
-        /// code-behind stays UI-only.
-        /// </summary>
-        public string? TryDenyRequest(int requestIdentifier, string? rawReason)
+        public string? TryDenyRequest(int requestIdToDeny, string? rawDenialReason)
         {
-            var trimmedReason = (rawReason ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(trimmedReason))
+            var trimmedDenialReason = (rawDenialReason ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(trimmedDenialReason))
             {
-                trimmedReason = Constants.DialogMessages.NoReasonProvided;
+                trimmedDenialReason = Constants.DialogMessages.NoReasonProvided;
             }
 
-            var result = requestService.DenyRequest(requestIdentifier, OwnerIdentifier, trimmedReason);
-            if (result.IsSuccess)
+            var denialResult = rentalRequestService.DenyRequest(requestIdToDeny, CurrentGameOwnerUserId, trimmedDenialReason);
+            if (denialResult.IsSuccess)
             {
                 Reload();
                 return null;
             }
 
-            return result.Error switch
+            return denialResult.Error switch
             {
                 DenyRequestError.NotFound => "Request not found.",
                 DenyRequestError.Unauthorized => "You are not authorized to deny this request.",
@@ -86,20 +77,16 @@ namespace Property_and_Management.Src.Viewmodels
             };
         }
 
-        /// <summary>
-        /// Offer the game to the renter. In the current flow this directly
-        /// approves the request and creates the rental atomically.
-        /// </summary>
-        public string? TryOfferGame(int requestIdentifier)
+        public string? TryOfferGame(int requestIdForGameOffer)
         {
-            var result = requestService.OfferGame(requestIdentifier, OwnerIdentifier);
-            if (result.IsSuccess)
+            var gameOfferResult = rentalRequestService.OfferGame(requestIdForGameOffer, CurrentGameOwnerUserId);
+            if (gameOfferResult.IsSuccess)
             {
                 Reload();
                 return null;
             }
 
-            return result.Error switch
+            return gameOfferResult.Error switch
             {
                 OfferError.NotFound => "Request not found.",
                 OfferError.NotOwner => "You are not the owner of this game.",

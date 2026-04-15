@@ -37,7 +37,7 @@
                   SelectionMode="None"
                   IsItemClickEnabled="False">
             <ListView.ItemTemplate>
-                <DataTemplate x:DataType="local:RentalDataTransferObject">
+                <DataTemplate x:DataType="local:RentalDTO">
                     <Grid Background="#2D2D2D"
                           Margin="0,0,0,10"
                           Padding="15"
@@ -71,7 +71,7 @@
             </ListView.ItemTemplate>
         </ListView>
 
-        <!-- Paging -->
+        
         <Grid Grid.Row="2" Margin="12">
             <TextBlock Text="{Binding ShowingText}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

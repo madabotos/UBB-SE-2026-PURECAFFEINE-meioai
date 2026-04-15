@@ -6,11 +6,6 @@ using Microsoft.Data.SqlClient;
 
 namespace Property_and_Management.Src.Repository
 {
-    /// <summary>
-    /// Ensures the BoardRent database exists with the expected schema,
-    /// and seeds it with demo data on first run. All operations are idempotent
-    /// so it is safe to call from multiple processes at startup.
-    /// </summary>
     public static class DatabaseInitializer
     {
         private const string ConnectionStringName = "BoardRent";
@@ -73,12 +68,6 @@ namespace Property_and_Management.Src.Repository
             ExecuteBatch(connection, CreateNotificationsTableSql);
         }
 
-        /// <summary>
-        /// Mirrors Scripts/migrate_offer_system.sql — brings pre-offer-system
-        /// databases up to date by adding the status/offering_user_id columns
-        /// on Requests and the type/related_request_id columns on Notifications.
-        /// Idempotent: each column is added only if missing.
-        /// </summary>
         private static void EnsureOfferSystemColumnsMigrated(SqlConnection connection)
         {
             ExecuteBatch(connection, AddRequestsStatusColumnSql);
@@ -91,8 +80,6 @@ namespace Property_and_Management.Src.Repository
         {
             using (var transaction = connection.BeginTransaction(IsolationLevel.Serializable))
             {
-                // Re-check emptiness inside the transaction to avoid races between
-                // two app instances starting simultaneously (two-window dev mode).
                 using (var checkCommand = connection.CreateCommand())
                 {
                     checkCommand.Transaction = transaction;
@@ -114,8 +101,6 @@ namespace Property_and_Management.Src.Repository
                 transaction.Commit();
             }
 
-            // DBCC CHECKIDENT is executed outside the transaction because it is
-            // not fully transactional on all SQL Server versions.
             ExecuteBatch(connection, ReseedIdentityColumnsSql);
         }
 
@@ -131,7 +116,6 @@ namespace Property_and_Management.Src.Repository
             command.ExecuteNonQuery();
         }
 
-        // --- Schema creation SQL ---
         private const string CreateUsersTableSql = @"
 IF OBJECT_ID(N'[dbo].[Users]', 'U') IS NULL
 BEGIN
@@ -219,7 +203,6 @@ BEGIN
     );
 END;";
 
-        // --- Offer-system column migration SQL (mirrors Scripts/migrate_offer_system.sql) ---
         private const string AddRequestsStatusColumnSql = @"
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Requests') AND name = 'status')
 BEGIN
@@ -248,7 +231,6 @@ BEGIN
         FOREIGN KEY (related_request_id) REFERENCES Requests(request_id);
 END;";
 
-        // --- Seed data SQL (mirrors Scripts/reset_and_insert_test_data.sql) ---
         private const string SeedUsersSql = @"
 SET IDENTITY_INSERT Users ON;
 INSERT INTO Users (id, display_name) VALUES (1, 'Darius Turcu'), (2, 'Mihai Tira');

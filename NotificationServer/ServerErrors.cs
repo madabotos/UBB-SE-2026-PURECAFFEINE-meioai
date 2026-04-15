@@ -1,14 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace NotificationServer
 {
+    internal static class ServerExitCodes
+    {
+        internal const int Success = 0;
+        internal const int InitializationFailure = -1;
+    }
+
     internal enum ServerErrors
     {
-        SERVER_NO_ERROR = 0,
-        SERVER_FAILED_INIT = -1,
+        None = ServerExitCodes.Success,
+        FailedToInitializeServer = ServerExitCodes.InitializationFailure,
     }
 }

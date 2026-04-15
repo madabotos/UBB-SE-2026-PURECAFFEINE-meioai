@@ -5,16 +5,16 @@ using Property_and_Management.Src.Interface;
 
 namespace Property_and_Management.Src.Viewmodels
 {
-    public class RentalsToOthersViewModel : PagedViewModel<RentalDataTransferObject>
+    public class RentalsToOthersViewModel : PagedViewModel<RentalDTO>
     {
-        private readonly IRentalService rentalService;
+        private readonly IRentalService rentalLookupService;
         private readonly ICurrentUserContext currentUserContext;
 
-        public int OwnerIdentifier { get; private set; }
+        public int CurrentGameOwnerUserId { get; private set; }
 
-        public RentalsToOthersViewModel(IRentalService rentalService, ICurrentUserContext currentUserContext)
+        public RentalsToOthersViewModel(IRentalService rentalLookupService, ICurrentUserContext currentUserContext)
         {
-            this.rentalService = rentalService;
+            this.rentalLookupService = rentalLookupService;
             this.currentUserContext = currentUserContext;
             Reload();
         }
@@ -25,12 +25,12 @@ namespace Property_and_Management.Src.Viewmodels
 
         protected override void Reload()
         {
-            OwnerIdentifier = currentUserContext.CurrentUserIdentifier;
-            var allRentals = rentalService
-                .GetRentalsForOwner(OwnerIdentifier)
+            CurrentGameOwnerUserId = currentUserContext.CurrentUserId;
+            var ownerRentalsSortedByNewest = rentalLookupService
+                .GetRentalsForOwner(CurrentGameOwnerUserId)
                 .OrderByDescending(rental => rental.StartDate)
                 .ToImmutableList();
-            SetAllItems(allRentals);
+            SetAllItems(ownerRentalsSortedByNewest);
         }
     }
 }

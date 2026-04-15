@@ -9,13 +9,13 @@ namespace Property_and_Management.Src.Repository
 {
     public class UserRepository : IUserRepository
     {
-        private readonly string connectionString =
+        private readonly string boardRentConnectionString =
             System.Configuration.ConfigurationManager.ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
 
         public ImmutableList<User> GetAll()
         {
-            var list = new List<User>();
-            using (var connection = new SqlConnection(connectionString))
+            var allRetrievedUsers = new List<User>();
+            using (var connection = new SqlConnection(boardRentConnectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
@@ -25,45 +25,47 @@ namespace Property_and_Management.Src.Repository
                     {
                         while (reader.Read())
                         {
-                            var id = (int)reader["id"];
-                            var displayName = reader["display_name"] as string ?? string.Empty;
-                            list.Add(new User(id, displayName));
+                            var userId = (int)reader["id"];
+                            var userDisplayName = reader["display_name"] as string ?? string.Empty;
+                            allRetrievedUsers.Add(new User(userId, userDisplayName));
                         }
                     }
                 }
             }
-            return list.ToImmutableList();
+            return allRetrievedUsers.ToImmutableList();
         }
 
-        public void Add(User newEntity)
+        public void Add(User userToInsert)
         {
-            using (var connection = new SqlConnection(connectionString))
+            using (var connection = new SqlConnection(boardRentConnectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "INSERT INTO Users (display_name) VALUES (@display_name); SELECT SCOPE_IDENTITY();";
-                    command.Parameters.AddWithValue("@display_name", newEntity.DisplayName ?? (object)DBNull.Value);
-                    var newIdentifier = Convert.ToInt32(command.ExecuteScalar());
-                    newEntity.Identifier = newIdentifier;
+                    command.Parameters.AddWithValue("@display_name", userToInsert.DisplayName ?? (object)DBNull.Value);
+                    var newUserIdentifier = Convert.ToInt32(command.ExecuteScalar());
+                    userToInsert.Id = newUserIdentifier;
                 }
             }
         }
 
-        public User Delete(int removedEntityIdentifier)
+        public User Delete(int userIdToRemove)
         {
-            using (var connection = new SqlConnection(connectionString))
+            using (var connection = new SqlConnection(boardRentConnectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "DELETE FROM Users OUTPUT deleted.id, deleted.display_name WHERE id = @id";
-                    command.Parameters.AddWithValue("@id", removedEntityIdentifier);
+                    command.Parameters.AddWithValue("@id", userIdToRemove);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
                         {
-                            return new User((int)reader["id"], reader["display_name"] as string ?? string.Empty);
+                            var deletedUserId = (int)reader["id"];
+                            var deletedUserDisplayName = reader["display_name"] as string ?? string.Empty;
+                            return new User(deletedUserId, deletedUserDisplayName);
                         }
                     }
                 }
@@ -71,42 +73,42 @@ namespace Property_and_Management.Src.Repository
             throw new KeyNotFoundException();
         }
 
-        public void Update(int updatedEntityIdentifier, User newEntity)
+        public void Update(int userIdToUpdate, User userDataToUpdate)
         {
-            if (updatedEntityIdentifier != newEntity.Identifier)
+            if (userIdToUpdate != userDataToUpdate.Id)
             {
                 throw new ArgumentException("Id mismatch");
             }
 
-            using (var connection = new SqlConnection(connectionString))
+            using (var connection = new SqlConnection(boardRentConnectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "UPDATE Users SET display_name = @display_name WHERE id = @id";
-                    command.Parameters.AddWithValue("@display_name", newEntity.DisplayName ?? (object)DBNull.Value);
-                    command.Parameters.AddWithValue("@id", updatedEntityIdentifier);
+                    command.Parameters.AddWithValue("@display_name", userDataToUpdate.DisplayName ?? (object)DBNull.Value);
+                    command.Parameters.AddWithValue("@id", userIdToUpdate);
                     command.ExecuteNonQuery();
                 }
             }
         }
 
-        public User Get(int identifier)
+        public User Get(int userIdToFind)
         {
-            using (var connection = new SqlConnection(connectionString))
+            using (var connection = new SqlConnection(boardRentConnectionString))
             {
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = "SELECT * FROM Users WHERE id = @id";
-                    command.Parameters.AddWithValue("@id", identifier);
+                    command.Parameters.AddWithValue("@id", userIdToFind);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
                         {
-                            var userIdentifier = (int)reader["id"];
-                            var displayName = reader["display_name"] as string ?? string.Empty;
-                            return new User(userIdentifier, displayName);
+                            var foundUserId = (int)reader["id"];
+                            var foundUserDisplayName = reader["display_name"] as string ?? string.Empty;
+                            return new User(foundUserId, foundUserDisplayName);
                         }
                     }
                 }
@@ -116,6 +118,3 @@ namespace Property_and_Management.Src.Repository
         }
     }
 }
-
-
-

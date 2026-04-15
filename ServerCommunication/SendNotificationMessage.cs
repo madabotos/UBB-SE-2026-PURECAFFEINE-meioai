@@ -9,7 +9,7 @@ namespace ServerCommunication
 {
     public class SendNotificationMessage : MessageBase
     {
-        public int UserIdentifier { get; set; }
+        public int UserId { get; set; }
         public DateTime Timestamp { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Body { get; set; } = string.Empty;

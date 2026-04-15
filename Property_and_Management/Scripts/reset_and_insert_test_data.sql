@@ -1,29 +1,20 @@
     USE BoardRent;
     GO
-
-    -- Reset identity columns
     IF OBJECT_ID('dbo.Notifications', 'U') IS NOT NULL DBCC CHECKIDENT ('Notifications', RESEED, 0);
     IF OBJECT_ID('dbo.Rentals', 'U') IS NOT NULL DBCC CHECKIDENT ('Rentals', RESEED, 0);
     IF OBJECT_ID('dbo.Requests', 'U') IS NOT NULL DBCC CHECKIDENT ('Requests', RESEED, 0);
     IF OBJECT_ID('dbo.Games', 'U') IS NOT NULL DBCC CHECKIDENT ('Games', RESEED, 0);
     IF OBJECT_ID('dbo.Users', 'U') IS NOT NULL DBCC CHECKIDENT ('Users', RESEED, 0);
     GO
-
-    -- 1.5 Add display_name column if it does not exist
     IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[dbo].[Users]') AND name = 'display_name')
     BEGIN
         ALTER TABLE Users ADD display_name NVARCHAR(50) NOT NULL DEFAULT 'Unknown User';
     END;
     GO
-
-    -- 2. Insert Test Data for Users 1 and 2
     SET IDENTITY_INSERT Users ON;
     INSERT INTO Users (id, display_name) VALUES (1, 'Darius Turcu'), (2, 'Mihai Tira');
     SET IDENTITY_INSERT Users OFF;
     GO
-
-    -- 3. Insert Games (at least 10 entries, mixed owners)
-    -- Requirements: 5-30 char name, >0 price, min >= 1, max >= min, 10-500 char description
     SET IDENTITY_INSERT Games ON;
     INSERT INTO Games (game_id, owner_id, name, price, minimum_player_number, maximum_player_number, description, is_active) VALUES
     (1, 1, 'Catan Base Game', 15.50, 3, 4, 'Classic resource management and trading board game.', 1),
@@ -39,9 +30,6 @@
     (11, 1, 'Twilight Imperium', 40.00, 3, 6, 'Epic space opera board game of galactic conquest.', 0); -- Inactive to test REQ-GAM-05
     SET IDENTITY_INSERT Games OFF;
     GO
-
-    -- 4. Insert Requests (at least 10 entries)
-    -- Test different dates, overlapping tests for SYS-INT-04, etc.
     SET IDENTITY_INSERT Requests ON;
     INSERT INTO Requests (request_id, game_id, renter_id, owner_id, start_date, end_date, status, offering_user_id) VALUES
     (1, 1, 2, 1, DATEADD(day, 5, GETDATE()), DATEADD(day, 7, GETDATE()), 0, NULL),
@@ -57,9 +45,6 @@
     (11, 10, 1, 2, DATEADD(day, 26, GETDATE()), DATEADD(day, 29, GETDATE()), 0, NULL); -- Overlaps with 10
     SET IDENTITY_INSERT Requests OFF;
     GO
-
-    -- 5. Insert Rentals (at least 10 entries)
-    -- Mix of past (greyed out - REQ-REN-04) and future/active rentals
     SET IDENTITY_INSERT Rentals ON;
     INSERT INTO Rentals (rental_id, game_id, renter_id, owner_id, start_date, end_date) VALUES
     (1, 4, 2, 1, DATEADD(day, -10, GETDATE()), DATEADD(day, -8, GETDATE())), -- Past rental
@@ -74,8 +59,6 @@
     (10, 10, 1, 2, DATEADD(day, 20, GETDATE()), DATEADD(day, 23, GETDATE())); -- Future rental
     SET IDENTITY_INSERT Rentals OFF;
     GO
-
-    -- 6. Insert Notifications (at least 10 entries)
     SET IDENTITY_INSERT Notifications ON;
     INSERT INTO Notifications (notification_id, user_id, timestamp, title, body, type, related_request_id) VALUES
     (1, 1, DATEADD(day, -5, GETDATE()), 'Upcoming Rental Reminder', 'Catan Base Game rental starts soon.', 0, NULL),
@@ -90,9 +73,6 @@
     (10, 2, DATEADD(day, -1, GETDATE()), 'Rental Confirmed', 'You accepted the offer for Codenames.', 2, NULL);
     SET IDENTITY_INSERT Notifications OFF;
     GO
-
-    -- 7. Sync Identity Columns
-    -- This ensures that when your C# app inserts new records, it starts from the correct ID.
     IF OBJECT_ID('dbo.Users', 'U') IS NOT NULL DBCC CHECKIDENT ('Users', RESEED, 2);
     IF OBJECT_ID('dbo.Games', 'U') IS NOT NULL DBCC CHECKIDENT ('Games', RESEED, 11);
     IF OBJECT_ID('dbo.Requests', 'U') IS NOT NULL DBCC CHECKIDENT ('Requests', RESEED, 11);

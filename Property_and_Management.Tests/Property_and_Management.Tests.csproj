@@ -30,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="App.config">
+    <None Include="..\App.config" Link="App.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

@@ -5,36 +5,32 @@ using Property_and_Management.Src.Interface;
 
 namespace Property_and_Management.Src.Viewmodels
 {
-    public class RentalsFromOthersViewModel : PagedViewModel<RentalDataTransferObject>
+    public class RentalsFromOthersViewModel : PagedViewModel<RentalDTO>
     {
-        private readonly IRentalService rentalService;
+        private readonly IRentalService rentalLookupService;
         private readonly ICurrentUserContext currentUserContext;
 
-        public int RenterIdentifier { get; private set; }
+        public int CurrentRenterUserId { get; private set; }
 
-        public RentalsFromOthersViewModel(IRentalService rentalService, ICurrentUserContext currentUserContext)
+        public RentalsFromOthersViewModel(IRentalService rentalLookupService, ICurrentUserContext currentUserContext)
         {
-            this.rentalService = rentalService;
+            this.rentalLookupService = rentalLookupService;
             this.currentUserContext = currentUserContext;
             Reload();
         }
 
         public override string ShowingText => $"Showing {DisplayedCount} of {TotalCount} rentals";
 
-        /// <summary>
-        /// Public alias retained so navigation can request a full refresh
-        /// without reaching into the base class.
-        /// </summary>
         public void LoadRentals() => Reload();
 
         protected override void Reload()
         {
-            RenterIdentifier = currentUserContext.CurrentUserIdentifier;
-            var allRentals = rentalService
-                .GetRentalsForRenter(RenterIdentifier)
+            CurrentRenterUserId = currentUserContext.CurrentUserId;
+            var currentUserRentalsSortedByNewest = rentalLookupService
+                .GetRentalsForRenter(CurrentRenterUserId)
                 .OrderByDescending(rental => rental.StartDate)
                 .ToImmutableList();
-            SetAllItems(allRentals);
+            SetAllItems(currentUserRentalsSortedByNewest);
         }
     }
 }

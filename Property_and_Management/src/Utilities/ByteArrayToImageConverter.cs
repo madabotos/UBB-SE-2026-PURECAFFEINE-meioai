@@ -12,24 +12,20 @@ namespace Property_and_Management.Src.Utilities
 
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            if (value is byte[] bytes && bytes.Length > EmptyByteArrayLength)
+            if (value is byte[] imageBytes && imageBytes.Length > EmptyByteArrayLength)
             {
                 try
                 {
-                    // Keep the stream alive for the BitmapImage lifetime to avoid intermittent
-                    // decode failures when list items are recycled during paging/virtualization.
-                    var imageStream = new MemoryStream(bytes);
-                    var image = new BitmapImage();
-                    image.SetSource(imageStream.AsRandomAccessStream());
-                    return image;
+                    var imageByteStream = new MemoryStream(imageBytes);
+                    var gameImageBitmap = new BitmapImage();
+                    gameImageBitmap.SetSource(imageByteStream.AsRandomAccessStream());
+                    return gameImageBitmap;
                 }
                 catch
                 {
-                    // Fall through to placeholder if bytes are invalid/corrupted.
                 }
             }
 
-            // UI-LST-02: Default placeholder if none is uploaded
             return new BitmapImage(new Uri("ms-appx:///Assets/default-game-placeholder.jpg"));
         }
 

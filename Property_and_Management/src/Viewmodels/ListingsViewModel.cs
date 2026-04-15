@@ -4,64 +4,60 @@ using Property_and_Management.Src.Interface;
 
 namespace Property_and_Management.Src.Viewmodels
 {
-    public class ListingsViewModel : PagedViewModel<GameDataTransferObject>
+    public class ListingsViewModel : PagedViewModel<GameDTO>
     {
         private const int NoActiveRentalsCount = 0;
         private const string DeleteSuccessMessageTemplate =
             "There are {0} active rentals for this game. It was removed successfully.";
 
-        private readonly IGameService gameService;
-        private readonly int currentUserIdentifier;
+        private readonly IGameService gameListingService;
+        private readonly int currentOwnerUserId;
 
-        public ListingsViewModel(IGameService gameService, int currentUserIdentifier)
+        public ListingsViewModel(IGameService gameListingService, int currentOwnerUserId)
         {
-            this.gameService = gameService;
-            this.currentUserIdentifier = currentUserIdentifier;
+            this.gameListingService = gameListingService;
+            this.currentOwnerUserId = currentOwnerUserId;
             Reload();
         }
 
-        /// <summary>
-        /// Convenience alias kept because views invoke LoadGames() after external
-        /// mutations (e.g. navigation back from the create/edit pages).
-        /// </summary>
         public void LoadGames() => Reload();
 
         protected override void Reload()
         {
-            var games = gameService.GetGamesForOwner(currentUserIdentifier);
-            SetAllItems(games.ToImmutableList());
+            var ownerGameListings = gameListingService.GetGamesForOwner(currentOwnerUserId);
+            SetAllItems(ownerGameListings.ToImmutableList());
         }
 
         public override string ShowingText => $"Showing {DisplayedCount} of {TotalCount} games";
 
-        public void DeleteGame(GameDataTransferObject game)
+        public void DeleteGame(GameDTO gameToDelete)
         {
-            gameService.DeleteGameByIdentifier(game.Identifier);
+            gameListingService.DeleteGameByIdentifier(gameToDelete.Id);
             Reload();
         }
 
-        public ViewOperationResult TryDeleteGame(GameDataTransferObject game)
+        public ViewOperationResult TryDeleteGame(GameDTO gameToDelete)
         {
             try
             {
-                DeleteGame(game);
+                DeleteGame(gameToDelete);
                 return ViewOperationResult.Success(
                     Constants.DialogTitles.GameRemoved,
                     string.Format(DeleteSuccessMessageTemplate, NoActiveRentalsCount));
             }
-            catch (System.InvalidOperationException invalidOperationException)
+            catch (System.InvalidOperationException gameHasActiveRentalsException)
             {
                 return ViewOperationResult.Failure(
                     Constants.DialogTitles.CannotDeleteGame,
-                    invalidOperationException.Message);
+                    gameHasActiveRentalsException.Message);
             }
-            catch (System.Exception exception)
+            catch (System.Exception unexpectedException)
             {
                 return ViewOperationResult.Failure(
                     Constants.DialogTitles.CannotDeleteGame,
-                    string.IsNullOrWhiteSpace(exception.Message)
+                    string.IsNullOrWhiteSpace(unexpectedException.Message)
                         ? Constants.DialogMessages.UnexpectedErrorOccurred
-                        : exception.Message);
+                        : unexpectedException.Message);
             }
         }
     }

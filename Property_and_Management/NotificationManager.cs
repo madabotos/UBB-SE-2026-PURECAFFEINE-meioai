@@ -20,22 +20,17 @@ namespace Property_and_Management
 
         public void Init()
         {
-            // To ensure all Notification handling happens in this process instance, register for
-            // NotificationInvoked before calling Register(). Without this a new process will
-            // be launched to handle the notification.
-            AppNotificationManager notificationManager = AppNotificationManager.Default;
+            AppNotificationManager appNotificationManagerInstance = AppNotificationManager.Default;
 
-            notificationManager.NotificationInvoked += OnNotificationInvoked;
+            appNotificationManagerInstance.NotificationInvoked += OnNotificationInvoked;
 
             try
             {
-                notificationManager.Register();
+                appNotificationManagerInstance.Register();
                 isRegistered = true;
             }
             catch (Exception registrationException)
             {
-                // This prevents crashes if the app restarts during debugging
-                // and Windows thinks it's already registered.
                 System.Diagnostics.Debug.WriteLine($"Toast manager failed to register: {registrationException.Message}");
             }
         }
@@ -50,15 +45,14 @@ namespace Property_and_Management
             }
         }
 
-        private void OnNotificationInvoked(AppNotificationManager sender, AppNotificationActivatedEventArgs args)
+        private void OnNotificationInvoked(AppNotificationManager notificationManagerSender, AppNotificationActivatedEventArgs notificationActivationArgs)
         {
-            // Fire our custom event to let App.xaml.cs handle the UI navigation
-            NotificationClicked?.Invoke(this, args);
+            NotificationClicked?.Invoke(this, notificationActivationArgs);
         }
 
-        public void ProcessLaunchActivationArgs(AppNotificationActivatedEventArgs args)
+        public void ProcessLaunchActivationArgs(AppNotificationActivatedEventArgs notificationActivationArgs)
         {
-            NotificationClicked?.Invoke(this, args);
+            NotificationClicked?.Invoke(this, notificationActivationArgs);
         }
     }
 }

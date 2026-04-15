@@ -8,12 +8,6 @@ using Property_and_Management.Src.Viewmodels;
 
 namespace Property_and_Management.Src.Views
 {
-    /// <summary>
-    /// Notifications list. Periodic refresh is
-    /// not needed here — <see cref="NotificationsViewModel"/> subscribes to
-    /// <c>INotificationService</c> and reloads itself whenever the UDP
-    /// listener pushes a new notification.
-    /// </summary>
     public sealed partial class NotificationsPage : Page
     {
         public NotificationsPage()
@@ -25,51 +19,47 @@ namespace Property_and_Management.Src.Views
         {
             base.OnNavigatedTo(navigationEventArgs);
 
-            // Prefer the view model passed as a navigation parameter (e.g. from
-            // MenuBarView's toast-triggered NavigateToNotifications call). Fall
-            // back to the DI container so direct menu navigation still works.
             if (navigationEventArgs.Parameter is NotificationsViewModel navigatedViewModel)
             {
                 DataContext = navigatedViewModel;
-                navigatedViewModel.LoadNotificationsForUser(navigatedViewModel.CurrentUserIdentifier);
+                navigatedViewModel.LoadNotificationsForUser(navigatedViewModel.CurrentUserId);
                 return;
             }
 
             if (DataContext is NotificationsViewModel existingViewModel)
             {
-                existingViewModel.LoadNotificationsForUser(existingViewModel.CurrentUserIdentifier);
+                existingViewModel.LoadNotificationsForUser(existingViewModel.CurrentUserId);
                 return;
             }
 
-            // Composition root: resolve from DI when nothing was passed in.
             var resolvedViewModel = App.Services.GetRequiredService<NotificationsViewModel>();
             DataContext = resolvedViewModel;
-            resolvedViewModel.LoadNotificationsForUser(resolvedViewModel.CurrentUserIdentifier);
+            resolvedViewModel.LoadNotificationsForUser(resolvedViewModel.CurrentUserId);
         }
 
         private NotificationsViewModel? ResolveViewModel()
         {
-            var root = this.Content as FrameworkElement;
-            return root?.DataContext as NotificationsViewModel;
+            var pageRootElement = this.Content as FrameworkElement;
+            return pageRootElement?.DataContext as NotificationsViewModel;
         }
 
         private void DeleteButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
             var clickedButton = sender as Button;
-            if (clickedButton?.DataContext is not NotificationDataTransferObject notification)
+            if (clickedButton?.DataContext is not NotificationDTO notificationToDelete)
             {
                 Debug.WriteLine("DeleteButton_Click: notification Data Transfer Object not found");
                 return;
             }
 
-            var notificationsViewModel = ResolveViewModel();
-            if (notificationsViewModel == null)
+            var resolvedNotificationsViewModel = ResolveViewModel();
+            if (resolvedNotificationsViewModel == null)
             {
                 Debug.WriteLine("NotificationsPage: viewmodel not found on DeleteButton_Click");
                 return;
             }
 
-            notificationsViewModel.DeleteNotificationByIdentifier(notification.Identifier);
+            resolvedNotificationsViewModel.DeleteNotificationByIdentifier(notificationToDelete.Id);
         }
 
         private void NextButton_Click(object sender, RoutedEventArgs routedEventArgs) => ResolveViewModel()?.NextPage();

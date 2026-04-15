@@ -5,6 +5,9 @@
 [Bb]in/
 [Oo]bj/
 [Oo]ut/
+**/TestResults/
+**/.dotnet/
+.dotnet_home/
 *.user
 *.userosscache
 *.sln.docstates
@@ -76,3 +79,12 @@ _ReSharper*/
 Thumbs.db
 ehthumbs.db
 $RECYCLE.BIN/
+
+# ==========================================
+# Local AI / Tooling Workspace Folders
+# ==========================================
+.claude/
+.superpowers/
+.superpowers.dotnet/
+.dotnet/
+.vs/

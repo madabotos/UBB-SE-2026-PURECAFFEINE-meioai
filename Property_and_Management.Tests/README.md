@@ -18,18 +18,17 @@ dotnet test Property_and_Management.Tests/Property_and_Management.Tests.csproj
 
 ## Test database setup (integration tests only)
 
-The integration tests target a dedicated `BoardRent_Test` database on the
-local SQL Server Express instance. Connection string lives in this project's
-`App.config`:
+The integration tests use the shared `BoardRent` connection string from the
+root-level `App.config`:
 
 ```
-Data Source=localhost\SQLEXPRESS;Initial Catalog=BoardRent_Test;...
+Data Source=localhost\SQLEXPRESS;Initial Catalog=BoardRent;...
 ```
 
 Before running integration tests for the first time:
 
 1. Make sure SQL Server Express is running.
-2. Create an empty database named `BoardRent_Test`. The
+2. Create an empty database named `BoardRent`. The
    `DatabaseInitializer` will create all tables on first run.
 3. Adjust `Data Source` in `App.config` if your local instance name differs.
 

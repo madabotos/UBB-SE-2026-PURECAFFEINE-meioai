@@ -26,8 +26,6 @@ namespace Property_and_Management.Src.Views
 
             if (DataContext is not RequestsToOthersViewModel)
             {
-                // Composition root: fall back to the DI container when no
-                // navigation parameter was passed.
                 DataContext = App.Services.GetRequiredService<RequestsToOthersViewModel>();
             }
         }
@@ -39,12 +37,12 @@ namespace Property_and_Management.Src.Views
 
         private async void CancelButton_Click(object sender, RoutedEventArgs routedEventArgs)
         {
-            if (sender is not Button clickedButton || clickedButton.Tag is not int requestIdentifier)
+            if (sender is not Button clickedButton || clickedButton.Tag is not int requestId)
             {
                 return;
             }
 
-            var result = await DialogHelper.ShowConfirmationAsync(
+            var cancelConfirmationResult = await DialogHelper.ShowConfirmationAsync(
                 this.XamlRoot,
                 Constants.DialogTitles.CancelRequestConfirmation,
                 "Are you sure you want to cancel this request?",
@@ -52,19 +50,19 @@ namespace Property_and_Management.Src.Views
                 Constants.DialogButtons.GoBack,
                 ContentDialogButton.Close);
 
-            if (result != ContentDialogResult.Primary)
+            if (cancelConfirmationResult != ContentDialogResult.Primary)
             {
                 return;
             }
 
-            var requestsToOthersViewModel = DataContext as RequestsToOthersViewModel;
-            var error = requestsToOthersViewModel?.TryCancelRequest(requestIdentifier);
-            if (error != null)
+            var pageViewModel = DataContext as RequestsToOthersViewModel;
+            var cancelErrorMessage = pageViewModel?.TryCancelRequest(requestId);
+            if (cancelErrorMessage != null)
             {
                 await DialogHelper.ShowMessageAsync(
                     this.XamlRoot,
                     Constants.DialogTitles.CancelRequestConfirmation,
-                    error);
+                    cancelErrorMessage);
             }
         }
 
