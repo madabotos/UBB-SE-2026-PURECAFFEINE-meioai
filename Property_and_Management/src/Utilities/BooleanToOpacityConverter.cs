@@ -10,10 +10,17 @@ namespace Property_and_Management.Src.Utilities
 
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            return (value is bool isExpired && isExpired) ? ExpiredItemOpacity : ActiveItemOpacity;
+            if (value is bool isExpired && isExpired)
+            {
+                return ExpiredItemOpacity;
+            }
+
+            return ActiveItemOpacity;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
-            => throw new NotImplementedException();
+        {
+            throw new NotImplementedException();
+        }
     }
 }
