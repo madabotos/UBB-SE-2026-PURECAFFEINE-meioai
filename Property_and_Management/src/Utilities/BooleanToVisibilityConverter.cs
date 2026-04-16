@@ -8,21 +8,35 @@ namespace Property_and_Management.Src.Utilities
     {
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            return (value is bool isVisible && isVisible) ? Visibility.Visible : Visibility.Collapsed;
+            if (value is bool isVisible && isVisible)
+            {
+                return Visibility.Visible;
+            }
+
+            return Visibility.Collapsed;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
-            => throw new NotImplementedException();
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class InverseBooleanToVisibilityConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            return (value is bool isVisible && isVisible) ? Visibility.Collapsed : Visibility.Visible;
+            if (value is bool isVisible && isVisible)
+            {
+                return Visibility.Collapsed;
+            }
+
+            return Visibility.Visible;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
-            => throw new NotImplementedException();
+        {
+            throw new NotImplementedException();
+        }
     }
 }

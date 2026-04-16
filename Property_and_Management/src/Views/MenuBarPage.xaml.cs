@@ -31,7 +31,7 @@ namespace Property_and_Management.Src.Views
             ViewModel = App.Services.GetRequiredService<MenuBarViewModel>();
             this.DataContext = ViewModel;
             ViewModel.RequestNavigation += OnViewModelRequestedNavigation;
-            this.Unloaded += (pageSender, unloadedEventArgs) => ViewModel.RequestNavigation -= OnViewModelRequestedNavigation;
+            this.Unloaded += OnMenuBarViewUnloaded;
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs navigationEventArgs)
@@ -52,6 +52,11 @@ namespace Property_and_Management.Src.Views
             }
 
             ContentFrame.Navigate(pageType, injectedGameService);
+        }
+
+        private void OnMenuBarViewUnloaded(object pageSender, RoutedEventArgs unloadedEventArgs)
+        {
+            ViewModel.RequestNavigation -= OnViewModelRequestedNavigation;
         }
 
         public void NavigateToNotifications()
