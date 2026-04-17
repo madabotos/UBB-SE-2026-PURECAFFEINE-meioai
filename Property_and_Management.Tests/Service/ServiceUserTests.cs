@@ -60,11 +60,11 @@ namespace Property_and_Management.Tests.Service
 
             RepositoryMock.Setup(db => db.GetAll()).Returns(ImmutableList.Create(new User(MeId, "Me")));
             var result1 = Service.GetUsersExcept(MeId);
-            Assert.Equals(result1, 0);
+            Assert.That(result1, Has.Count.EqualTo(0));
         }
 
         [Test]
-        public void GetUsersWithCorrecData()
+        public void GetUsersCorrectInfo()
         {
 
             var allUsers = ImmutableList.Create(

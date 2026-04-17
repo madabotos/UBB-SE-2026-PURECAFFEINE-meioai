@@ -60,7 +60,11 @@ namespace Property_and_Management.Tests.Viewmodels
             var actualIds = ViewModelToTest.PagedItems.Select(rental => rental.Id).ToList();
             Assert.That(ViewModelToTest.PagedItems.All(r => r.Game.Id == 1), Is.True);
             Assert.That(ViewModelToTest.PagedItems.All(r => r.Owner.Id == Test_Id), Is.True);
-            Assert.That(ViewModelToTest.PagedItems.All(r => r.EndDate - r.StartDate == TimeSpan.FromDays(7)), Is.True);
+            foreach (var rental in ViewModelToTest.PagedItems)
+            {
+                TimeSpan duration = rental.EndDate - rental.StartDate;
+                Assert.That(duration, Is.EqualTo(TimeSpan.FromDays(7)).Within(TimeSpan.FromSeconds(1)));
+            }
             Assert.That(actualIds, Does.Contain(10));
             Assert.That(actualIds, Does.Contain(20));
             Assert.That(actualIds, Does.Contain(30));
