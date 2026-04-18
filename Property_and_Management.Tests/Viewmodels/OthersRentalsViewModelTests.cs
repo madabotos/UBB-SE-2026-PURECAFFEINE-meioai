@@ -28,6 +28,27 @@ namespace Property_and_Management.Tests.Viewmodels
                 .Returns(ImmutableList<RentalDTO>.Empty);
         }
 
+
+
+        [Test]
+        public void ShowingText_ShouldDescribeRentals_UsingAssert()
+        {
+            var fakeRentals1 = ImmutableList.Create(
+                BuildFakeRental(10),
+                BuildFakeRental(20),
+                BuildFakeRental(30),
+                BuildFakeRental(50)
+            );
+
+            MockRentalService.Setup(s => s.GetRentalsForOwner(Test_Id)).Returns(fakeRentals1);
+
+            ViewModelToTest = new RentalsToOthersViewModel(MockRentalService.Object, MockUserContext.Object);
+            string statusText = ViewModelToTest.ShowingText;
+            Assert.That(statusText, Does.Contain("rentals"));
+            Assert.That(statusText, Does.Contain("4"));
+        }
+
+
         [Test]
         public void GetCorrectOwnerAndCorrectNrOfRentals()
         {
@@ -35,13 +56,14 @@ namespace Property_and_Management.Tests.Viewmodels
             var fakeRentals = ImmutableList.Create(
                 BuildFakeRental(10),
                 BuildFakeRental(20),
-                BuildFakeRental(30)
+                BuildFakeRental(30),
+                BuildFakeRental(40)
             );
             MockRentalService.Setup(s => s.GetRentalsForOwner(Test_Id)).Returns(fakeRentals);
             var actualIds = ViewModelToTest.PagedItems.Select(rental => rental.Id).ToList();
 
             ViewModelToTest = new RentalsToOthersViewModel(MockRentalService.Object, MockUserContext.Object);
-            Assert.That(ViewModelToTest.TotalCount, Is.EqualTo(3));
+            Assert.That(ViewModelToTest.TotalCount, Is.EqualTo(4));
             Assert.That(ViewModelToTest.CurrentGameOwnerUserId, Is.EqualTo(Test_Id));
             
         }
@@ -55,11 +77,15 @@ namespace Property_and_Management.Tests.Viewmodels
                 BuildFakeRental(20),
                 BuildFakeRental(30)
             );
+
             MockRentalService.Setup(s => s.GetRentalsForOwner(Test_Id)).Returns(fakeRentals);
             ViewModelToTest = new RentalsToOthersViewModel(MockRentalService.Object, MockUserContext.Object);
+
             var actualIds = ViewModelToTest.PagedItems.Select(rental => rental.Id).ToList();
+
             Assert.That(ViewModelToTest.PagedItems.All(r => r.Game.Id == 1), Is.True);
             Assert.That(ViewModelToTest.PagedItems.All(r => r.Owner.Id == Test_Id), Is.True);
+
             foreach (var rental in ViewModelToTest.PagedItems)
             {
                 TimeSpan duration = rental.EndDate - rental.StartDate;
@@ -70,6 +96,9 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(actualIds, Does.Contain(30));
 
         }
+
+       
+
 
         [Test]
         public void LoadRentalsRefreshesTheEntitiesInViewModel()
@@ -101,26 +130,6 @@ namespace Property_and_Management.Tests.Viewmodels
 
 
         }
-
-        [Test]
-        public void ShowingText_ShouldDescribeRentals_UsingAssert()
-        {
-            var fakeRentals1 = ImmutableList.Create(
-                BuildFakeRental(10),
-                BuildFakeRental(20),
-                BuildFakeRental(30),
-                BuildFakeRental(50)
-            );
-
-            MockRentalService.Setup(s => s.GetRentalsForOwner(Test_Id)).Returns(fakeRentals1);
-
-            ViewModelToTest = new RentalsToOthersViewModel(MockRentalService.Object, MockUserContext.Object);
-            string statusText = ViewModelToTest.ShowingText;
-            Assert.That(statusText, Does.Contain("rentals"));
-            Assert.That(statusText, Does.Contain("4"));
-        }
-
-
         private static RentalDTO BuildFakeRental(int rentalId)
         {
             return new RentalDTO
