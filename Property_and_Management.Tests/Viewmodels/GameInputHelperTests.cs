@@ -15,7 +15,6 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void BuildValidationErrors_ValidInput()
         {
-            // set up some valid parameters
             var gameName = "Catan";
             var gamePrice = 19.99m;
             var minimumPlayerCount = 3;
@@ -28,7 +27,7 @@ namespace Property_and_Management.Tests.Viewmodels
             var minimumDescriptionLength = 10;
             var maximumDescriptionLength = 200;
             
-            // run the method
+            
             var validationErrors = GameInputHelper.BuildValidationErrors(
                 gameName,
                 gamePrice,
@@ -42,14 +41,14 @@ namespace Property_and_Management.Tests.Viewmodels
                 minimumDescriptionLength,
                 maximumDescriptionLength);
 
-            // assert
+           
             Assert.That(validationErrors, Is.Empty);
         }
 
         [Test]
         public void BuildValidationErrors_InvalidInput1()
         {
-            // set up some parameters
+            
             var gameName = "Saboteur";
             var gamePrice = 2.0m;
             var minimumPlayerCount = 2;
@@ -62,7 +61,7 @@ namespace Property_and_Management.Tests.Viewmodels
             var minimumDescriptionLength = 100;
             var maximumDescriptionLength = 200;
 
-            // run the method
+           
             var validationErrors = GameInputHelper.BuildValidationErrors(
                 gameName,
                 gamePrice,
@@ -76,7 +75,7 @@ namespace Property_and_Management.Tests.Viewmodels
                 minimumDescriptionLength,
                 maximumDescriptionLength);
 
-            // assert
+            
             Assert.That(validationErrors, Does.Contain(Constants.ValidationMessages.PriceMinimum(minimumAllowedPrice)));
             Assert.That(validationErrors, Does.Contain(Constants.ValidationMessages.DescriptionLengthRange(minimumDescriptionLength, maximumDescriptionLength)));
         }
@@ -84,7 +83,7 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void BuildValidationErrors_InvalidInput2()
         {
-            // set up some parameters
+            
             var gameName = "";
             var gamePrice = 30.0m;
             var minimumPlayerCount = 11;
@@ -97,7 +96,7 @@ namespace Property_and_Management.Tests.Viewmodels
             var minimumDescriptionLength = 1;
             var maximumDescriptionLength = 200;
 
-            // run the method
+            
             var validationErrors = GameInputHelper.BuildValidationErrors(
                 gameName,
                 gamePrice,
@@ -111,7 +110,7 @@ namespace Property_and_Management.Tests.Viewmodels
                 minimumDescriptionLength,
                 maximumDescriptionLength);
 
-            // assert
+            
             Assert.That(validationErrors, Does.Contain(Constants.ValidationMessages.NameLengthRange(minimumNameLength, maximumNameLength)));
             Assert.That(validationErrors, Does.Contain(Constants.ValidationMessages.MinimumPlayerCount(absoluteMinimumPlayerCount)));
             Assert.That(validationErrors, Does.Contain(Constants.ValidationMessages.MaximumPlayerCountComparedToMinimum));
