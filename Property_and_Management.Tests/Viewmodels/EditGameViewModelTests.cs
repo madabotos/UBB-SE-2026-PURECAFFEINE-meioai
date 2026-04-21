@@ -26,10 +26,10 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void LoadGame_PopulatesPropertiesFromService()
         {
-            var existingGame = new GameDataTransferObject
+            var existingGame = new GameDTO
             {
-                Identifier = SampleGameIdentifier,
-                Owner = new UserDataTransferObject { Identifier = SampleOwnerIdentifier },
+                Id = SampleGameIdentifier,
+                Owner = new UserDTO { Id = SampleOwnerIdentifier },
                 Name = "Existing Game",
                 Price = 15m,
                 MinimumPlayerNumber = 2,
@@ -43,8 +43,8 @@ namespace Property_and_Management.Tests.Viewmodels
 
             viewModel.LoadGame(SampleGameIdentifier);
 
-            viewModel.GameIdentifier.Should().Be(SampleGameIdentifier);
-            viewModel.Name.Should().Be("Existing Game");
+            viewModel.EditedGameId.Should().Be(SampleGameIdentifier);
+            viewModel.GameName.Should().Be("Existing Game");
         }
 
         [Test]
@@ -52,10 +52,10 @@ namespace Property_and_Management.Tests.Viewmodels
         {
             gameServiceMock
                 .Setup(service => service.GetGameByIdentifier(SampleGameIdentifier))
-                .Returns(new GameDataTransferObject
+                .Returns(new GameDTO
                 {
-                    Identifier = SampleGameIdentifier,
-                    Owner = new UserDataTransferObject { Identifier = SampleOwnerIdentifier },
+                    Id = SampleGameIdentifier,
+                    Owner = new UserDTO { Id = SampleOwnerIdentifier },
                     Name = "Valid Name",
                     Price = 10m,
                     MinimumPlayerNumber = 2,
@@ -69,7 +69,7 @@ namespace Property_and_Management.Tests.Viewmodels
 
             gameServiceMock.Verify(
                 service => service.UpdateGameByIdentifier(
-                    SampleGameIdentifier, It.IsAny<GameDataTransferObject>()),
+                    SampleGameIdentifier, It.IsAny<GameDTO>()),
                 Times.Once);
         }
     }

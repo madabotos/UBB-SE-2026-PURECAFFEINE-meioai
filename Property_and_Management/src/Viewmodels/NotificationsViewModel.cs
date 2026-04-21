@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
 using Property_and_Management.Src.DataTransferObjects;
 using Property_and_Management.Src.Interface;
@@ -28,7 +29,14 @@ namespace Property_and_Management.Src.Viewmodels
         {
             this.notificationLookupService = notificationLookupService;
 
-            uiDispatcherQueue = DispatcherQueue.GetForCurrentThread();
+            try
+            {
+                uiDispatcherQueue = DispatcherQueue.GetForCurrentThread();
+            }
+            catch (COMException)
+            {
+                uiDispatcherQueue = null;
+            }
 
             LoadNotificationsForUser(currentUserContext.CurrentUserId);
 

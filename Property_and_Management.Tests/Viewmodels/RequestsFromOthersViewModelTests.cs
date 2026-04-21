@@ -25,11 +25,11 @@ namespace Property_and_Management.Tests.Viewmodels
             requestServiceMock = new Mock<IRequestService>();
             currentUserContextMock = new Mock<ICurrentUserContext>();
             currentUserContextMock
-                .SetupGet(context => context.CurrentUserIdentifier)
+                .SetupGet(context => context.CurrentUserId)
                 .Returns(SampleOwnerIdentifier);
             requestServiceMock
                 .Setup(service => service.GetRequestsForOwner(SampleOwnerIdentifier))
-                .Returns(ImmutableList<RequestDataTransferObject>.Empty);
+                .Returns(ImmutableList<RequestDTO>.Empty);
 
             viewModel = new RequestsFromOthersViewModel(
                 requestServiceMock.Object, currentUserContextMock.Object);
