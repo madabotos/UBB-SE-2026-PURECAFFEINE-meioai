@@ -23,11 +23,11 @@ namespace Property_and_Management.Tests.Viewmodels
             rentalServiceMock = new Mock<IRentalService>();
             currentUserContextMock = new Mock<ICurrentUserContext>();
             currentUserContextMock
-                .SetupGet(context => context.CurrentUserIdentifier)
+                .SetupGet(context => context.CurrentUserId)
                 .Returns(SampleRenterIdentifier);
             rentalServiceMock
                 .Setup(service => service.GetRentalsForRenter(SampleRenterIdentifier))
-                .Returns(ImmutableList<RentalDataTransferObject>.Empty);
+                .Returns(ImmutableList<RentalDTO>.Empty);
         }
 
         [Test]
@@ -53,17 +53,17 @@ namespace Property_and_Management.Tests.Viewmodels
 
             var viewModel = new RentalsFromOthersViewModel(rentalServiceMock.Object, currentUserContextMock.Object);
 
-            viewModel.PagedItems[0].Identifier.Should().Be(2);
+            viewModel.PagedItems[0].Id.Should().Be(2);
         }
 
-        private static RentalDataTransferObject BuildRental(int identifier, DateTime? startDate = null)
+        private static RentalDTO BuildRental(int identifier, DateTime? startDate = null)
         {
-            return new RentalDataTransferObject
+            return new RentalDTO
             {
-                Identifier = identifier,
-                Game = new GameDataTransferObject { Identifier = 100 },
-                Renter = new UserDataTransferObject { Identifier = SampleRenterIdentifier },
-                Owner = new UserDataTransferObject { Identifier = 99 },
+                Id = identifier,
+                Game = new GameDTO { Id = 100 },
+                Renter = new UserDTO { Id = SampleRenterIdentifier },
+                Owner = new UserDTO { Id = 99 },
                 StartDate = startDate ?? DateTime.UtcNow.AddDays(1),
                 EndDate = (startDate ?? DateTime.UtcNow.AddDays(1)).AddDays(2),
             };
