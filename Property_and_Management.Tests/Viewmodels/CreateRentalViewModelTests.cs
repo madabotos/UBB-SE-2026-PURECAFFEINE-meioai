@@ -30,7 +30,7 @@ namespace Property_and_Management.Tests.Viewmodels
 
             mockUserContext.SetupGet(ctx => ctx.CurrentUserId).Returns(OwnerUserId);
 
-            // Default: owner has one active game, one available renter
+          
             mockGameService
                 .Setup(svc => svc.GetGamesForOwner(OwnerUserId))
                 .Returns(ImmutableList.Create(BuildActiveGame(GameId, OwnerUserId)));
@@ -49,7 +49,6 @@ namespace Property_and_Management.Tests.Viewmodels
                 mockUserContext.Object);
         }
 
-        // --- Constructor & data loading ---
 
         [Test]
         public void Constructor_LoadsOwnedActiveGames()
@@ -92,7 +91,7 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(viewModel.CurrentUserId, Is.EqualTo(OwnerUserId));
         }
 
-        // --- LoadRentalFormData ---
+
 
         [Test]
         public void LoadRentalFormData_RefreshesGamesAndRenters()
@@ -100,7 +99,6 @@ namespace Property_and_Management.Tests.Viewmodels
             var viewModel = BuildViewModel();
             Assert.That(viewModel.OwnedActiveGames, Has.Count.EqualTo(1));
 
-            // Simulate a second game appearing after reload
             mockGameService
                 .Setup(svc => svc.GetGamesForOwner(OwnerUserId))
                 .Returns(ImmutableList.Create(
@@ -112,7 +110,7 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(viewModel.OwnedActiveGames, Has.Count.EqualTo(2));
         }
 
-        // --- ValidateRentalInputs ---
+  
 
         [Test]
         public void ValidateRentalInputs_AllFieldsValid_ReturnsTrue()
@@ -174,7 +172,6 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(viewModel.ValidateRentalInputs(), Is.False);
         }
 
-        // --- CreateRental ---
 
         [Test]
         public void CreateRental_ValidInputs_ReturnsSuccess()
@@ -207,7 +204,6 @@ namespace Property_and_Management.Tests.Viewmodels
         public void CreateRental_InvalidInputs_ReturnsFailureWithValidationTitle()
         {
             var viewModel = BuildViewModel();
-            // Leave all selections at null/default
 
             ViewOperationResult result = viewModel.CreateRental();
 
@@ -248,7 +244,7 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(result.DialogMessage, Does.Contain("overlap"));
         }
 
-        // --- SaveRental ---
+       
 
         [Test]
         public void SaveRental_ValidInputs_ReturnsNull()
@@ -265,7 +261,6 @@ namespace Property_and_Management.Tests.Viewmodels
         public void SaveRental_ValidationFails_ReturnsValidationFailedMessage()
         {
             var viewModel = BuildViewModel();
-            // No selections → validation will fail
 
             string? errorMessage = viewModel.SaveRental();
 
@@ -289,7 +284,6 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(errorMessage, Is.EqualTo("Database connection lost."));
         }
 
-        // --- PropertyChanged notifications ---
 
         [Test]
         public void SelectedGameToRent_WhenSet_RaisesPropertyChanged()
@@ -339,7 +333,6 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(changedProperty, Is.EqualTo(nameof(viewModel.EndDate)));
         }
 
-        // --- Helpers ---
 
         private static void PopulateWithValidSelections(CreateRentalViewModel viewModel)
         {

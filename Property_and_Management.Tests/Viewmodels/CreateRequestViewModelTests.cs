@@ -29,7 +29,7 @@ namespace Property_and_Management.Tests.Viewmodels
 
             mockUserContext.SetupGet(ctx => ctx.CurrentUserId).Returns(CurrentUserId);
 
-            // Default: one active game owned by someone else
+           
             mockGameService
                 .Setup(svc => svc.GetAllGames())
                 .Returns(ImmutableList.Create(BuildOtherUsersGame(AvailableGameId)));
@@ -43,7 +43,7 @@ namespace Property_and_Management.Tests.Viewmodels
                 mockUserContext.Object);
         }
 
-        // --- Constructor & data loading ---
+      
 
         [Test]
         public void Constructor_LoadsActiveGamesOwnedByOtherUsers()
@@ -98,7 +98,7 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(viewModel.CurrentUserId, Is.EqualTo(CurrentUserId));
         }
 
-        // --- LoadAvailableGames ---
+       
 
         [Test]
         public void LoadAvailableGames_RefreshesCollection()
@@ -106,7 +106,7 @@ namespace Property_and_Management.Tests.Viewmodels
             var viewModel = BuildViewModel();
             Assert.That(viewModel.AvailableGamesToRequest, Has.Count.EqualTo(1));
 
-            // Now two games exist
+            
             mockGameService
                 .Setup(svc => svc.GetAllGames())
                 .Returns(ImmutableList.Create(
@@ -118,7 +118,7 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(viewModel.AvailableGamesToRequest, Has.Count.EqualTo(2));
         }
 
-        // --- ValidateRequestInputs ---
+    
 
         [Test]
         public void ValidateRequestInputs_AllFieldsValid_ReturnsTrue()
@@ -180,8 +180,7 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(viewModel.ValidateRequestInputs(), Is.False);
         }
 
-        // --- SubmitRequest ---
-
+   
         [Test]
         public void SubmitRequest_ValidInputsAndServiceSucceeds_ReturnsSuccess()
         {
@@ -203,7 +202,7 @@ namespace Property_and_Management.Tests.Viewmodels
         public void SubmitRequest_ValidationFails_ReturnsFailureWithValidationTitle()
         {
             var viewModel = BuildViewModel();
-            // Leave SelectedGame null
+            
 
             ViewOperationResult result = viewModel.SubmitRequest();
 
@@ -280,7 +279,7 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(result.DialogMessage, Does.Contain("no longer exists"));
         }
 
-        // --- TrySubmitRequest ---
+     
 
         [Test]
         public void TrySubmitRequest_SuccessfulSubmission_ReturnsNull()
@@ -303,7 +302,7 @@ namespace Property_and_Management.Tests.Viewmodels
         public void TrySubmitRequest_FailedSubmission_ReturnsDialogMessage()
         {
             var viewModel = BuildViewModel();
-            // No game selected → validation failure
+          
 
             string? error = viewModel.TrySubmitRequest();
 
@@ -311,7 +310,7 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(error, Is.Not.Empty);
         }
 
-        // --- PropertyChanged notifications ---
+    
 
         [Test]
         public void SelectedGame_WhenSet_RaisesPropertyChanged()
@@ -349,7 +348,7 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(changedProperty, Is.EqualTo(nameof(viewModel.EndDate)));
         }
 
-        // --- Helpers ---
+        
 
         private static void PopulateWithValidSelections(CreateRequestViewModel viewModel)
         {
