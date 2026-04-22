@@ -13,40 +13,44 @@ namespace Property_and_Management.Tests.Service
     [TestFixture]
     public class RequestServiceTests
     {
-        private Mock<IRequestRepository> requestRepo;
-        private Mock<IRentalRepository> rentalRepo;
-        private Mock<IGameRepository> gameRepo;
+        private Mock<IRequestRepository> requestRepositoryMock;
+        private Mock<IRentalRepository> rentalRepositoryMock;
+        private Mock<IGameRepository> gameRepositoryMock;
         private Mock<INotificationService> notifications;
-        private Mock<IMapper<Request, RequestDTO>> mapper;
-        private RequestService service;
+        private Mock<IMapper<Request, RequestDTO>> requestMapperMock;
+        private RequestService requestService;
 
         [SetUp]
         public void Setup()
         {
-            requestRepo = new Mock<IRequestRepository>();
-            rentalRepo = new Mock<IRentalRepository>();
-            gameRepo = new Mock<IGameRepository>();
+            requestRepositoryMock = new Mock<IRequestRepository>();
+            rentalRepositoryMock = new Mock<IRentalRepository>();
+            gameRepositoryMock = new Mock<IGameRepository>();
             notifications = new Mock<INotificationService>();
-            mapper = new Mock<IMapper<Request, RequestDTO>>();
+            requestMapperMock = new Mock<IMapper<Request, RequestDTO>>();
 
-            service = new RequestService(
-                requestRepo.Object,
-                rentalRepo.Object,
-                gameRepo.Object,
+            requestService = new RequestService(
+                requestRepositoryMock.Object,
+                rentalRepositoryMock.Object,
+                gameRepositoryMock.Object,
                 notifications.Object,
-                mapper.Object);
+                requestMapperMock.Object);
         }
 
         [Test]
         public void CreateRequest_WhenRenterIsOwner_ReturnsOwnerCannotRent()
         {
-            var result = service.CreateRequest(
+            //Arrange - no additional setup needed; renter and owner share the same userId
+
+            //Act
+            var result = requestService.CreateRequest(
                 gameId: 10,
                 renterUserId: 1,
                 ownerUserId: 1,
                 proposedStartDate: DateTime.UtcNow.AddDays(2),
                 proposedEndDate: DateTime.UtcNow.AddDays(4));
 
+            //Assert
             Assert.That(result.IsSuccess, Is.False);
             Assert.That(result.Error, Is.EqualTo(CreateRequestError.OwnerCannotRent));
         }
@@ -54,7 +58,8 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void CancelRequest_AsRenter_DeletesRequestAndNotifications()
         {
-            var existing = new Request
+            //Arrange
+            var existingOpenRequest = new Request
             {
                 Id = 100,
                 Renter = new User(1, "Renter"),
@@ -64,13 +69,15 @@ namespace Property_and_Management.Tests.Service
                 EndDate = DateTime.UtcNow.AddDays(5),
                 Status = RequestStatus.Open
             };
-            requestRepo.Setup(r => r.Get(100)).Returns(existing);
+            requestRepositoryMock.Setup(repo => repo.Get(100)).Returns(existingOpenRequest);
 
-            var result = service.CancelRequest(100, 1);
+            //Act
+            var result = requestService.CancelRequest(100, 1);
 
+            //Assert
             Assert.That(result, Is.EqualTo(100));
-            requestRepo.Verify(r => r.Delete(100), Times.Once);
-            notifications.Verify(n => n.DeleteNotificationsLinkedToRequest(100), Times.Once);
+            requestRepositoryMock.Verify(repo => repo.Delete(100), Times.Once);
+            notifications.Verify(notifSvc => notifSvc.DeleteNotificationsLinkedToRequest(100), Times.Once);
         }
     }
 }

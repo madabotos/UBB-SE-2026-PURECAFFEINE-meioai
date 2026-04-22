@@ -13,62 +13,69 @@ namespace Property_and_Management.Tests.Service
     public class NotificationServiceTests
     {
         private Mock<INotificationRepository> notificationRepo;
-        private Mock<IMapper<Notification, NotificationDTO>> mapper;
+        private Mock<IMapper<Notification, NotificationDTO>> notificationMapperMock;
         private Mock<IServerClient> serverClient;
         private Mock<ICurrentUserContext> userContext;
-        private Mock<IToastNotificationService> toast;
-        private NotificationService service;
+        private Mock<IToastNotificationService> toastNotificationServiceMock;
+        private NotificationService notificationService;
 
         [SetUp]
         public void Setup()
         {
             notificationRepo = new Mock<INotificationRepository>();
-            mapper = new Mock<IMapper<Notification, NotificationDTO>>();
+            notificationMapperMock = new Mock<IMapper<Notification, NotificationDTO>>();
             serverClient = new Mock<IServerClient>();
             userContext = new Mock<ICurrentUserContext>();
-            toast = new Mock<IToastNotificationService>();
+            toastNotificationServiceMock = new Mock<IToastNotificationService>();
 
-            userContext.SetupGet(c => c.CurrentUserId).Returns(1);
+            userContext.SetupGet(ctx => ctx.CurrentUserId).Returns(1);
             serverClient
-                .Setup(c => c.Subscribe(It.IsAny<IObserver<IncomingNotification>>()))
+                .Setup(client => client.Subscribe(It.IsAny<IObserver<IncomingNotification>>()))
                 .Returns(Mock.Of<IDisposable>());
 
-            service = new NotificationService(
+            notificationService = new NotificationService(
                 notificationRepo.Object,
-                mapper.Object,
+                notificationMapperMock.Object,
                 serverClient.Object,
                 userContext.Object,
-                toast.Object);
+                toastNotificationServiceMock.Object);
         }
 
         [TearDown]
         public void TearDown()
         {
-            service?.Dispose();
+            notificationService?.Dispose();
         }
 
         [Test]
         public void SendNotificationToUser_SavesAndForwardsToServer()
         {
-            var dto = new NotificationDTO
+            //Arrange
+            var notificationDto = new NotificationDTO
             {
                 User = new UserDTO { Id = 2 },
                 Title = "Hello",
                 Body = "World"
             };
 
-            service.SendNotificationToUser(2, dto);
+            //Act
+            notificationService.SendNotificationToUser(2, notificationDto);
 
-            notificationRepo.Verify(r => r.Add(It.IsAny<Notification>()), Times.Once);
-            serverClient.Verify(c => c.SendNotification(2, "Hello", "World"), Times.Once);
+            //Assert
+            notificationRepo.Verify(repo => repo.Add(It.IsAny<Notification>()), Times.Once);
+            serverClient.Verify(client => client.SendNotification(2, "Hello", "World"), Times.Once);
         }
 
         [Test]
         public void DeleteNotificationsLinkedToRequest_CallsRepository()
         {
-            service.DeleteNotificationsLinkedToRequest(42);
+            //Arrange - no additional setup needed
 
-            notificationRepo.Verify(r => r.DeleteNotificationsLinkedToRequest(42), Times.Once);
+            //Act
+            notificationService.DeleteNotificationsLinkedToRequest(42);
+
+            //Assert
+            notificationRepo.Verify(repo => repo.DeleteNotificationsLinkedToRequest(42), Times.Once);
         }
     }
 }
