@@ -222,10 +222,10 @@ namespace Property_and_Management.Tests.Viewmodels
         public void PagedItems_MoreGamesThanPageSize_ShowsOnlyFirstPage()
         {
             // PagedViewModel uses a page size of 3; load more than that
-            var games = Enumerable.Range(1, 5).Select(id => BuildGame(id)).ToImmutableList();
+            var fiveGamesList = Enumerable.Range(1, 5).Select(id => BuildGame(id)).ToImmutableList();
             mockGameService
                 .Setup(svc => svc.GetGamesForOwner(OwnerUserId))
-                .Returns(games);
+                .Returns(fiveGamesList);
 
             var viewModel = BuildViewModel();
 
@@ -236,16 +236,16 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void ShowingText_WithGames_IncludesDisplayedAndTotalCounts()
         {
-            var games = Enumerable.Range(1, 5).Select(id => BuildGame(id)).ToImmutableList();
+            var fiveGamesList = Enumerable.Range(1, 5).Select(id => BuildGame(id)).ToImmutableList();
             mockGameService
                 .Setup(svc => svc.GetGamesForOwner(OwnerUserId))
-                .Returns(games);
+                .Returns(fiveGamesList);
 
             var viewModel = BuildViewModel();
 
-            string text = viewModel.ShowingText;
-            Assert.That(text, Does.Contain("5"));
-            Assert.That(text, Does.Contain("games"));
+            string showingText = viewModel.ShowingText;
+            Assert.That(showingText, Does.Contain("5"));
+            Assert.That(showingText, Does.Contain("games"));
         }
 
         // --- Helpers ---

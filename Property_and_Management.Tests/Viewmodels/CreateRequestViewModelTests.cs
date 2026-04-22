@@ -72,7 +72,7 @@ namespace Property_and_Management.Tests.Viewmodels
             var viewModel = BuildViewModel();
 
             Assert.That(viewModel.AvailableGamesToRequest, Has.Count.EqualTo(1));
-            Assert.That(viewModel.AvailableGamesToRequest.Any(g => g.Id == 999), Is.False);
+            Assert.That(viewModel.AvailableGamesToRequest.Any(game => game.Id == 999), Is.False);
         }
 
         [Test]
