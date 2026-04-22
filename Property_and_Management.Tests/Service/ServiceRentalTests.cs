@@ -83,8 +83,8 @@ namespace Property_and_Management.Tests.Service
         public void CreateRental_WithInvalidDateRange_ThrowsArgumentException()
         {
             Assert.Throws<ArgumentException>(() =>
-                RentalServiceToTest.CreateConfirmedRental(
-                    Game_Id,
+                rentalServiceToTest.CreateConfirmedRental(
+                    ActiveGameId,
                     Renter_Id,
                     Owner_Id,
                     DateTime.UtcNow.AddDays(4),

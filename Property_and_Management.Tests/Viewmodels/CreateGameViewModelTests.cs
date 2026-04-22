@@ -46,15 +46,11 @@ namespace Property_and_Management.Tests.Viewmodels
 
             viewModel = new CreateGameViewModel(mockGameService.Object, mockUserContext.Object);
         }
-
-
         [Test]
         public void CurrentUserId_ReturnsValueFromUserContext()
         {
             Assert.That(viewModel.CurrentUserId, Is.EqualTo(TestUserId));
         }
-
-
         [Test]
         public void ValidateGameInputs_AllFieldsValid_ReturnsNoErrors()
         {
@@ -136,9 +132,9 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void ValidateGameInputs_MultipleInvalidFields_ReturnsMultipleErrors()
         {
-            viewModel.GameName = "";
+            viewModel.GameName = string.Empty;
             viewModel.GamePrice = 0m;
-            viewModel.GameDescription = "";
+            viewModel.GameDescription = string.Empty;
 
             List<string> errors = viewModel.ValidateGameInputs();
 
@@ -158,7 +154,7 @@ namespace Property_and_Management.Tests.Viewmodels
         {
             viewModel.GamePrice = 10m;
 
-            viewModel.SetGamePriceFromText("");
+            viewModel.SetGamePriceFromText(string.Empty);
 
             Assert.That(viewModel.GamePrice, Is.EqualTo(0m));
         }
@@ -181,8 +177,6 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(viewModel.GamePrice, Is.EqualTo(19.99m));
             Assert.That(viewModel.GamePriceAsDouble, Is.EqualTo(19.99).Within(0.001));
         }
-
-
         [Test]
         public void SubmitCreateGame_ValidInputs_ReturnsSuccessResult()
         {
@@ -206,7 +200,7 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void SubmitCreateGame_InvalidInputs_ReturnsFailureWithValidationTitle()
         {
-            viewModel.GameName = "";
+            viewModel.GameName = string.Empty;
 
             ViewOperationResult result = viewModel.SubmitCreateGame();
 
@@ -217,7 +211,7 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void SubmitCreateGame_InvalidInputs_DoesNotInvokeServiceAddGame()
         {
-            viewModel.GameName = "";
+            viewModel.GameName = string.Empty;
 
             viewModel.SubmitCreateGame();
 
@@ -251,7 +245,7 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void SaveGame_InvalidInputs_ReturnsNull()
         {
-            viewModel.GameName = "";
+            viewModel.GameName = string.Empty;
 
             GameDTO savedGame = viewModel.SaveGame();
 
@@ -261,7 +255,7 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void SaveGame_InvalidInputs_DoesNotCallService()
         {
-            viewModel.GameName = "";
+            viewModel.GameName = string.Empty;
 
             viewModel.SaveGame();
 

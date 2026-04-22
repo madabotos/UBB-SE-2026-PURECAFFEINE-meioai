@@ -29,7 +29,6 @@ namespace Property_and_Management.Tests.Viewmodels
 
             mockUserContext.SetupGet(ctx => ctx.CurrentUserId).Returns(CurrentUserId);
 
-
             mockGameService
                 .Setup(svc => svc.GetAvailableGamesForRenter(CurrentUserId))
                 .Returns(ImmutableList.Create(BuildOtherUsersGame(AvailableGameId)));
@@ -42,9 +41,6 @@ namespace Property_and_Management.Tests.Viewmodels
                 mockRequestService.Object,
                 mockUserContext.Object);
         }
-
-      
-
         [Test]
         public void Constructor_LoadsActiveGamesOwnedByOtherUsers()
         {
@@ -88,14 +84,11 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(viewModel.CurrentUserId, Is.EqualTo(CurrentUserId));
         }
 
-       
-
         [Test]
         public void LoadAvailableGames_RefreshesCollection()
         {
             var viewModel = BuildViewModel();
             Assert.That(viewModel.AvailableGamesToRequest, Has.Count.EqualTo(1));
-
 
             mockGameService
                 .Setup(svc => svc.GetAvailableGamesForRenter(CurrentUserId))
@@ -107,9 +100,6 @@ namespace Property_and_Management.Tests.Viewmodels
 
             Assert.That(viewModel.AvailableGamesToRequest, Has.Count.EqualTo(2));
         }
-
-    
-
         [Test]
         public void ValidateRequestInputs_AllFieldsValid_ReturnsTrue()
         {
@@ -167,7 +157,6 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(result.DialogTitle, Is.EqualTo("Validation Error"));
         }
 
-   
         [Test]
         public void SubmitRequest_ValidInputsAndServiceSucceeds_ReturnsSuccess()
         {
@@ -189,8 +178,6 @@ namespace Property_and_Management.Tests.Viewmodels
         public void SubmitRequest_ValidationFails_ReturnsFailureWithValidationTitle()
         {
             var viewModel = BuildViewModel();
-            
-
             ViewOperationResult result = viewModel.SubmitRequest();
 
             Assert.That(result.IsSuccess, Is.False);
@@ -266,8 +253,6 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(result.DialogMessage, Does.Contain("no longer exists"));
         }
 
-     
-
         [Test]
         public void TrySubmitRequest_SuccessfulSubmission_ReturnsNull()
         {
@@ -289,16 +274,12 @@ namespace Property_and_Management.Tests.Viewmodels
         public void TrySubmitRequest_FailedSubmission_ReturnsDialogMessage()
         {
             var viewModel = BuildViewModel();
-          
 
             string? error = viewModel.TrySubmitRequest();
 
             Assert.That(error, Is.Not.Null);
             Assert.That(error, Is.Not.Empty);
         }
-
-    
-
         [Test]
         public void SelectedGame_WhenSet_RaisesPropertyChanged()
         {
@@ -334,9 +315,6 @@ namespace Property_and_Management.Tests.Viewmodels
 
             Assert.That(changedProperty, Is.EqualTo(nameof(viewModel.EndDate)));
         }
-
-        
-
         private static void PopulateWithValidSelections(CreateRequestViewModel viewModel)
         {
             viewModel.SelectedGame = BuildOtherUsersGame(AvailableGameId);

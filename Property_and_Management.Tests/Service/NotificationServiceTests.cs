@@ -50,18 +50,13 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void SendNotificationToUser_SavesAndForwardsToServer()
         {
-            //Arrange
             var notificationDto = new NotificationDTO
             {
                 User = new UserDTO { Id = 2 },
                 Title = "Hello",
                 Body = "World"
             };
-
-            //Act
             notificationService.SendNotificationToUser(2, notificationDto);
-
-            //Assert
             notificationRepo.Verify(repo => repo.Add(It.IsAny<Notification>()), Times.Once);
             serverClient.Verify(client => client.SendNotification(2, "Hello", "World"), Times.Once);
         }
@@ -69,12 +64,7 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void DeleteNotificationsLinkedToRequest_CallsRepository()
         {
-            //Arrange
-
-            //Act
             notificationService.DeleteNotificationsLinkedToRequest(42);
-
-            //Assert
             notificationRepo.Verify(repo => repo.DeleteNotificationsLinkedToRequest(42), Times.Once);
         }
     }

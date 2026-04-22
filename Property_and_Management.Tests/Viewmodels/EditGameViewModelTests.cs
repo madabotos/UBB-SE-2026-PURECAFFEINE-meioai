@@ -1,5 +1,5 @@
-using FluentAssertions;
 using System.Collections.Generic;
+using FluentAssertions;
 using Moq;
 using NUnit.Framework;
 using Property_and_Management.Src.DataTransferObjects;

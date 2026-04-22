@@ -31,7 +31,6 @@ namespace Property_and_Management.Tests.Viewmodels
 
             mockUserContext.SetupGet(ctx => ctx.CurrentUserId).Returns(OwnerUserId);
 
-
             mockGameService
                 .Setup(svc => svc.GetActiveGamesForOwner(OwnerUserId))
                 .Returns(ImmutableList.Create(BuildActiveGame(GameId, OwnerUserId)));
@@ -49,8 +48,6 @@ namespace Property_and_Management.Tests.Viewmodels
                 mockUserService.Object,
                 mockUserContext.Object);
         }
-
-
         [Test]
         public void Constructor_LoadsOwnedActiveGames()
         {
@@ -89,9 +86,6 @@ namespace Property_and_Management.Tests.Viewmodels
 
             Assert.That(viewModel.CurrentUserId, Is.EqualTo(OwnerUserId));
         }
-
-
-
         [Test]
         public void LoadRentalFormData_RefreshesGamesAndRenters()
         {
@@ -108,9 +102,6 @@ namespace Property_and_Management.Tests.Viewmodels
 
             Assert.That(viewModel.OwnedActiveGames, Has.Count.EqualTo(2));
         }
-
-  
-
         [Test]
         public void ValidateRentalInputs_AllFieldsValid_ReturnsTrue()
         {
@@ -167,8 +158,6 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(result.IsSuccess, Is.False);
             Assert.That(result.DialogTitle, Is.EqualTo("Validation Error"));
         }
-
-
         [Test]
         public void CreateRental_ValidInputs_ReturnsSuccess()
         {
@@ -239,9 +228,6 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(result.DialogTitle, Is.EqualTo("Rental Failed"));
             Assert.That(result.DialogMessage, Does.Contain("overlap"));
         }
-
-       
-
         [Test]
         public void SaveRental_ValidInputs_ReturnsNull()
         {
@@ -279,8 +265,6 @@ namespace Property_and_Management.Tests.Viewmodels
 
             Assert.That(errorMessage, Is.EqualTo("Database connection lost."));
         }
-
-
         [Test]
         public void SelectedGameToRent_WhenSet_RaisesPropertyChanged()
         {
@@ -328,8 +312,6 @@ namespace Property_and_Management.Tests.Viewmodels
 
             Assert.That(changedProperty, Is.EqualTo(nameof(viewModel.EndDate)));
         }
-
-
         private static void PopulateWithValidSelections(CreateRentalViewModel viewModel)
         {
             viewModel.SelectedGameToRent = BuildActiveGame(GameId, OwnerUserId);
