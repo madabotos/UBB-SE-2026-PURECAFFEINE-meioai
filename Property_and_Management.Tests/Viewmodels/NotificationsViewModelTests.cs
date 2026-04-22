@@ -29,33 +29,26 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void Constructor_LoadsNotificationsForCurrentUser()
         {
-            //Arrange
             notificationService
                 .Setup(svc => svc.GetNotificationsForUser(1))
                 .Returns(ImmutableList.Create(
                     new NotificationDTO { Id = 1, User = new UserDTO { Id = 1 }, Title = "a", Body = "b" },
                     new NotificationDTO { Id = 2, User = new UserDTO { Id = 1 }, Title = "c", Body = "d" }));
-
-            //Act
             var viewModel = new NotificationsViewModel(notificationService.Object, userContext.Object);
 
-            //Assert
             Assert.That(viewModel.PagedItems.Count, Is.EqualTo(2));
         }
 
         [Test]
         public void DeleteNotificationByIdentifier_CallsServiceDelete()
         {
-            //Arrange
             notificationService
                 .Setup(svc => svc.GetNotificationsForUser(1))
                 .Returns(ImmutableList<NotificationDTO>.Empty);
             var viewModel = new NotificationsViewModel(notificationService.Object, userContext.Object);
 
-            //Act
             viewModel.DeleteNotificationByIdentifier(7);
 
-            //Assert
             notificationService.Verify(svc => svc.DeleteNotificationByIdentifier(7), Times.Once);
         }
     }

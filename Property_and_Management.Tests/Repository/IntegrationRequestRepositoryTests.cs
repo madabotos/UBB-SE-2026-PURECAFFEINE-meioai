@@ -15,7 +15,7 @@ namespace Property_and_Management.Tests.Repository
     {
         private const string ConnectionStringName = "BoardRent";
 
-        private readonly List<int> createdRequestIds = new();
+        private readonly List<int> createdRequestIds = new ();
         private RequestRepository requestRepository = null!;
 
         [SetUp]
@@ -23,8 +23,6 @@ namespace Property_and_Management.Tests.Repository
         {
             requestRepository = new RequestRepository();
         }
-
-
         [Test]
         public void AddRequest_ThenGetById_PreservesAllRequestFields()
         {
@@ -85,8 +83,5 @@ namespace Property_and_Management.Tests.Repository
                 status,
                 offeringUserId.HasValue ? new User(offeringUserId.Value, $"User {offeringUserId.Value}") : null);
         }
-
-
-
     }
 }

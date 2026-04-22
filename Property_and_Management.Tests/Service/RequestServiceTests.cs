@@ -49,9 +49,6 @@ namespace Property_and_Management.Tests.Service
                     IsActive = true
                 });
 
-            //Arrange
-
-            //Act
             var result = requestService.CreateRequest(
                 gameId: 10,
                 renterUserId: 1,
@@ -59,7 +56,6 @@ namespace Property_and_Management.Tests.Service
                 proposedStartDate: DateTime.UtcNow.AddDays(2),
                 proposedEndDate: DateTime.UtcNow.AddDays(4));
 
-            //Assert
             Assert.That(result.IsSuccess, Is.False);
             Assert.That(result.Error, Is.EqualTo(CreateRequestError.OwnerCannotRent));
         }
@@ -81,7 +77,6 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void CancelRequest_AsRenter_DeletesRequestAndNotifications()
         {
-            //Arrange
             var existingOpenRequest = new Request
             {
                 Id = 100,

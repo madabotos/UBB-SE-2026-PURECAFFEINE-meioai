@@ -96,11 +96,11 @@ namespace Property_and_Management.Tests.Service
             var gameDto = new GameDTO
             {
                 Id = SampleGameIdentifier,
-                Name = "",
+                Name = string.Empty,
                 Price = 0m,
                 MinimumPlayerNumber = 0,
                 MaximumPlayerNumber = 0,
-                Description = ""
+                Description = string.Empty
             };
 
             Action addAction = () => gameService.AddGame(gameDto);
