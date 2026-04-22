@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using Property_and_Management.Src.DataTransferObjects;
 using Property_and_Management.Src.Interface;
@@ -62,9 +61,7 @@ namespace Property_and_Management.Src.Viewmodels
         public void LoadAvailableGames()
         {
             AvailableGamesToRequest.Clear();
-            var gamesOwnedByOtherUsers = gameListingService.GetAllGames()
-                .Where(game => game.IsActive && game.Owner?.Id != CurrentUserId);
-            foreach (var availableGame in gamesOwnedByOtherUsers)
+            foreach (var availableGame in gameListingService.GetAvailableGamesForRenter(CurrentUserId))
             {
                 AvailableGamesToRequest.Add(availableGame);
             }
@@ -77,7 +74,7 @@ namespace Property_and_Management.Src.Viewmodels
                 return false;
             }
 
-            return DateRangeValidationHelper.HasValidFutureDateRange(StartDate, EndDate);
+            return StartDate != null && EndDate != null;
         }
 
         public ViewOperationResult SubmitRequest()
@@ -92,13 +89,20 @@ namespace Property_and_Management.Src.Viewmodels
             var requestCreationResult = rentalRequestService.CreateRequest(
                 SelectedGame.Id,
                 CurrentUserId,
-                SelectedGame.Owner.Id,
+                SelectedGame.Owner?.Id ?? 0,
                 StartDate.Value.DateTime,
                 EndDate.Value.DateTime);
 
             if (requestCreationResult.IsSuccess)
             {
                 return ViewOperationResult.Success();
+            }
+
+            if (requestCreationResult.Error == CreateRequestError.InvalidDateRange)
+            {
+                return ViewOperationResult.Failure(
+                    Constants.DialogTitles.ValidationError,
+                    Constants.DialogMessages.CreateRequestValidationError);
             }
 
             return ViewOperationResult.Failure(
@@ -113,6 +117,7 @@ namespace Property_and_Management.Src.Viewmodels
                 CreateRequestError.OwnerCannotRent => "You cannot rent your own game.",
                 CreateRequestError.DatesUnavailable => "The selected dates are not available.",
                 CreateRequestError.GameDoesNotExist => "The selected game no longer exists.",
+                CreateRequestError.InvalidDateRange => "The selected date range is invalid.",
                 _ => Constants.DialogMessages.UnexpectedErrorOccurred
             };
         }

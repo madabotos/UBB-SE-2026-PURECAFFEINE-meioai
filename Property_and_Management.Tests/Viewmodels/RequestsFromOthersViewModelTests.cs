@@ -28,7 +28,7 @@ namespace Property_and_Management.Tests.Viewmodels
                 .SetupGet(context => context.CurrentUserId)
                 .Returns(SampleOwnerIdentifier);
             requestServiceMock
-                .Setup(service => service.GetRequestsForOwner(SampleOwnerIdentifier))
+                .Setup(service => service.GetOpenRequestsForOwner(SampleOwnerIdentifier))
                 .Returns(ImmutableList<RequestDTO>.Empty);
 
             viewModel = new RequestsFromOthersViewModel(

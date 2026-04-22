@@ -71,13 +71,13 @@ namespace Property_and_Management.Src.Constants
 
     internal static class GameValidation
     {
-        public const int MinimumNameLength = global::Property_and_Management.Constants.GameValidation.MinimumNameLength;
-        public const int MaximumNameLength = global::Property_and_Management.Constants.GameValidation.MaximumNameLength;
-        public const decimal MinimumAllowedPrice = global::Property_and_Management.Constants.GameValidation.MinimumAllowedPrice;
-        public const int MinimumPlayerCount = global::Property_and_Management.Constants.GameValidation.MinimumPlayerCount;
-        public const int MinimumDescriptionLength = global::Property_and_Management.Constants.GameValidation.MinimumDescriptionLength;
-        public const int MaximumDescriptionLength = global::Property_and_Management.Constants.GameValidation.MaximumDescriptionLength;
-        public const int DefaultMinimumPlayers = global::Property_and_Management.Constants.GameValidation.DefaultMinimumPlayers;
-        public const int DefaultMaximumPlayers = global::Property_and_Management.Constants.GameValidation.DefaultMaximumPlayers;
+        public const int MinimumNameLength = DomainConstants.GameMinimumNameLength;
+        public const int MaximumNameLength = DomainConstants.GameMaximumNameLength;
+        public const decimal MinimumAllowedPrice = DomainConstants.GameMinimumAllowedPrice;
+        public const int MinimumPlayerCount = DomainConstants.GameMinimumPlayerCount;
+        public const int MinimumDescriptionLength = DomainConstants.GameMinimumDescriptionLength;
+        public const int MaximumDescriptionLength = DomainConstants.GameMaximumDescriptionLength;
+        public const int DefaultMinimumPlayers = DomainConstants.GameDefaultMinimumPlayers;
+        public const int DefaultMaximumPlayers = DomainConstants.GameDefaultMaximumPlayers;
     }
 }

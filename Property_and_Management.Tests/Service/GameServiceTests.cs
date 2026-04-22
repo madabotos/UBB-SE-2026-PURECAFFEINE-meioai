@@ -64,7 +64,7 @@ namespace Property_and_Management.Tests.Service
                 endDate: DateTime.Now.AddDays(3));
 
             rentalRepositoryMock
-                .Setup(repository => repo.GetRentalsByGame(SampleGameIdentifier))
+                .Setup(repository => repository.GetRentalsByGame(SampleGameIdentifier))
                 .Returns(ImmutableList.Create(activeRental));
 
             Action deleteAction = () => gameService.DeleteGameByIdentifier(SampleGameIdentifier);
@@ -77,11 +77,37 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void AddGame_WithValidDto_CallsRepositoryAddOnce()
         {
-            var gameDto = new GameDTO { Id = SampleGameIdentifier };
+            var gameDto = new GameDTO
+            {
+                Id = SampleGameIdentifier,
+                Name = "Chess Classic",
+                Price = 15m,
+                MinimumPlayerNumber = 2,
+                MaximumPlayerNumber = 4,
+                Description = "A classic strategy board game for two players."
+            };
 
             gameService.AddGame(gameDto);
 
             gameRepositoryMock.Verify(repository => repository.Add(It.IsAny<Game>()), Times.Once);
+        }
+
+        [Test]
+        public void AddGame_WithInvalidDto_ThrowsArgumentException()
+        {
+            var gameDto = new GameDTO
+            {
+                Id = SampleGameIdentifier,
+                Name = "",
+                Price = 0m,
+                MinimumPlayerNumber = 0,
+                MaximumPlayerNumber = 0,
+                Description = ""
+            };
+
+            Action addAction = () => gameService.AddGame(gameDto);
+
+            addAction.Should().Throw<ArgumentException>();
         }
 
         [Test]
@@ -130,7 +156,15 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void UpdateGameByIdentifier_WithValidDto_CallsRepositoryUpdateWithCorrectId()
         {
-            var gameDto = new GameDTO { Id = SampleGameIdentifier };
+            var gameDto = new GameDTO
+            {
+                Id = SampleGameIdentifier,
+                Name = "Updated Game",
+                Price = 12m,
+                MinimumPlayerNumber = 2,
+                MaximumPlayerNumber = 4,
+                Description = "A valid updated description for the game."
+            };
 
             gameService.UpdateGameByIdentifier(SampleGameIdentifier, gameDto);
 

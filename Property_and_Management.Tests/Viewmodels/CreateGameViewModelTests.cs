@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using Moq;
 using NUnit.Framework;
+using Property_and_Management.Src.Constants;
 using Property_and_Management.Src.DataTransferObjects;
 using Property_and_Management.Src.Interface;
+using Property_and_Management.Src.Service;
 using Property_and_Management.Src.Viewmodels;
 
 namespace Property_and_Management.Tests.Viewmodels
@@ -27,6 +29,20 @@ namespace Property_and_Management.Tests.Viewmodels
             mockGameService = new Mock<IGameService>();
             mockUserContext = new Mock<ICurrentUserContext>();
             mockUserContext.SetupGet(ctx => ctx.CurrentUserId).Returns(TestUserId);
+            mockGameService
+                .Setup(svc => svc.ValidateGame(It.IsAny<GameDTO>()))
+                .Returns((GameDTO gameDto) => GameInputHelper.BuildValidationErrors(
+                    gameDto.Name,
+                    gameDto.Price,
+                    gameDto.MinimumPlayerNumber,
+                    gameDto.MaximumPlayerNumber,
+                    gameDto.Description,
+                    DomainConstants.GameMinimumNameLength,
+                    DomainConstants.GameMaximumNameLength,
+                    DomainConstants.GameMinimumAllowedPrice,
+                    DomainConstants.GameMinimumPlayerCount,
+                    DomainConstants.GameMinimumDescriptionLength,
+                    DomainConstants.GameMaximumDescriptionLength));
 
             viewModel = new CreateGameViewModel(mockGameService.Object, mockUserContext.Object);
         }

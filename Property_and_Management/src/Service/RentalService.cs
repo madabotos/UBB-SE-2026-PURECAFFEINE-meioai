@@ -43,6 +43,11 @@ namespace Property_and_Management.Src.Service
 
         public void CreateConfirmedRental(int gameId, int renterUserId, int ownerUserId, DateTime rentalStartDate, DateTime rentalEndDate)
         {
+            if (!DateRangeValidationHelper.HasValidFutureDateRange(rentalStartDate, rentalEndDate))
+            {
+                throw new ArgumentException("Start date must be before end date and not in the past.");
+            }
+
             var gameToRent = gameLookupRepository.Get(gameId);
             if (gameToRent.Owner.Id != ownerUserId)
             {

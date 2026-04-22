@@ -80,17 +80,5 @@ namespace Property_and_Management
             public static string DescriptionLengthRange(int minimumLength, int maximumLength) =>
                 $"Description must be between {minimumLength} and {maximumLength} characters.";
         }
-
-        internal static class GameValidation
-        {
-            public const int MinimumNameLength = 5;
-            public const int MaximumNameLength = 30;
-            public const decimal MinimumAllowedPrice = 1m;
-            public const int MinimumPlayerCount = 1;
-            public const int MinimumDescriptionLength = 10;
-            public const int MaximumDescriptionLength = 500;
-            public const int DefaultMinimumPlayers = 1;
-            public const int DefaultMaximumPlayers = 4;
-        }
     }
 }

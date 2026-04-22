@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Moq;
 using NUnit.Framework;
-using Property_and_Management.Src.Viewmodels;
+using Property_and_Management.Src.Service;
 
 namespace Property_and_Management.Tests.Viewmodels
 {

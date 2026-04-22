@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Immutable;
+using System.Linq;
 using Moq;
 using NUnit.Framework;
 using Property_and_Management.Src.DataTransferObjects;
@@ -30,9 +31,9 @@ namespace Property_and_Management.Tests.Viewmodels
 
             mockUserContext.SetupGet(ctx => ctx.CurrentUserId).Returns(OwnerUserId);
 
-          
+
             mockGameService
-                .Setup(svc => svc.GetGamesForOwner(OwnerUserId))
+                .Setup(svc => svc.GetActiveGamesForOwner(OwnerUserId))
                 .Returns(ImmutableList.Create(BuildActiveGame(GameId, OwnerUserId)));
 
             mockUserService
@@ -62,16 +63,14 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void Constructor_ExcludesInactiveGamesFromList()
         {
-            var inactiveGame = BuildActiveGame(200, OwnerUserId);
-            inactiveGame.IsActive = false;
-
             mockGameService
-                .Setup(svc => svc.GetGamesForOwner(OwnerUserId))
-                .Returns(ImmutableList.Create(BuildActiveGame(GameId, OwnerUserId), inactiveGame));
+                .Setup(svc => svc.GetActiveGamesForOwner(OwnerUserId))
+                .Returns(ImmutableList.Create(BuildActiveGame(GameId, OwnerUserId)));
 
             var viewModel = BuildViewModel();
 
             Assert.That(viewModel.OwnedActiveGames, Has.Count.EqualTo(1));
+            Assert.That(viewModel.OwnedActiveGames.All(g => g.IsActive), Is.True);
         }
 
         [Test]
@@ -100,7 +99,7 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(viewModel.OwnedActiveGames, Has.Count.EqualTo(1));
 
             mockGameService
-                .Setup(svc => svc.GetGamesForOwner(OwnerUserId))
+                .Setup(svc => svc.GetActiveGamesForOwner(OwnerUserId))
                 .Returns(ImmutableList.Create(
                     BuildActiveGame(GameId, OwnerUserId),
                     BuildActiveGame(201, OwnerUserId)));
@@ -152,24 +151,21 @@ namespace Property_and_Management.Tests.Viewmodels
         }
 
         [Test]
-        public void ValidateRentalInputs_EndDateBeforeStartDate_ReturnsFalse()
+        public void CreateRental_ServiceThrowsArgumentException_ReturnsValidationError()
         {
             var viewModel = BuildViewModel();
             PopulateWithValidSelections(viewModel);
-            viewModel.EndDate = viewModel.StartDate.Value.AddDays(-1);
 
-            Assert.That(viewModel.ValidateRentalInputs(), Is.False);
-        }
+            mockRentalService
+                .Setup(svc => svc.CreateConfirmedRental(
+                    It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
+                    It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                .Throws(new ArgumentException("Start date must be before end date and not in the past."));
 
-        [Test]
-        public void ValidateRentalInputs_StartDateInPast_ReturnsFalse()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
-            viewModel.StartDate = DateTimeOffset.Now.AddDays(-5);
-            viewModel.EndDate = DateTimeOffset.Now.AddDays(-2);
+            ViewOperationResult result = viewModel.CreateRental();
 
-            Assert.That(viewModel.ValidateRentalInputs(), Is.False);
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.DialogTitle, Is.EqualTo("Validation Error"));
         }
 
 

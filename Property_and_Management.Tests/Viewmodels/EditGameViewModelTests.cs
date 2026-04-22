@@ -1,4 +1,5 @@
 using FluentAssertions;
+using System.Collections.Generic;
 using Moq;
 using NUnit.Framework;
 using Property_and_Management.Src.DataTransferObjects;
@@ -20,6 +21,9 @@ namespace Property_and_Management.Tests.Viewmodels
         public void SetUp()
         {
             gameServiceMock = new Mock<IGameService>();
+            gameServiceMock
+                .Setup(service => service.ValidateGame(It.IsAny<GameDTO>()))
+                .Returns(new List<string>());
             viewModel = new EditGameViewModel(gameServiceMock.Object);
         }
 

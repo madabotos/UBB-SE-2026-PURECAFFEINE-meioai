@@ -40,6 +40,15 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void CreateRequest_WhenRenterIsOwner_ReturnsOwnerCannotRent()
         {
+            gameRepositoryMock
+                .Setup(repo => repo.Get(10))
+                .Returns(new Game
+                {
+                    Id = 10,
+                    Owner = new User(1, "Owner"),
+                    IsActive = true
+                });
+
             //Arrange
 
             //Act
@@ -53,6 +62,20 @@ namespace Property_and_Management.Tests.Service
             //Assert
             Assert.That(result.IsSuccess, Is.False);
             Assert.That(result.Error, Is.EqualTo(CreateRequestError.OwnerCannotRent));
+        }
+
+        [Test]
+        public void CreateRequest_WhenDateRangeIsInvalid_ReturnsInvalidDateRange()
+        {
+            var result = requestService.CreateRequest(
+                gameId: 10,
+                renterUserId: 1,
+                ownerUserId: 2,
+                proposedStartDate: DateTime.UtcNow.AddDays(4),
+                proposedEndDate: DateTime.UtcNow.AddDays(2));
+
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.Error, Is.EqualTo(CreateRequestError.InvalidDateRange));
         }
 
         [Test]
@@ -71,11 +94,10 @@ namespace Property_and_Management.Tests.Service
             };
             requestRepositoryMock.Setup(repo => repo.Get(100)).Returns(existingOpenRequest);
 
-            //Act
             var result = requestService.CancelRequest(100, 1);
 
-            //Assert
-            Assert.That(result, Is.EqualTo(100));
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.Value, Is.EqualTo(100));
             requestRepositoryMock.Verify(repo => repo.Delete(100), Times.Once);
             notifications.Verify(notifSvc => notifSvc.DeleteNotificationsLinkedToRequest(100), Times.Once);
         }

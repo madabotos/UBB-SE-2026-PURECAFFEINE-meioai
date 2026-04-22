@@ -10,7 +10,8 @@ namespace Property_and_Management.Src.Interface
     {
         OwnerCannotRent,
         DatesUnavailable,
-        GameDoesNotExist
+        GameDoesNotExist,
+        InvalidDateRange
     }
 
     public enum ApproveRequestError

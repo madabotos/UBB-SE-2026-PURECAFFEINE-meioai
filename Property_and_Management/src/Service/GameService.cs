@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Property_and_Management.Src.Constants;
 using Property_and_Management.Src.DataTransferObjects;
 using Property_and_Management.Src.Interface;
 using Property_and_Management.Src.Model;
@@ -28,13 +30,43 @@ namespace Property_and_Management.Src.Service
             this.rentalRequestService = requestService;
         }
 
+        public List<string> ValidateGame(GameDTO gameDto)
+        {
+            return GameInputHelper.BuildValidationErrors(
+                gameDto.Name,
+                gameDto.Price,
+                gameDto.MinimumPlayerNumber,
+                gameDto.MaximumPlayerNumber,
+                gameDto.Description,
+                DomainConstants.GameMinimumNameLength,
+                DomainConstants.GameMaximumNameLength,
+                DomainConstants.GameMinimumAllowedPrice,
+                DomainConstants.GameMinimumPlayerCount,
+                DomainConstants.GameMinimumDescriptionLength,
+                DomainConstants.GameMaximumDescriptionLength);
+        }
+
         public void AddGame(GameDTO gameToAdd)
         {
+            var validationErrors = ValidateGame(gameToAdd);
+            if (validationErrors.Count > NoActiveOrUpcomingRentals)
+            {
+                throw new ArgumentException(string.Join(Environment.NewLine, validationErrors));
+            }
+
+            gameToAdd.Image = GameInputHelper.EnsureImageOrDefault(gameToAdd.Image, AppDomain.CurrentDomain.BaseDirectory);
             gameListingRepository.Add(gameDtoMapper.ToModel(gameToAdd));
         }
 
         public void UpdateGameByIdentifier(int gameId, GameDTO updatedGameData)
         {
+            var validationErrors = ValidateGame(updatedGameData);
+            if (validationErrors.Count > NoActiveOrUpcomingRentals)
+            {
+                throw new ArgumentException(string.Join(Environment.NewLine, validationErrors));
+            }
+
+            updatedGameData.Image = GameInputHelper.EnsureImageOrDefault(updatedGameData.Image, AppDomain.CurrentDomain.BaseDirectory);
             gameListingRepository.Update(gameId, gameDtoMapper.ToModel(updatedGameData));
         }
 
@@ -77,6 +109,20 @@ namespace Property_and_Management.Src.Service
             return gameListingRepository
                 .GetAll()
                 .Select(game => gameDtoMapper.ToDTO(game))
+                .ToImmutableList();
+        }
+
+        public ImmutableList<GameDTO> GetAvailableGamesForRenter(int renterUserId)
+        {
+            return GetAllGames()
+                .Where(game => game.IsActive && game.Owner?.Id != renterUserId)
+                .ToImmutableList();
+        }
+
+        public ImmutableList<GameDTO> GetActiveGamesForOwner(int ownerUserId)
+        {
+            return GetGamesForOwner(ownerUserId)
+                .Where(game => game.IsActive)
                 .ToImmutableList();
         }
     }

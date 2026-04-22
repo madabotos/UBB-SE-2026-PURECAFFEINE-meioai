@@ -78,12 +78,9 @@ namespace Property_and_Management.Src.Viewmodels
         public void LoadRentalFormData()
         {
             OwnedActiveGames.Clear();
-            foreach (var ownedGame in gameListingService.GetGamesForOwner(CurrentUserId))
+            foreach (var activeGame in gameListingService.GetActiveGamesForOwner(CurrentUserId))
             {
-                if (ownedGame.IsActive)
-                {
-                    OwnedActiveGames.Add(ownedGame);
-                }
+                OwnedActiveGames.Add(activeGame);
             }
 
             AvailableRenters.Clear();
@@ -105,7 +102,7 @@ namespace Property_and_Management.Src.Viewmodels
                 return false;
             }
 
-            return DateRangeValidationHelper.HasValidFutureDateRange(StartDate, EndDate);
+            return StartDate != null && EndDate != null;
         }
 
         public ViewOperationResult CreateRental()
@@ -126,6 +123,12 @@ namespace Property_and_Management.Src.Viewmodels
                     StartDate.Value.DateTime,
                     EndDate.Value.DateTime);
                 return ViewOperationResult.Success();
+            }
+            catch (ArgumentException)
+            {
+                return ViewOperationResult.Failure(
+                    Constants.DialogTitles.ValidationError,
+                    Constants.DialogMessages.CreateRentalValidationError);
             }
             catch (Exception rentalCreationException)
             {

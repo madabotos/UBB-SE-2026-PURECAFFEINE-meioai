@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Property_and_Management.Src.Constants;
 using Property_and_Management.Src.DataTransferObjects;
 using Property_and_Management.Src.Interface;
 
@@ -21,8 +22,8 @@ namespace Property_and_Management.Src.Viewmodels
             get => (double)GamePrice;
             set => GamePrice = (decimal)value;
         }
-        public int MinimumPlayersRequired { get; set; } = Constants.GameValidation.DefaultMinimumPlayers;
-        public int MaximumPlayersAllowed { get; set; } = Constants.GameValidation.DefaultMaximumPlayers;
+        public int MinimumPlayersRequired { get; set; } = DomainConstants.GameDefaultMinimumPlayers;
+        public int MaximumPlayersAllowed { get; set; } = DomainConstants.GameDefaultMaximumPlayers;
         public string GameDescription { get; set; } = string.Empty;
         public bool IsGameActive { get; set; } = true;
         public byte[] GameImage { get; set; } = null;
@@ -37,18 +38,7 @@ namespace Property_and_Management.Src.Viewmodels
 
         public List<string> ValidateGameInputs()
         {
-            return GameInputHelper.BuildValidationErrors(
-                GameName,
-                GamePrice,
-                MinimumPlayersRequired,
-                MaximumPlayersAllowed,
-                GameDescription,
-                Constants.GameValidation.MinimumNameLength,
-                Constants.GameValidation.MaximumNameLength,
-                Constants.GameValidation.MinimumAllowedPrice,
-                Constants.GameValidation.MinimumPlayerCount,
-                Constants.GameValidation.MinimumDescriptionLength,
-                Constants.GameValidation.MaximumDescriptionLength);
+            return gameListingService.ValidateGame(BuildGameDataTransferObject());
         }
 
         public ViewOperationResult SubmitCreateGame()
@@ -78,14 +68,20 @@ namespace Property_and_Management.Src.Viewmodels
 
         public GameDTO SaveGame()
         {
-            if (ValidateGameInputs().Count > NoValidationErrors)
+            var newGameDataTransferObject = BuildGameDataTransferObject();
+
+            if (gameListingService.ValidateGame(newGameDataTransferObject).Count > NoValidationErrors)
             {
                 return null;
             }
 
-            GameImage = GameInputHelper.EnsureImageOrDefault(GameImage, AppDomain.CurrentDomain.BaseDirectory);
+            gameListingService.AddGame(newGameDataTransferObject);
+            return newGameDataTransferObject;
+        }
 
-            var newGameDataTransferObject = new GameDTO
+        private GameDTO BuildGameDataTransferObject()
+        {
+            return new GameDTO
             {
                 Id = NewGameId,
                 Owner = new UserDTO { Id = CurrentUserId },
@@ -97,9 +93,6 @@ namespace Property_and_Management.Src.Viewmodels
                 Image = GameImage,
                 IsActive = IsGameActive
             };
-
-            gameListingService.AddGame(newGameDataTransferObject);
-            return newGameDataTransferObject;
         }
     }
 }
