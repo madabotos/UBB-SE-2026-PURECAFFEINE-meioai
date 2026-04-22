@@ -31,7 +31,6 @@ namespace Property_and_Management.Tests.Viewmodels
             viewModel = new CreateGameViewModel(mockGameService.Object, mockUserContext.Object);
         }
 
-        // --- CurrentUserId delegation ---
 
         [Test]
         public void CurrentUserId_ReturnsValueFromUserContext()
@@ -39,7 +38,6 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(viewModel.CurrentUserId, Is.EqualTo(TestUserId));
         }
 
-        // --- ValidateGameInputs ---
 
         [Test]
         public void ValidateGameInputs_AllFieldsValid_ReturnsNoErrors()
@@ -131,8 +129,6 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(errors.Count, Is.GreaterThanOrEqualTo(3));
         }
 
-        // --- SetGamePriceFromText ---
-
         [Test]
         public void SetGamePriceFromText_ValidNumericString_SetsGamePrice()
         {
@@ -161,8 +157,6 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(viewModel.GamePrice, Is.EqualTo(0m));
         }
 
-        // --- GamePriceAsDouble ---
-
         [Test]
         public void GamePriceAsDouble_RoundTrips_WithDecimalGamePrice()
         {
@@ -172,7 +166,6 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(viewModel.GamePriceAsDouble, Is.EqualTo(19.99).Within(0.001));
         }
 
-        // --- SubmitCreateGame ---
 
         [Test]
         public void SubmitCreateGame_ValidInputs_ReturnsSuccessResult()
@@ -214,8 +207,6 @@ namespace Property_and_Management.Tests.Viewmodels
 
             mockGameService.Verify(svc => svc.AddGame(It.IsAny<GameDTO>()), Times.Never);
         }
-
-        // --- SaveGame ---
 
         [Test]
         public void SaveGame_ValidInputs_ReturnsGameDtoWithCorrectOwner()
@@ -261,8 +252,6 @@ namespace Property_and_Management.Tests.Viewmodels
             mockGameService.Verify(svc => svc.AddGame(It.IsAny<GameDTO>()), Times.Never);
         }
 
-        // --- Default property values ---
-
         [Test]
         public void Constructor_DefaultValues_AreSetCorrectly()
         {
@@ -271,8 +260,6 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(viewModel.IsGameActive, Is.True);
             Assert.That(viewModel.GameImage, Is.Null);
         }
-
-        // --- Helpers ---
 
         private void PopulateWithValidInputs()
         {

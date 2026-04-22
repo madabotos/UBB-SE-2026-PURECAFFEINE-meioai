@@ -1,4 +1,5 @@
 // Tudor
+using System;
 using Moq;
 using NUnit.Framework;
 using Property_and_Management.Src.DataTransferObjects;
@@ -28,6 +29,9 @@ namespace Property_and_Management.Tests.Service
             toast = new Mock<IToastNotificationService>();
 
             userContext.SetupGet(c => c.CurrentUserId).Returns(1);
+            serverClient
+                .Setup(c => c.Subscribe(It.IsAny<IObserver<IncomingNotification>>()))
+                .Returns(Mock.Of<IDisposable>());
 
             service = new NotificationService(
                 notificationRepo.Object,

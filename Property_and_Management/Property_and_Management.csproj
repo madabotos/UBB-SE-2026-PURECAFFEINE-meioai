@@ -8,6 +8,7 @@
         <WindowsPackageType>None</WindowsPackageType>
 
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
         <Platforms>x86;x64</Platforms>
 
         <RootNamespace>Property_and_Management</RootNamespace>
