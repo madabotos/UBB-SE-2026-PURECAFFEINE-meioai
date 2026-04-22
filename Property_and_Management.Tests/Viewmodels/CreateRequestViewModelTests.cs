@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Moq;
@@ -41,54 +42,19 @@ namespace Property_and_Management.Tests.Viewmodels
                 mockRequestService.Object,
                 mockUserContext.Object);
         }
+
         [Test]
-        public void Constructor_LoadsActiveGamesOwnedByOtherUsers()
+        public void Constructor_LoadsGamesCurrentUserAndRefreshesCollection()
         {
             var viewModel = BuildViewModel();
 
-            Assert.That(viewModel.AvailableGamesToRequest, Has.Count.EqualTo(1));
-            Assert.That(viewModel.AvailableGamesToRequest[0].Id, Is.EqualTo(AvailableGameId));
-        }
-
-        [Test]
-        public void Constructor_ExcludesGamesOwnedByCurrentUser()
-        {
-            mockGameService
-                .Setup(svc => svc.GetAvailableGamesForRenter(CurrentUserId))
-                .Returns(ImmutableList.Create(BuildOtherUsersGame(AvailableGameId)));
-
-            var viewModel = BuildViewModel();
-
-            Assert.That(viewModel.AvailableGamesToRequest, Has.Count.EqualTo(1));
-            Assert.That(viewModel.AvailableGamesToRequest.Any(game => game.Owner?.Id == CurrentUserId), Is.False);
-        }
-
-        [Test]
-        public void Constructor_ExcludesInactiveGames()
-        {
-            mockGameService
-                .Setup(svc => svc.GetAvailableGamesForRenter(CurrentUserId))
-                .Returns(ImmutableList.Create(BuildOtherUsersGame(AvailableGameId)));
-
-            var viewModel = BuildViewModel();
-
-            Assert.That(viewModel.AvailableGamesToRequest, Has.Count.EqualTo(1));
-            Assert.That(viewModel.AvailableGamesToRequest.All(g => g.IsActive), Is.True);
-        }
-
-        [Test]
-        public void CurrentUserId_DelegatesToUserContext()
-        {
-            var viewModel = BuildViewModel();
-
-            Assert.That(viewModel.CurrentUserId, Is.EqualTo(CurrentUserId));
-        }
-
-        [Test]
-        public void LoadAvailableGames_RefreshesCollection()
-        {
-            var viewModel = BuildViewModel();
-            Assert.That(viewModel.AvailableGamesToRequest, Has.Count.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(viewModel.CurrentUserId, Is.EqualTo(CurrentUserId));
+                Assert.That(viewModel.AvailableGamesToRequest.Select(game => game.Id), Is.EquivalentTo(new[] { AvailableGameId }));
+                Assert.That(viewModel.AvailableGamesToRequest.Any(game => game.Owner?.Id == CurrentUserId), Is.False);
+                Assert.That(viewModel.AvailableGamesToRequest.All(game => game.IsActive), Is.True);
+            });
 
             mockGameService
                 .Setup(svc => svc.GetAvailableGamesForRenter(CurrentUserId))
@@ -98,52 +64,58 @@ namespace Property_and_Management.Tests.Viewmodels
 
             viewModel.LoadAvailableGames();
 
-            Assert.That(viewModel.AvailableGamesToRequest, Has.Count.EqualTo(2));
+            Assert.That(viewModel.AvailableGamesToRequest.Select(game => game.Id), Is.EquivalentTo(new[] { AvailableGameId, 401 }));
         }
+
         [Test]
-        public void ValidateRequestInputs_AllFieldsValid_ReturnsTrue()
+        public void ValidateRequestInputs_RequiresGameAndDates()
         {
             var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
 
+            PopulateWithValidSelections(viewModel);
             Assert.That(viewModel.ValidateRequestInputs(), Is.True);
+
+            AssertInvalidRequestInputs(viewModel, vm => vm.SelectedGame = null);
+            AssertInvalidRequestInputs(viewModel, vm => vm.StartDate = null);
+            AssertInvalidRequestInputs(viewModel, vm => vm.EndDate = null);
         }
 
         [Test]
-        public void ValidateRequestInputs_NoGameSelected_ReturnsFalse()
+        public void SubmitRequest_CoversValidationSuccessAndInvalidDateRange()
         {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
-            viewModel.SelectedGame = null;
+            var invalidViewModel = BuildViewModel();
 
-            Assert.That(viewModel.ValidateRequestInputs(), Is.False);
-        }
+            ViewOperationResult validationFailure = invalidViewModel.SubmitRequest();
 
-        [Test]
-        public void ValidateRequestInputs_StartDateNull_ReturnsFalse()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
-            viewModel.StartDate = null;
+            Assert.Multiple(() =>
+            {
+                Assert.That(validationFailure.IsSuccess, Is.False);
+                Assert.That(validationFailure.DialogTitle, Is.EqualTo("Validation Error"));
+            });
+            mockRequestService.Verify(
+                svc => svc.CreateRequest(
+                    It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
+                    It.IsAny<DateTime>(), It.IsAny<DateTime>()),
+                Times.Never);
 
-            Assert.That(viewModel.ValidateRequestInputs(), Is.False);
-        }
+            mockRequestService
+                .Setup(svc => svc.CreateRequest(
+                    It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
+                    It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                .Returns(Result<int, CreateRequestError>.Success(1));
 
-        [Test]
-        public void ValidateRequestInputs_EndDateNull_ReturnsFalse()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
-            viewModel.EndDate = null;
+            var successfulViewModel = BuildViewModel();
+            PopulateWithValidSelections(successfulViewModel);
 
-            Assert.That(viewModel.ValidateRequestInputs(), Is.False);
-        }
+            ViewOperationResult successResult = successfulViewModel.SubmitRequest();
 
-        [Test]
-        public void SubmitRequest_ServiceReturnsInvalidDateRange_ReturnsValidationError()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
+            Assert.That(successResult.IsSuccess, Is.True);
+            mockRequestService.Verify(svc => svc.CreateRequest(
+                AvailableGameId,
+                CurrentUserId,
+                OtherOwnerId,
+                It.IsAny<DateTime>(),
+                It.IsAny<DateTime>()), Times.Once);
 
             mockRequestService
                 .Setup(svc => svc.CreateRequest(
@@ -151,77 +123,39 @@ namespace Property_and_Management.Tests.Viewmodels
                     It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                 .Returns(Result<int, CreateRequestError>.Failure(CreateRequestError.InvalidDateRange));
 
-            ViewOperationResult result = viewModel.SubmitRequest();
+            var invalidDateRangeViewModel = BuildViewModel();
+            PopulateWithValidSelections(invalidDateRangeViewModel);
 
-            Assert.That(result.IsSuccess, Is.False);
-            Assert.That(result.DialogTitle, Is.EqualTo("Validation Error"));
+            ViewOperationResult invalidDateRangeResult = invalidDateRangeViewModel.SubmitRequest();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(invalidDateRangeResult.IsSuccess, Is.False);
+                Assert.That(invalidDateRangeResult.DialogTitle, Is.EqualTo("Validation Error"));
+            });
         }
 
         [Test]
-        public void SubmitRequest_ValidInputsAndServiceSucceeds_ReturnsSuccess()
+        public void SubmitRequest_MapsServiceErrorsAndTrySubmitRequestMirrorsResult()
         {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
-
-            mockRequestService
-                .Setup(svc => svc.CreateRequest(
-                    It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
-                    It.IsAny<DateTime>(), It.IsAny<DateTime>()))
-                .Returns(Result<int, CreateRequestError>.Success(1));
-
-            ViewOperationResult result = viewModel.SubmitRequest();
-
-            Assert.That(result.IsSuccess, Is.True);
-        }
-
-        [Test]
-        public void SubmitRequest_ValidationFails_ReturnsFailureWithValidationTitle()
-        {
-            var viewModel = BuildViewModel();
-            ViewOperationResult result = viewModel.SubmitRequest();
-
-            Assert.That(result.IsSuccess, Is.False);
-            Assert.That(result.DialogTitle, Is.EqualTo("Validation Error"));
-        }
-
-        [Test]
-        public void SubmitRequest_ValidationFails_DoesNotCallService()
-        {
-            var viewModel = BuildViewModel();
-
-            viewModel.SubmitRequest();
-
-            mockRequestService.Verify(
-                svc => svc.CreateRequest(
-                    It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
-                    It.IsAny<DateTime>(), It.IsAny<DateTime>()),
-                Times.Never);
-        }
-
-        [Test]
-        public void SubmitRequest_ServiceReturnsOwnerCannotRent_ReturnsFailureWithOwnGameMessage()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
-
             mockRequestService
                 .Setup(svc => svc.CreateRequest(
                     It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
                     It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                 .Returns(Result<int, CreateRequestError>.Failure(CreateRequestError.OwnerCannotRent));
 
-            ViewOperationResult result = viewModel.SubmitRequest();
+            var ownerCannotRentViewModel = BuildViewModel();
+            PopulateWithValidSelections(ownerCannotRentViewModel);
 
-            Assert.That(result.IsSuccess, Is.False);
-            Assert.That(result.DialogTitle, Is.EqualTo("Request Failed"));
-            Assert.That(result.DialogMessage, Does.Contain("own game"));
-        }
+            ViewOperationResult ownerCannotRentResult = ownerCannotRentViewModel.SubmitRequest();
 
-        [Test]
-        public void SubmitRequest_ServiceReturnsDatesUnavailable_ReturnsFailureWithDatesMessage()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
+            Assert.Multiple(() =>
+            {
+                Assert.That(ownerCannotRentResult.IsSuccess, Is.False);
+                Assert.That(ownerCannotRentResult.DialogTitle, Is.EqualTo("Request Failed"));
+                Assert.That(ownerCannotRentResult.DialogMessage, Does.Contain("own game"));
+                Assert.That(ownerCannotRentViewModel.TrySubmitRequest(), Does.Contain("own game"));
+            });
 
             mockRequestService
                 .Setup(svc => svc.CreateRequest(
@@ -229,17 +163,9 @@ namespace Property_and_Management.Tests.Viewmodels
                     It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                 .Returns(Result<int, CreateRequestError>.Failure(CreateRequestError.DatesUnavailable));
 
-            ViewOperationResult result = viewModel.SubmitRequest();
-
-            Assert.That(result.IsSuccess, Is.False);
-            Assert.That(result.DialogMessage, Does.Contain("not available"));
-        }
-
-        [Test]
-        public void SubmitRequest_ServiceReturnsGameDoesNotExist_ReturnsFailureWithMissingGameMessage()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
+            var datesUnavailableViewModel = BuildViewModel();
+            PopulateWithValidSelections(datesUnavailableViewModel);
+            Assert.That(datesUnavailableViewModel.SubmitRequest().DialogMessage, Does.Contain("not available"));
 
             mockRequestService
                 .Setup(svc => svc.CreateRequest(
@@ -247,17 +173,9 @@ namespace Property_and_Management.Tests.Viewmodels
                     It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                 .Returns(Result<int, CreateRequestError>.Failure(CreateRequestError.GameDoesNotExist));
 
-            ViewOperationResult result = viewModel.SubmitRequest();
-
-            Assert.That(result.IsSuccess, Is.False);
-            Assert.That(result.DialogMessage, Does.Contain("no longer exists"));
-        }
-
-        [Test]
-        public void TrySubmitRequest_SuccessfulSubmission_ReturnsNull()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
+            var missingGameViewModel = BuildViewModel();
+            PopulateWithValidSelections(missingGameViewModel);
+            Assert.That(missingGameViewModel.SubmitRequest().DialogMessage, Does.Contain("no longer exists"));
 
             mockRequestService
                 .Setup(svc => svc.CreateRequest(
@@ -265,56 +183,37 @@ namespace Property_and_Management.Tests.Viewmodels
                     It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                 .Returns(Result<int, CreateRequestError>.Success(1));
 
-            string? error = viewModel.TrySubmitRequest();
-
-            Assert.That(error, Is.Null);
+            var successfulTrySubmitViewModel = BuildViewModel();
+            PopulateWithValidSelections(successfulTrySubmitViewModel);
+            Assert.That(successfulTrySubmitViewModel.TrySubmitRequest(), Is.Null);
         }
 
         [Test]
-        public void TrySubmitRequest_FailedSubmission_ReturnsDialogMessage()
+        public void Setters_RaisePropertyChangedForBindableFields()
         {
             var viewModel = BuildViewModel();
-
-            string? error = viewModel.TrySubmitRequest();
-
-            Assert.That(error, Is.Not.Null);
-            Assert.That(error, Is.Not.Empty);
-        }
-        [Test]
-        public void SelectedGame_WhenSet_RaisesPropertyChanged()
-        {
-            var viewModel = BuildViewModel();
-            string? changedProperty = null;
-            viewModel.PropertyChanged += (_, args) => changedProperty = args.PropertyName;
+            var changedProperties = new List<string?>();
+            viewModel.PropertyChanged += (_, args) => changedProperties.Add(args.PropertyName);
 
             viewModel.SelectedGame = BuildOtherUsersGame(888);
-
-            Assert.That(changedProperty, Is.EqualTo(nameof(viewModel.SelectedGame)));
-        }
-
-        [Test]
-        public void StartDate_WhenSet_RaisesPropertyChanged()
-        {
-            var viewModel = BuildViewModel();
-            string? changedProperty = null;
-            viewModel.PropertyChanged += (_, args) => changedProperty = args.PropertyName;
-
             viewModel.StartDate = DateTimeOffset.Now.AddDays(2);
-
-            Assert.That(changedProperty, Is.EqualTo(nameof(viewModel.StartDate)));
-        }
-
-        [Test]
-        public void EndDate_WhenSet_RaisesPropertyChanged()
-        {
-            var viewModel = BuildViewModel();
-            string? changedProperty = null;
-            viewModel.PropertyChanged += (_, args) => changedProperty = args.PropertyName;
-
             viewModel.EndDate = DateTimeOffset.Now.AddDays(10);
 
-            Assert.That(changedProperty, Is.EqualTo(nameof(viewModel.EndDate)));
+            Assert.That(changedProperties, Is.EqualTo(new[]
+            {
+                nameof(viewModel.SelectedGame),
+                nameof(viewModel.StartDate),
+                nameof(viewModel.EndDate)
+            }));
         }
+
+        private static void AssertInvalidRequestInputs(CreateRequestViewModel viewModel, Action<CreateRequestViewModel> invalidate)
+        {
+            PopulateWithValidSelections(viewModel);
+            invalidate(viewModel);
+            Assert.That(viewModel.ValidateRequestInputs(), Is.False);
+        }
+
         private static void PopulateWithValidSelections(CreateRequestViewModel viewModel)
         {
             viewModel.SelectedGame = BuildOtherUsersGame(AvailableGameId);

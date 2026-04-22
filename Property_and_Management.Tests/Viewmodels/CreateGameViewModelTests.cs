@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Moq;
 using NUnit.Framework;
@@ -46,92 +47,38 @@ namespace Property_and_Management.Tests.Viewmodels
 
             viewModel = new CreateGameViewModel(mockGameService.Object, mockUserContext.Object);
         }
+
         [Test]
-        public void CurrentUserId_ReturnsValueFromUserContext()
+        public void Constructor_InitializesCurrentUserAndDefaultState()
         {
-            Assert.That(viewModel.CurrentUserId, Is.EqualTo(TestUserId));
+            Assert.Multiple(() =>
+            {
+                Assert.That(viewModel.CurrentUserId, Is.EqualTo(TestUserId));
+                Assert.That(viewModel.GameName, Is.EqualTo(string.Empty));
+                Assert.That(viewModel.GameDescription, Is.EqualTo(string.Empty));
+                Assert.That(viewModel.IsGameActive, Is.True);
+                Assert.That(viewModel.GameImage, Is.Null);
+            });
         }
+
         [Test]
-        public void ValidateGameInputs_AllFieldsValid_ReturnsNoErrors()
+        public void ValidateGameInputs_CoversValidAndInvalidScenarios()
         {
             PopulateWithValidInputs();
+            Assert.That(viewModel.ValidateGameInputs(), Is.Empty);
 
-            List<string> errors = viewModel.ValidateGameInputs();
+            AssertValidationError(vm => vm.GameName = "AB", "Name");
+            AssertValidationError(vm => vm.GameName = string.Empty, "Name");
+            AssertValidationError(vm => vm.GamePrice = 0m, "Price");
+            AssertValidationError(vm => vm.MinimumPlayersRequired = 0, "player");
+            AssertValidationError(vm =>
+            {
+                vm.MinimumPlayersRequired = 5;
+                vm.MaximumPlayersAllowed = 2;
+            }, "Maximum");
+            AssertValidationError(vm => vm.GameDescription = "Short", "Description");
 
-            Assert.That(errors, Is.Empty);
-        }
-
-        [Test]
-        public void ValidateGameInputs_NameTooShort_ReturnsNameError()
-        {
             PopulateWithValidInputs();
-            viewModel.GameName = "AB";
-
-            List<string> errors = viewModel.ValidateGameInputs();
-
-            Assert.That(errors, Has.Count.GreaterThanOrEqualTo(1));
-            Assert.That(errors, Has.Some.Contain("Name"));
-        }
-
-        [Test]
-        public void ValidateGameInputs_NameIsEmpty_ReturnsNameError()
-        {
-            PopulateWithValidInputs();
-            viewModel.GameName = string.Empty;
-
-            List<string> errors = viewModel.ValidateGameInputs();
-
-            Assert.That(errors, Has.Some.Contain("Name"));
-        }
-
-        [Test]
-        public void ValidateGameInputs_PriceBelowMinimum_ReturnsPriceError()
-        {
-            PopulateWithValidInputs();
-            viewModel.GamePrice = 0m;
-
-            List<string> errors = viewModel.ValidateGameInputs();
-
-            Assert.That(errors, Has.Some.Contain("Price"));
-        }
-
-        [Test]
-        public void ValidateGameInputs_MinPlayersZero_ReturnsPlayerCountError()
-        {
-            PopulateWithValidInputs();
-            viewModel.MinimumPlayersRequired = 0;
-
-            List<string> errors = viewModel.ValidateGameInputs();
-
-            Assert.That(errors, Has.Some.Contain("player"));
-        }
-
-        [Test]
-        public void ValidateGameInputs_MaxPlayersLessThanMin_ReturnsMaxPlayerError()
-        {
-            PopulateWithValidInputs();
-            viewModel.MinimumPlayersRequired = 5;
-            viewModel.MaximumPlayersAllowed = 2;
-
-            List<string> errors = viewModel.ValidateGameInputs();
-
-            Assert.That(errors, Has.Some.Contain("Maximum"));
-        }
-
-        [Test]
-        public void ValidateGameInputs_DescriptionTooShort_ReturnsDescriptionError()
-        {
-            PopulateWithValidInputs();
-            viewModel.GameDescription = "Short";
-
-            List<string> errors = viewModel.ValidateGameInputs();
-
-            Assert.That(errors, Has.Some.Contain("Description"));
-        }
-
-        [Test]
-        public void ValidateGameInputs_MultipleInvalidFields_ReturnsMultipleErrors()
-        {
             viewModel.GameName = string.Empty;
             viewModel.GamePrice = 0m;
             viewModel.GameDescription = string.Empty;
@@ -142,133 +89,89 @@ namespace Property_and_Management.Tests.Viewmodels
         }
 
         [Test]
-        public void SetGamePriceFromText_ValidNumericString_SetsGamePrice()
+        public void PriceHelpers_ParseAndRoundTripValues()
         {
             viewModel.SetGamePriceFromText("25.50");
-
             Assert.That(viewModel.GamePrice, Is.EqualTo(25.50m));
-        }
 
-        [Test]
-        public void SetGamePriceFromText_EmptyString_SetsGamePriceToZero()
-        {
             viewModel.GamePrice = 10m;
-
             viewModel.SetGamePriceFromText(string.Empty);
-
             Assert.That(viewModel.GamePrice, Is.EqualTo(0m));
-        }
 
-        [Test]
-        public void SetGamePriceFromText_NonNumericString_SetsGamePriceToZero()
-        {
             viewModel.GamePrice = 10m;
-
             viewModel.SetGamePriceFromText("not-a-price");
-
             Assert.That(viewModel.GamePrice, Is.EqualTo(0m));
-        }
 
-        [Test]
-        public void GamePriceAsDouble_RoundTrips_WithDecimalGamePrice()
-        {
             viewModel.GamePriceAsDouble = 19.99;
 
-            Assert.That(viewModel.GamePrice, Is.EqualTo(19.99m));
-            Assert.That(viewModel.GamePriceAsDouble, Is.EqualTo(19.99).Within(0.001));
-        }
-        [Test]
-        public void SubmitCreateGame_ValidInputs_ReturnsSuccessResult()
-        {
-            PopulateWithValidInputs();
-
-            ViewOperationResult result = viewModel.SubmitCreateGame();
-
-            Assert.That(result.IsSuccess, Is.True);
+            Assert.Multiple(() =>
+            {
+                Assert.That(viewModel.GamePrice, Is.EqualTo(19.99m));
+                Assert.That(viewModel.GamePriceAsDouble, Is.EqualTo(19.99).Within(0.001));
+            });
         }
 
         [Test]
-        public void SubmitCreateGame_ValidInputs_InvokesServiceAddGame()
+        public void SubmitCreateGame_CoversSuccessAndValidationFailure()
         {
             PopulateWithValidInputs();
 
-            viewModel.SubmitCreateGame();
+            ViewOperationResult successResult = viewModel.SubmitCreateGame();
 
+            Assert.That(successResult.IsSuccess, Is.True);
+            mockGameService.Verify(svc => svc.AddGame(It.Is<GameDTO>(game =>
+                game.Owner.Id == TestUserId &&
+                game.Name == ValidGameName &&
+                game.Price == ValidPrice)), Times.Once);
+
+            mockGameService.Invocations.Clear();
+            viewModel.GameName = string.Empty;
+
+            ViewOperationResult failureResult = viewModel.SubmitCreateGame();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(failureResult.IsSuccess, Is.False);
+                Assert.That(failureResult.DialogTitle, Is.EqualTo("Validation Error"));
+            });
+            mockGameService.Verify(svc => svc.AddGame(It.IsAny<GameDTO>()), Times.Never);
+        }
+
+        [Test]
+        public void SaveGame_CoversSuccessAndValidationFailure()
+        {
+            PopulateWithValidInputs();
+
+            GameDTO savedGame = viewModel.SaveGame();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(savedGame, Is.Not.Null);
+                Assert.That(savedGame.Owner.Id, Is.EqualTo(TestUserId));
+                Assert.That(savedGame.Name, Is.EqualTo(ValidGameName));
+                Assert.That(savedGame.Price, Is.EqualTo(ValidPrice));
+                Assert.That(savedGame.MinimumPlayerNumber, Is.EqualTo(ValidMinPlayers));
+                Assert.That(savedGame.MaximumPlayerNumber, Is.EqualTo(ValidMaxPlayers));
+            });
             mockGameService.Verify(svc => svc.AddGame(It.IsAny<GameDTO>()), Times.Once);
-        }
 
-        [Test]
-        public void SubmitCreateGame_InvalidInputs_ReturnsFailureWithValidationTitle()
-        {
+            mockGameService.Invocations.Clear();
             viewModel.GameName = string.Empty;
 
-            ViewOperationResult result = viewModel.SubmitCreateGame();
+            GameDTO invalidGame = viewModel.SaveGame();
 
-            Assert.That(result.IsSuccess, Is.False);
-            Assert.That(result.DialogTitle, Is.EqualTo("Validation Error"));
-        }
-
-        [Test]
-        public void SubmitCreateGame_InvalidInputs_DoesNotInvokeServiceAddGame()
-        {
-            viewModel.GameName = string.Empty;
-
-            viewModel.SubmitCreateGame();
-
+            Assert.That(invalidGame, Is.Null);
             mockGameService.Verify(svc => svc.AddGame(It.IsAny<GameDTO>()), Times.Never);
         }
 
-        [Test]
-        public void SaveGame_ValidInputs_ReturnsGameDtoWithCorrectOwner()
+        private void AssertValidationError(Action<CreateGameViewModel> mutate, string expectedMessageFragment)
         {
             PopulateWithValidInputs();
+            mutate(viewModel);
 
-            GameDTO savedGame = viewModel.SaveGame();
+            List<string> errors = viewModel.ValidateGameInputs();
 
-            Assert.That(savedGame, Is.Not.Null);
-            Assert.That(savedGame.Owner.Id, Is.EqualTo(TestUserId));
-        }
-
-        [Test]
-        public void SaveGame_ValidInputs_ReturnedDtoCarriesInputValues()
-        {
-            PopulateWithValidInputs();
-
-            GameDTO savedGame = viewModel.SaveGame();
-
-            Assert.That(savedGame.Name, Is.EqualTo(ValidGameName));
-            Assert.That(savedGame.Price, Is.EqualTo(ValidPrice));
-            Assert.That(savedGame.MinimumPlayerNumber, Is.EqualTo(ValidMinPlayers));
-            Assert.That(savedGame.MaximumPlayerNumber, Is.EqualTo(ValidMaxPlayers));
-        }
-
-        [Test]
-        public void SaveGame_InvalidInputs_ReturnsNull()
-        {
-            viewModel.GameName = string.Empty;
-
-            GameDTO savedGame = viewModel.SaveGame();
-
-            Assert.That(savedGame, Is.Null);
-        }
-
-        [Test]
-        public void SaveGame_InvalidInputs_DoesNotCallService()
-        {
-            viewModel.GameName = string.Empty;
-
-            viewModel.SaveGame();
-
-            mockGameService.Verify(svc => svc.AddGame(It.IsAny<GameDTO>()), Times.Never);
-        }
-
-        [Test]
-        public void Constructor_DefaultValues_AreSetCorrectly()
-        {
-            Assert.That(viewModel.GameName, Is.EqualTo(string.Empty));
-            Assert.That(viewModel.GameDescription, Is.EqualTo(string.Empty));
-            Assert.That(viewModel.IsGameActive, Is.True);
-            Assert.That(viewModel.GameImage, Is.Null);
+            Assert.That(errors, Has.Some.Contain(expectedMessageFragment));
         }
 
         private void PopulateWithValidInputs()
