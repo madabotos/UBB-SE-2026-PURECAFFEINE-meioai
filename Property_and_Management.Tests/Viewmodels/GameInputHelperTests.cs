@@ -13,11 +13,16 @@ namespace Property_and_Management.Tests.Viewmodels
     public sealed class GameInputHelperTests
     {
         [Test]
-        public void BuildValidationErrors_ValidInput()
+        public void BuildValidationErrors_WithAllValidInputs_ReturnsEmptyErrorList()
         {
+<<<<<<< Updated upstream
             // set up some valid parameters
             var gameName = "Catan";
             var gamePrice = 19.99m;
+=======
+            var testGameName = "Catan";
+            var testGamePrice = 19.99m;
+>>>>>>> Stashed changes
             var minimumPlayerCount = 3;
             var maximumPlayerCount = 4;
             var gameDescription = "Colonize the island";
@@ -30,8 +35,8 @@ namespace Property_and_Management.Tests.Viewmodels
             
             // run the method
             var validationErrors = GameInputHelper.BuildValidationErrors(
-                gameName,
-                gamePrice,
+                testGameName,
+                testGamePrice,
                 minimumPlayerCount,
                 maximumPlayerCount,
                 gameDescription,
@@ -47,11 +52,17 @@ namespace Property_and_Management.Tests.Viewmodels
         }
 
         [Test]
-        public void BuildValidationErrors_InvalidInput1()
+        public void BuildValidationErrors_WithLowPriceAndShortDescription_ReturnsPriceAndDescriptionErrors()
         {
+<<<<<<< Updated upstream
             // set up some parameters
             var gameName = "Saboteur";
             var gamePrice = 2.0m;
+=======
+            
+            var testGameName = "Saboteur";
+            var testGamePrice = 2.0m;
+>>>>>>> Stashed changes
             var minimumPlayerCount = 2;
             var maximumPlayerCount = 12;
             var gameDescription = "Find the gold";
@@ -64,8 +75,8 @@ namespace Property_and_Management.Tests.Viewmodels
 
             // run the method
             var validationErrors = GameInputHelper.BuildValidationErrors(
-                gameName,
-                gamePrice,
+                testGameName,
+                testGamePrice,
                 minimumPlayerCount,
                 maximumPlayerCount,
                 gameDescription,
@@ -82,11 +93,17 @@ namespace Property_and_Management.Tests.Viewmodels
         }
 
         [Test]
-        public void BuildValidationErrors_InvalidInput2()
+        public void BuildValidationErrors_WithEmptyNameAndInvalidPlayerCounts_ReturnsNameAndPlayerCountErrors()
         {
+<<<<<<< Updated upstream
             // set up some parameters
             var gameName = "";
             var gamePrice = 30.0m;
+=======
+            
+            var testGameName = "";
+            var testGamePrice = 30.0m;
+>>>>>>> Stashed changes
             var minimumPlayerCount = 11;
             var maximumPlayerCount = 10;
             var gameDescription = "Find the gold";
@@ -99,8 +116,8 @@ namespace Property_and_Management.Tests.Viewmodels
 
             // run the method
             var validationErrors = GameInputHelper.BuildValidationErrors(
-                gameName,
-                gamePrice,
+                testGameName,
+                testGamePrice,
                 minimumPlayerCount,
                 maximumPlayerCount,
                 gameDescription,
@@ -134,9 +151,9 @@ namespace Property_and_Management.Tests.Viewmodels
             var gameImage = Array.Empty<byte>();
             var baseDir = "InvalidDirectory123456789";
 
-            var result = GameInputHelper.EnsureImageOrDefault(gameImage, baseDir);
+            var returnedImage = GameInputHelper.EnsureImageOrDefault(gameImage, baseDir);
 
-            Assert.That(result, Is.Empty);
+            Assert.That(returnedImage, Is.Empty);
         }
     }
 }
