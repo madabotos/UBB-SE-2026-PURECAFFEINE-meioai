@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Moq;
@@ -48,49 +49,19 @@ namespace Property_and_Management.Tests.Viewmodels
                 mockUserService.Object,
                 mockUserContext.Object);
         }
+
         [Test]
-        public void Constructor_LoadsOwnedActiveGames()
+        public void Constructor_LoadsCollectionsCurrentUserAndRefreshesData()
         {
             var viewModel = BuildViewModel();
 
-            Assert.That(viewModel.OwnedActiveGames, Has.Count.EqualTo(1));
-            Assert.That(viewModel.OwnedActiveGames[0].Id, Is.EqualTo(GameId));
-        }
-
-        [Test]
-        public void Constructor_ExcludesInactiveGamesFromList()
-        {
-            mockGameService
-                .Setup(svc => svc.GetActiveGamesForOwner(OwnerUserId))
-                .Returns(ImmutableList.Create(BuildActiveGame(GameId, OwnerUserId)));
-
-            var viewModel = BuildViewModel();
-
-            Assert.That(viewModel.OwnedActiveGames, Has.Count.EqualTo(1));
-            Assert.That(viewModel.OwnedActiveGames.All(g => g.IsActive), Is.True);
-        }
-
-        [Test]
-        public void Constructor_LoadsAvailableRenters()
-        {
-            var viewModel = BuildViewModel();
-
-            Assert.That(viewModel.AvailableRenters, Has.Count.EqualTo(1));
-            Assert.That(viewModel.AvailableRenters[0].Id, Is.EqualTo(RenterUserId));
-        }
-
-        [Test]
-        public void CurrentUserId_DelegatesToUserContext()
-        {
-            var viewModel = BuildViewModel();
-
-            Assert.That(viewModel.CurrentUserId, Is.EqualTo(OwnerUserId));
-        }
-        [Test]
-        public void LoadRentalFormData_RefreshesGamesAndRenters()
-        {
-            var viewModel = BuildViewModel();
-            Assert.That(viewModel.OwnedActiveGames, Has.Count.EqualTo(1));
+            Assert.Multiple(() =>
+            {
+                Assert.That(viewModel.CurrentUserId, Is.EqualTo(OwnerUserId));
+                Assert.That(viewModel.OwnedActiveGames.Select(game => game.Id), Is.EquivalentTo(new[] { GameId }));
+                Assert.That(viewModel.OwnedActiveGames.All(game => game.IsActive), Is.True);
+                Assert.That(viewModel.AvailableRenters.Select(user => user.Id), Is.EquivalentTo(new[] { RenterUserId }));
+            });
 
             mockGameService
                 .Setup(svc => svc.GetActiveGamesForOwner(OwnerUserId))
@@ -98,220 +69,153 @@ namespace Property_and_Management.Tests.Viewmodels
                     BuildActiveGame(GameId, OwnerUserId),
                     BuildActiveGame(201, OwnerUserId)));
 
+            mockUserService
+                .Setup(svc => svc.GetUsersExcept(OwnerUserId))
+                .Returns(ImmutableList.Create(
+                    new UserDTO { Id = RenterUserId, DisplayName = "Renter" },
+                    new UserDTO { Id = 21, DisplayName = "Second renter" }));
+
             viewModel.LoadRentalFormData();
 
-            Assert.That(viewModel.OwnedActiveGames, Has.Count.EqualTo(2));
+            Assert.Multiple(() =>
+            {
+                Assert.That(viewModel.OwnedActiveGames.Select(game => game.Id), Is.EquivalentTo(new[] { GameId, 201 }));
+                Assert.That(viewModel.AvailableRenters.Select(user => user.Id), Is.EquivalentTo(new[] { RenterUserId, 21 }));
+            });
         }
+
         [Test]
-        public void ValidateRentalInputs_AllFieldsValid_ReturnsTrue()
+        public void ValidateRentalInputs_RequiresGameRenterAndDates()
         {
             var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
 
+            PopulateWithValidSelections(viewModel);
             Assert.That(viewModel.ValidateRentalInputs(), Is.True);
+
+            AssertInvalidRentalInputs(viewModel, vm => vm.SelectedGameToRent = null);
+            AssertInvalidRentalInputs(viewModel, vm => vm.SelectedRenter = null);
+            AssertInvalidRentalInputs(viewModel, vm => vm.StartDate = null);
+            AssertInvalidRentalInputs(viewModel, vm => vm.EndDate = null);
         }
 
         [Test]
-        public void ValidateRentalInputs_NoGameSelected_ReturnsFalse()
+        public void CreateRental_CoversSuccessValidationFailureAndExceptions()
         {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
-            viewModel.SelectedGameToRent = null;
+            var invalidViewModel = BuildViewModel();
 
-            Assert.That(viewModel.ValidateRentalInputs(), Is.False);
-        }
+            ViewOperationResult validationFailure = invalidViewModel.CreateRental();
 
-        [Test]
-        public void ValidateRentalInputs_NoRenterSelected_ReturnsFalse()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
-            viewModel.SelectedRenter = null;
-
-            Assert.That(viewModel.ValidateRentalInputs(), Is.False);
-        }
-
-        [Test]
-        public void ValidateRentalInputs_StartDateNull_ReturnsFalse()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
-            viewModel.StartDate = null;
-
-            Assert.That(viewModel.ValidateRentalInputs(), Is.False);
-        }
-
-        [Test]
-        public void CreateRental_ServiceThrowsArgumentException_ReturnsValidationError()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
-
-            mockRentalService
-                .Setup(svc => svc.CreateConfirmedRental(
+            Assert.Multiple(() =>
+            {
+                Assert.That(validationFailure.IsSuccess, Is.False);
+                Assert.That(validationFailure.DialogTitle, Is.EqualTo("Validation Error"));
+            });
+            mockRentalService.Verify(
+                svc => svc.CreateConfirmedRental(
                     It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
-                    It.IsAny<DateTime>(), It.IsAny<DateTime>()))
-                .Throws(new ArgumentException("Start date must be before end date and not in the past."));
+                    It.IsAny<DateTime>(), It.IsAny<DateTime>()),
+                Times.Never);
 
-            ViewOperationResult result = viewModel.CreateRental();
+            var successfulViewModel = BuildViewModel();
+            PopulateWithValidSelections(successfulViewModel);
 
-            Assert.That(result.IsSuccess, Is.False);
-            Assert.That(result.DialogTitle, Is.EqualTo("Validation Error"));
-        }
-        [Test]
-        public void CreateRental_ValidInputs_ReturnsSuccess()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
+            ViewOperationResult successResult = successfulViewModel.CreateRental();
 
-            ViewOperationResult result = viewModel.CreateRental();
-
-            Assert.That(result.IsSuccess, Is.True);
-        }
-
-        [Test]
-        public void CreateRental_ValidInputs_CallsServiceWithCorrectArguments()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
-
-            viewModel.CreateRental();
-
+            Assert.That(successResult.IsSuccess, Is.True);
             mockRentalService.Verify(svc => svc.CreateConfirmedRental(
                 GameId,
                 RenterUserId,
                 OwnerUserId,
                 It.IsAny<DateTime>(),
                 It.IsAny<DateTime>()), Times.Once);
-        }
 
-        [Test]
-        public void CreateRental_InvalidInputs_ReturnsFailureWithValidationTitle()
-        {
-            var viewModel = BuildViewModel();
-
-            ViewOperationResult result = viewModel.CreateRental();
-
-            Assert.That(result.IsSuccess, Is.False);
-            Assert.That(result.DialogTitle, Is.EqualTo("Validation Error"));
-        }
-
-        [Test]
-        public void CreateRental_InvalidInputs_DoesNotCallService()
-        {
-            var viewModel = BuildViewModel();
-
-            viewModel.CreateRental();
-
-            mockRentalService.Verify(
-                svc => svc.CreateConfirmedRental(
+            mockRentalService.Setup(svc => svc.CreateConfirmedRental(
                     It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
-                    It.IsAny<DateTime>(), It.IsAny<DateTime>()),
-                Times.Never);
-        }
+                    It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                .Throws(new ArgumentException("Start date must be before end date and not in the past."));
 
-        [Test]
-        public void CreateRental_ServiceThrowsException_ReturnsFailureWithExceptionMessage()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
+            var argumentExceptionViewModel = BuildViewModel();
+            PopulateWithValidSelections(argumentExceptionViewModel);
 
-            mockRentalService
-                .Setup(svc => svc.CreateConfirmedRental(
+            ViewOperationResult argumentExceptionResult = argumentExceptionViewModel.CreateRental();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(argumentExceptionResult.IsSuccess, Is.False);
+                Assert.That(argumentExceptionResult.DialogTitle, Is.EqualTo("Validation Error"));
+            });
+
+            mockRentalService.Setup(svc => svc.CreateConfirmedRental(
                     It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
                     It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                 .Throws(new InvalidOperationException("Dates overlap with existing rental."));
 
-            ViewOperationResult result = viewModel.CreateRental();
+            var unexpectedExceptionViewModel = BuildViewModel();
+            PopulateWithValidSelections(unexpectedExceptionViewModel);
 
-            Assert.That(result.IsSuccess, Is.False);
-            Assert.That(result.DialogTitle, Is.EqualTo("Rental Failed"));
-            Assert.That(result.DialogMessage, Does.Contain("overlap"));
-        }
-        [Test]
-        public void SaveRental_ValidInputs_ReturnsNull()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
+            ViewOperationResult unexpectedExceptionResult = unexpectedExceptionViewModel.CreateRental();
 
-            string? errorMessage = viewModel.SaveRental();
-
-            Assert.That(errorMessage, Is.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(unexpectedExceptionResult.IsSuccess, Is.False);
+                Assert.That(unexpectedExceptionResult.DialogTitle, Is.EqualTo("Rental Failed"));
+                Assert.That(unexpectedExceptionResult.DialogMessage, Does.Contain("overlap"));
+            });
         }
 
         [Test]
-        public void SaveRental_ValidationFails_ReturnsValidationFailedMessage()
+        public void SaveRental_CoversSuccessValidationFailureAndServiceMessage()
         {
-            var viewModel = BuildViewModel();
+            var successfulViewModel = BuildViewModel();
+            PopulateWithValidSelections(successfulViewModel);
 
-            string? errorMessage = viewModel.SaveRental();
+            string? successMessage = successfulViewModel.SaveRental();
+            Assert.That(successMessage, Is.Null);
 
-            Assert.That(errorMessage, Is.EqualTo("Validation failed."));
-        }
+            var invalidViewModel = BuildViewModel();
+            string? validationMessage = invalidViewModel.SaveRental();
+            Assert.That(validationMessage, Is.EqualTo("Validation failed."));
 
-        [Test]
-        public void SaveRental_ServiceThrows_ReturnsServiceExceptionMessage()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
-
-            mockRentalService
-                .Setup(svc => svc.CreateConfirmedRental(
+            mockRentalService.Setup(svc => svc.CreateConfirmedRental(
                     It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
                     It.IsAny<DateTime>(), It.IsAny<DateTime>()))
                 .Throws(new Exception("Database connection lost."));
 
-            string? errorMessage = viewModel.SaveRental();
+            var failingViewModel = BuildViewModel();
+            PopulateWithValidSelections(failingViewModel);
 
-            Assert.That(errorMessage, Is.EqualTo("Database connection lost."));
+            string? exceptionMessage = failingViewModel.SaveRental();
+            Assert.That(exceptionMessage, Is.EqualTo("Database connection lost."));
         }
+
         [Test]
-        public void SelectedGameToRent_WhenSet_RaisesPropertyChanged()
+        public void Setters_RaisePropertyChangedForBindableFields()
         {
             var viewModel = BuildViewModel();
-            string? changedProperty = null;
-            viewModel.PropertyChanged += (_, args) => changedProperty = args.PropertyName;
+            var changedProperties = new List<string?>();
+            viewModel.PropertyChanged += (_, args) => changedProperties.Add(args.PropertyName);
 
             viewModel.SelectedGameToRent = BuildActiveGame(999, OwnerUserId);
-
-            Assert.That(changedProperty, Is.EqualTo(nameof(viewModel.SelectedGameToRent)));
-        }
-
-        [Test]
-        public void SelectedRenter_WhenSet_RaisesPropertyChanged()
-        {
-            var viewModel = BuildViewModel();
-            string? changedProperty = null;
-            viewModel.PropertyChanged += (_, args) => changedProperty = args.PropertyName;
-
-            viewModel.SelectedRenter = new UserDTO { Id = 99 };
-
-            Assert.That(changedProperty, Is.EqualTo(nameof(viewModel.SelectedRenter)));
-        }
-
-        [Test]
-        public void StartDate_WhenSet_RaisesPropertyChanged()
-        {
-            var viewModel = BuildViewModel();
-            string? changedProperty = null;
-            viewModel.PropertyChanged += (_, args) => changedProperty = args.PropertyName;
-
+            viewModel.SelectedRenter = new UserDTO { Id = 99, DisplayName = "Listener" };
             viewModel.StartDate = DateTimeOffset.Now.AddDays(1);
-
-            Assert.That(changedProperty, Is.EqualTo(nameof(viewModel.StartDate)));
-        }
-
-        [Test]
-        public void EndDate_WhenSet_RaisesPropertyChanged()
-        {
-            var viewModel = BuildViewModel();
-            string? changedProperty = null;
-            viewModel.PropertyChanged += (_, args) => changedProperty = args.PropertyName;
-
             viewModel.EndDate = DateTimeOffset.Now.AddDays(5);
 
-            Assert.That(changedProperty, Is.EqualTo(nameof(viewModel.EndDate)));
+            Assert.That(changedProperties, Is.EqualTo(new[]
+            {
+                nameof(viewModel.SelectedGameToRent),
+                nameof(viewModel.SelectedRenter),
+                nameof(viewModel.StartDate),
+                nameof(viewModel.EndDate)
+            }));
         }
+
+        private static void AssertInvalidRentalInputs(CreateRentalViewModel viewModel, Action<CreateRentalViewModel> invalidate)
+        {
+            PopulateWithValidSelections(viewModel);
+            invalidate(viewModel);
+            Assert.That(viewModel.ValidateRentalInputs(), Is.False);
+        }
+
         private static void PopulateWithValidSelections(CreateRentalViewModel viewModel)
         {
             viewModel.SelectedGameToRent = BuildActiveGame(GameId, OwnerUserId);
