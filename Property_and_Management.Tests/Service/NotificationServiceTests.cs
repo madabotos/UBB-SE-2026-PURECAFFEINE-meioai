@@ -69,7 +69,7 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void DeleteNotificationsLinkedToRequest_CallsRepository()
         {
-            //Arrange - no additional setup needed
+            //Arrange
 
             //Act
             notificationService.DeleteNotificationsLinkedToRequest(42);

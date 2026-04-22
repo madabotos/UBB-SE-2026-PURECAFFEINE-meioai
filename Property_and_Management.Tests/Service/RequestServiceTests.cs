@@ -40,7 +40,7 @@ namespace Property_and_Management.Tests.Service
         [Test]
         public void CreateRequest_WhenRenterIsOwner_ReturnsOwnerCannotRent()
         {
-            //Arrange - no additional setup needed; renter and owner share the same userId
+            //Arrange
 
             //Act
             var result = requestService.CreateRequest(
