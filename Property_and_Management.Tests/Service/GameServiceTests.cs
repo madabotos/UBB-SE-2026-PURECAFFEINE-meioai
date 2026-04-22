@@ -53,7 +53,7 @@ namespace Property_and_Management.Tests.Service
                 requestServiceMock.Object);
         }
         [Test]
-        public void deletingGameWithActiveRentalsThrowsError()
+        public void DeleteGameByIdentifier_WithOneActiveRental_ThrowsInvalidOperationException()
         {
             var activeRental = new Rental(
                 1,
@@ -64,28 +64,28 @@ namespace Property_and_Management.Tests.Service
                 endDate: DateTime.Now.AddDays(3));
 
             rentalRepositoryMock
-                .Setup(r => r.GetRentalsByGame(SampleGameIdentifier))
+                .Setup(repository => repo.GetRentalsByGame(SampleGameIdentifier))
                 .Returns(ImmutableList.Create(activeRental));
 
-            Action act = () => gameService.DeleteGameByIdentifier(SampleGameIdentifier);
+            Action deleteAction = () => gameService.DeleteGameByIdentifier(SampleGameIdentifier);
 
-            act.Should()
+            deleteAction.Should()
                 .Throw<InvalidOperationException>()
                 .WithMessage("*1 active rental*");
         }
 
         [Test]
-        public void addGameCallsRepositoryOnce()
+        public void AddGame_WithValidDto_CallsRepositoryAddOnce()
         {
-            var dto = new GameDTO { Id = SampleGameIdentifier };
+            var gameDto = new GameDTO { Id = SampleGameIdentifier };
 
-            gameService.AddGame(dto);
+            gameService.AddGame(gameDto);
 
-            gameRepositoryMock.Verify(r => r.Add(It.IsAny<Game>()), Times.Once);
+            gameRepositoryMock.Verify(repository => repository.Add(It.IsAny<Game>()), Times.Once);
         }
 
         [Test]
-        public void deletingGameWithMultipleActiveRentalsShowsCorrectMessage()
+        public void DeleteGameByIdentifier_WithMultipleActiveRentals_ExceptionMessageContainsRentalCount()
         {
             var rentalA = new Rental(
                 1,
@@ -105,59 +105,59 @@ namespace Property_and_Management.Tests.Service
                 endDate: DateTime.Now.AddDays(6));
 
             rentalRepositoryMock
-                .Setup(r => r.GetRentalsByGame(SampleGameIdentifier))
+                .Setup(repository => repository.GetRentalsByGame(SampleGameIdentifier))
                 .Returns(ImmutableList.Create(rentalA, rentalB));
 
-            Action act = () => gameService.DeleteGameByIdentifier(SampleGameIdentifier);
+            Action deleteAction = () => gameService.DeleteGameByIdentifier(SampleGameIdentifier);
 
-            act.Should()
+            deleteAction.Should()
                 .Throw<InvalidOperationException>()
                 .WithMessage("*2 active rentals*");
         }
 
         [Test]
-        public void getGameByIdReturnsDto()
+        public void GetGameByIdentifier_WithValidId_ReturnsGameDto()
         {
             gameRepositoryMock
-                .Setup(r => r.Get(SampleGameIdentifier))
+                .Setup(repository => repository.Get(SampleGameIdentifier))
                 .Returns(new Game { Id = SampleGameIdentifier });
 
-            var result = gameService.GetGameByIdentifier(SampleGameIdentifier);
+            var retrievedGameDto = gameService.GetGameByIdentifier(SampleGameIdentifier);
 
-            result.Id.Should().Be(SampleGameIdentifier);
+            retrievedGameDto.Id.Should().Be(SampleGameIdentifier);
         }
 
         [Test]
-        public void updateGameCallsRepositoryWithCorrectId()
+        public void UpdateGameByIdentifier_WithValidDto_CallsRepositoryUpdateWithCorrectId()
         {
-            var dto = new GameDTO { Id = SampleGameIdentifier };
+            var gameDto = new GameDTO { Id = SampleGameIdentifier };
 
-            gameService.UpdateGameByIdentifier(SampleGameIdentifier, dto);
+            gameService.UpdateGameByIdentifier(SampleGameIdentifier, gameDto);
 
             gameRepositoryMock.Verify(
-                r => r.Update(SampleGameIdentifier, It.IsAny<Game>()),
+                repository => repository.Update(SampleGameIdentifier, It.IsAny<Game>()),
                 Times.Once);
         }
 
         [Test]
-        public void deletingGameWithoutRentalsRemovesItAndNotifies()
+        public void DeleteGameByIdentifier_WithNoActiveRentals_DeletesGameAndNotifiesRequestService()
         {
             rentalRepositoryMock
-                .Setup(r => r.GetRentalsByGame(SampleGameIdentifier))
+                .Setup(repository => repository.GetRentalsByGame(SampleGameIdentifier))
                 .Returns(ImmutableList<Rental>.Empty);
 
             gameRepositoryMock
-                .Setup(r => r.Delete(SampleGameIdentifier))
+                .Setup(repository => repository.Delete(SampleGameIdentifier))
                 .Returns(new Game { Id = SampleGameIdentifier });
 
             gameService.DeleteGameByIdentifier(SampleGameIdentifier);
 
             requestServiceMock.Verify(
-                s => s.OnGameDeactivated(SampleGameIdentifier),
+                requestService => requestService.OnGameDeactivated(SampleGameIdentifier),
                 Times.Once);
 
             gameRepositoryMock.Verify(
-                r => r.Delete(SampleGameIdentifier),
+                repository => repository.Delete(SampleGameIdentifier),
                 Times.Once);
         }
     }
