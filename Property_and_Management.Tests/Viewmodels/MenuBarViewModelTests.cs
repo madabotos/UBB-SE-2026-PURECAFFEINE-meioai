@@ -21,16 +21,16 @@ namespace Property_and_Management.Tests.Viewmodels
         }
 
         [Test]
-        public void Constructor_RegistersAllSixMenuEntries()
+        public void Constructor_WhenViewModelIsCreated_RegistersAllSixMenuEntries()
         {
-            var keys = viewModel.NavigationActionsByMenuLabel.Keys;
+            var registeredMenuLabels = viewModel.NavigationActionsByMenuLabel.Keys;
 
-            Assert.That(keys, Does.Contain("My Games"));
-            Assert.That(keys, Does.Contain("Others' Requests"));
-            Assert.That(keys, Does.Contain("Others' Rentals"));
-            Assert.That(keys, Does.Contain("My Requests"));
-            Assert.That(keys, Does.Contain("My Rentals"));
-            Assert.That(keys, Does.Contain("Notifications"));
+            Assert.That(registeredMenuLabels, Does.Contain("My Games"));
+            Assert.That(registeredMenuLabels, Does.Contain("Others' Requests"));
+            Assert.That(registeredMenuLabels, Does.Contain("Others' Rentals"));
+            Assert.That(registeredMenuLabels, Does.Contain("My Requests"));
+            Assert.That(registeredMenuLabels, Does.Contain("My Rentals"));
+            Assert.That(registeredMenuLabels, Does.Contain("Notifications"));
         }
 
         [Test]

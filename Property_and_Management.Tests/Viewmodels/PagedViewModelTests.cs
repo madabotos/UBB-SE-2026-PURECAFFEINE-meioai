@@ -68,9 +68,9 @@ namespace Property_and_Management.Tests.Viewmodels
         private static ImmutableList<string> BuildItems(int count)
         {
             var builder = ImmutableList.CreateBuilder<string>();
-            for (var i = 0; i < count; i++)
+            for (var generatedItemIndex = 0; generatedItemIndex < count; generatedItemIndex++)
             {
-                builder.Add($"item-{i}");
+                builder.Add($"item-{generatedItemIndex}");
             }
 
             return builder.ToImmutable();
