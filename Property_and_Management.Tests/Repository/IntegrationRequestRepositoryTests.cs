@@ -26,7 +26,7 @@ namespace Property_and_Management.Tests.Repository
 
 
         [Test]
-        public void AddThenGetPreservesAllFields()
+        public void AddRequest_ThenGetById_PreservesAllRequestFields()
         {
             var newRequest = new Request(
                 0,
@@ -39,16 +39,16 @@ namespace Property_and_Management.Tests.Repository
             requestRepository.Add(newRequest);
             createdRequestIds.Add(newRequest.Id);
 
-            var fetched = requestRepository.Get(newRequest.Id);
+            var fetchedRequest = requestRepository.Get(newRequest.Id);
 
-            fetched.Id.Should().Be(newRequest.Id);
-            fetched.Game.Id.Should().Be(1);
-            fetched.Renter.Id.Should().Be(2);
-            fetched.Owner.Id.Should().Be(1);
+            fetchedRequest.Id.Should().Be(newRequest.Id);
+            fetchedRequest.Game.Id.Should().Be(1);
+            fetchedRequest.Renter.Id.Should().Be(2);
+            fetchedRequest.Owner.Id.Should().Be(1);
         }
 
         [Test]
-        public void GetrRequestByGameAndReturnTheSpecificOne()
+        public void GetRequestsByGame_WithMultipleGames_ReturnsOnlyMatchingGameRequests()
         {
             var requestForFirstGame = BuildRequest(1, 50, RequestStatus.Open);
             var requestForSecondGame = BuildRequest(2, 60, RequestStatus.Open);
