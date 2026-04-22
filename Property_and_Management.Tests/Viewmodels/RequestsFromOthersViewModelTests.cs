@@ -36,7 +36,7 @@ namespace Property_and_Management.Tests.Viewmodels
         }
 
         [Test]
-        public void TryApproveRequest_HappyPath_ReturnsNullAndReloadsCurrentPage()
+        public void TryApproveRequest_WhenServiceSucceeds_ReturnsNull()
         {
             requestServiceMock
                 .Setup(service => service.ApproveRequest(SampleRequestIdentifier, SampleOwnerIdentifier))
@@ -49,7 +49,7 @@ namespace Property_and_Management.Tests.Viewmodels
         }
 
         [Test]
-        public void TryDenyRequest_Unauthorized_ReturnsFriendlyMessage()
+        public void TryDenyRequest_WhenServiceReturnsUnauthorized_ReturnsNonNullErrorMessage()
         {
             requestServiceMock
                 .Setup(service => service.DenyRequest(
