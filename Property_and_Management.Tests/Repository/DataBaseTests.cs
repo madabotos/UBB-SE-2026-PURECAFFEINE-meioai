@@ -13,7 +13,7 @@ namespace Property_and_Management.Tests.Repository
     {
         private const string ConnectionStringName = "BoardRent";
         protected string ConnectionString { get; private set; } = null!;
-        
+
         [SetUp]
         public void TruncateBusinessTables()
         {
@@ -88,7 +88,6 @@ namespace Property_and_Management.Tests.Repository
                    ?? ReadConnectionStringFromCopiedConfig("App.config")
                    ?? string.Empty;
         }
-
 
         [OneTimeSetUp]
         public void InitializeDatabase()

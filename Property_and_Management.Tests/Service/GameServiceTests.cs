@@ -12,13 +12,11 @@ using Property_and_Management.Src.Interface;
 using Property_and_Management.Src.Model;
 using Property_and_Management.Src.Service;
 
-
 namespace Property_and_Management.Tests.Service
 {
     [TestFixture]
     public sealed class GameServiceTests
     {
-
         private const int SampleGameIdentifier = 42;
         private const int SampleOwnerIdentifier = 1;
 
@@ -120,7 +118,6 @@ namespace Property_and_Management.Tests.Service
                 ownerUser: new User(SampleOwnerIdentifier, "Beatrice"),
                 startDate: DateTime.Now.AddDays(-1),
                 endDate: DateTime.Now.AddDays(3));
-
 
             var rentalB = new Rental(
                 2,

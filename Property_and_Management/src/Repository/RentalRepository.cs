@@ -5,7 +5,6 @@ using System.Data;
 using Microsoft.Data.SqlClient;
 using Property_and_Management.Src.Interface;
 using Property_and_Management.Src.Model;
-
 namespace Property_and_Management.Src.Repository
 {
     public class RentalRepository : IRentalRepository
