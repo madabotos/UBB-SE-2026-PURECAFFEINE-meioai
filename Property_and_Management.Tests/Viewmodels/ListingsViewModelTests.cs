@@ -31,8 +31,6 @@ namespace Property_and_Management.Tests.Viewmodels
             return new ListingsViewModel(mockGameService.Object, OwnerUserId);
         }
 
-        // --- Constructor & initial load ---
-
         [Test]
         public void Constructor_LoadsGamesForOwner()
         {
@@ -56,8 +54,6 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(viewModel.TotalCount, Is.EqualTo(0));
         }
 
-        // --- ShowingText ---
-
         [Test]
         public void ShowingText_ContainsGameCountAndGamesWord()
         {
@@ -70,8 +66,6 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(viewModel.ShowingText, Does.Contain("2"));
             Assert.That(viewModel.ShowingText, Does.Contain("games"));
         }
-
-        // --- LoadGames ---
 
         [Test]
         public void LoadGames_RefreshesCollectionFromService()
@@ -87,8 +81,6 @@ namespace Property_and_Management.Tests.Viewmodels
 
             Assert.That(viewModel.TotalCount, Is.EqualTo(2));
         }
-
-        // --- DeleteGame ---
 
         [Test]
         public void DeleteGame_CallsServiceDeleteWithCorrectId()
@@ -115,7 +107,6 @@ namespace Property_and_Management.Tests.Viewmodels
             var viewModel = BuildViewModel();
             Assert.That(viewModel.TotalCount, Is.EqualTo(2));
 
-            // After delete, only one game remains
             mockGameService
                 .Setup(svc => svc.GetGamesForOwner(OwnerUserId))
                 .Returns(ImmutableList.Create(BuildGame(2)));
@@ -124,8 +115,6 @@ namespace Property_and_Management.Tests.Viewmodels
 
             Assert.That(viewModel.TotalCount, Is.EqualTo(1));
         }
-
-        // --- TryDeleteGame ---
 
         [Test]
         public void TryDeleteGame_SuccessfulDeletion_ReturnsSuccessWithGameRemovedTitle()
@@ -216,12 +205,9 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(result.DialogMessage, Is.EqualTo("An unexpected error occurred."));
         }
 
-        // --- Paging integration (inherited from PagedViewModel) ---
-
         [Test]
         public void PagedItems_MoreGamesThanPageSize_ShowsOnlyFirstPage()
         {
-            // PagedViewModel uses a page size of 3; load more than that
             var fiveGamesList = Enumerable.Range(1, 5).Select(id => BuildGame(id)).ToImmutableList();
             mockGameService
                 .Setup(svc => svc.GetGamesForOwner(OwnerUserId))
@@ -247,8 +233,6 @@ namespace Property_and_Management.Tests.Viewmodels
             Assert.That(showingText, Does.Contain("5"));
             Assert.That(showingText, Does.Contain("games"));
         }
-
-        // --- Helpers ---
 
         private static GameDTO BuildGame(int gameId)
         {
