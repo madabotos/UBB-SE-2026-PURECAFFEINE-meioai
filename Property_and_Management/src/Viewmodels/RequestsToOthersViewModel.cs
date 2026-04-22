@@ -7,8 +7,6 @@ namespace Property_and_Management.Src.Viewmodels
 {
     public class RequestsToOthersViewModel : PagedViewModel<RequestDTO>
     {
-        private const int MinimumSuccessfulEntityId = 1;
-
         private readonly IRequestService rentalRequestService;
         private readonly ICurrentUserContext currentUserContext;
 
@@ -37,14 +35,14 @@ namespace Property_and_Management.Src.Viewmodels
 
         public string? TryCancelRequest(int requestIdToCancel)
         {
-            var cancellationResultCode = rentalRequestService.CancelRequest(requestIdToCancel, CurrentRenterUserId);
-            if (cancellationResultCode >= MinimumSuccessfulEntityId)
+            var cancellationResult = rentalRequestService.CancelRequest(requestIdToCancel, CurrentRenterUserId);
+            if (cancellationResult.IsSuccess)
             {
                 Reload();
                 return null;
             }
 
-            return ((CancelRequestError)cancellationResultCode) switch
+            return cancellationResult.Error switch
             {
                 CancelRequestError.NotFound => "Request not found.",
                 CancelRequestError.Unauthorized => "You are not authorized to cancel this request.",

@@ -17,8 +17,6 @@ namespace Property_and_Management.Src.Views
             this.InitializeComponent();
 
             GamePicker.ItemsSource = ViewModel.AvailableGamesToRequest;
-            StartDatePicker.MinDate = DateTimeOffset.Now;
-            EndDatePicker.MinDate = DateTimeOffset.Now;
         }
 
         private void GamePicker_SelectionChanged(object sender, SelectionChangedEventArgs selectionChangedEventArgs)

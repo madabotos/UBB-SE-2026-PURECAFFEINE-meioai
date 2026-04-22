@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using Property_and_Management.Src.DataTransferObjects;
 
@@ -7,14 +8,20 @@ namespace Property_and_Management.Src.Interface
     {
         void AddGame(GameDTO gameDto);
 
-        public void UpdateGameByIdentifier(int gameId, GameDTO updatedGameDTO);
+        void UpdateGameByIdentifier(int gameId, GameDTO updatedGameDTO);
 
-        public GameDTO DeleteGameByIdentifier(int gameId);
+        GameDTO DeleteGameByIdentifier(int gameId);
 
-        public GameDTO GetGameByIdentifier(int gameId);
+        GameDTO GetGameByIdentifier(int gameId);
 
-        public ImmutableList<GameDTO> GetGamesForOwner(int ownerUserId);
+        ImmutableList<GameDTO> GetGamesForOwner(int ownerUserId);
 
         ImmutableList<GameDTO> GetAllGames();
+
+        List<string> ValidateGame(GameDTO gameDto);
+
+        ImmutableList<GameDTO> GetAvailableGamesForRenter(int renterUserId);
+
+        ImmutableList<GameDTO> GetActiveGamesForOwner(int ownerUserId);
     }
 }

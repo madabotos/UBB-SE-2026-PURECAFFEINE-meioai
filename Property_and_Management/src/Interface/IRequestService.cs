@@ -10,6 +10,8 @@ namespace Property_and_Management.Src.Interface
 
         ImmutableList<RequestDTO> GetRequestsForOwner(int ownerUserId);
 
+        ImmutableList<RequestDTO> GetOpenRequestsForOwner(int ownerUserId);
+
         Result<int, CreateRequestError> CreateRequest(
             int gameId,
             int renterUserId,
@@ -21,7 +23,7 @@ namespace Property_and_Management.Src.Interface
 
         Result<int, DenyRequestError> DenyRequest(int requestId, int ownerUserId, string declineReason);
 
-        int CancelRequest(int requestId, int cancellingUserId);
+        Result<int, CancelRequestError> CancelRequest(int requestId, int cancellingUserId);
 
         void OnGameDeactivated(int gameId);
 

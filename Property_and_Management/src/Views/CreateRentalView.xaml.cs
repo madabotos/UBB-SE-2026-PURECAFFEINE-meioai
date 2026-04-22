@@ -19,8 +19,6 @@ namespace Property_and_Management.Src.Views
 
             GamePicker.ItemsSource = ViewModel.OwnedActiveGames;
             RenterPicker.ItemsSource = ViewModel.AvailableRenters;
-            StartDatePicker.MinDate = DateTimeOffset.Now;
-            EndDatePicker.MinDate = DateTimeOffset.Now;
         }
 
         private void GamePicker_SelectionChanged(object sender, SelectionChangedEventArgs selectionChangedEventArgs)

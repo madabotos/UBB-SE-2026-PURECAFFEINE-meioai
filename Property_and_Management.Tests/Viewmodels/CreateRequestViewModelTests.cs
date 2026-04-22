@@ -29,9 +29,9 @@ namespace Property_and_Management.Tests.Viewmodels
 
             mockUserContext.SetupGet(ctx => ctx.CurrentUserId).Returns(CurrentUserId);
 
-           
+
             mockGameService
-                .Setup(svc => svc.GetAllGames())
+                .Setup(svc => svc.GetAvailableGamesForRenter(CurrentUserId))
                 .Returns(ImmutableList.Create(BuildOtherUsersGame(AvailableGameId)));
         }
 
@@ -57,37 +57,27 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void Constructor_ExcludesGamesOwnedByCurrentUser()
         {
-            var ownGame = new GameDTO
-            {
-                Id = 999,
-                Owner = new UserDTO { Id = CurrentUserId },
-                Name = "My Own Game",
-                IsActive = true
-            };
-
             mockGameService
-                .Setup(svc => svc.GetAllGames())
-                .Returns(ImmutableList.Create(BuildOtherUsersGame(AvailableGameId), ownGame));
+                .Setup(svc => svc.GetAvailableGamesForRenter(CurrentUserId))
+                .Returns(ImmutableList.Create(BuildOtherUsersGame(AvailableGameId)));
 
             var viewModel = BuildViewModel();
 
             Assert.That(viewModel.AvailableGamesToRequest, Has.Count.EqualTo(1));
-            Assert.That(viewModel.AvailableGamesToRequest.Any(g => g.Id == 999), Is.False);
+            Assert.That(viewModel.AvailableGamesToRequest.Any(g => g.Owner?.Id == CurrentUserId), Is.False);
         }
 
         [Test]
         public void Constructor_ExcludesInactiveGames()
         {
-            var inactiveGame = BuildOtherUsersGame(400);
-            inactiveGame.IsActive = false;
-
             mockGameService
-                .Setup(svc => svc.GetAllGames())
-                .Returns(ImmutableList.Create(BuildOtherUsersGame(AvailableGameId), inactiveGame));
+                .Setup(svc => svc.GetAvailableGamesForRenter(CurrentUserId))
+                .Returns(ImmutableList.Create(BuildOtherUsersGame(AvailableGameId)));
 
             var viewModel = BuildViewModel();
 
             Assert.That(viewModel.AvailableGamesToRequest, Has.Count.EqualTo(1));
+            Assert.That(viewModel.AvailableGamesToRequest.All(g => g.IsActive), Is.True);
         }
 
         [Test]
@@ -106,9 +96,9 @@ namespace Property_and_Management.Tests.Viewmodels
             var viewModel = BuildViewModel();
             Assert.That(viewModel.AvailableGamesToRequest, Has.Count.EqualTo(1));
 
-            
+
             mockGameService
-                .Setup(svc => svc.GetAllGames())
+                .Setup(svc => svc.GetAvailableGamesForRenter(CurrentUserId))
                 .Returns(ImmutableList.Create(
                     BuildOtherUsersGame(AvailableGameId),
                     BuildOtherUsersGame(401)));
@@ -160,24 +150,21 @@ namespace Property_and_Management.Tests.Viewmodels
         }
 
         [Test]
-        public void ValidateRequestInputs_EndDateBeforeStartDate_ReturnsFalse()
+        public void SubmitRequest_ServiceReturnsInvalidDateRange_ReturnsValidationError()
         {
             var viewModel = BuildViewModel();
             PopulateWithValidSelections(viewModel);
-            viewModel.EndDate = viewModel.StartDate.Value.AddDays(-1);
 
-            Assert.That(viewModel.ValidateRequestInputs(), Is.False);
-        }
+            mockRequestService
+                .Setup(svc => svc.CreateRequest(
+                    It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(),
+                    It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+                .Returns(Result<int, CreateRequestError>.Failure(CreateRequestError.InvalidDateRange));
 
-        [Test]
-        public void ValidateRequestInputs_StartDateInPast_ReturnsFalse()
-        {
-            var viewModel = BuildViewModel();
-            PopulateWithValidSelections(viewModel);
-            viewModel.StartDate = DateTimeOffset.Now.AddDays(-3);
-            viewModel.EndDate = DateTimeOffset.Now.AddDays(-1);
+            ViewOperationResult result = viewModel.SubmitRequest();
 
-            Assert.That(viewModel.ValidateRequestInputs(), Is.False);
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.DialogTitle, Is.EqualTo("Validation Error"));
         }
 
    

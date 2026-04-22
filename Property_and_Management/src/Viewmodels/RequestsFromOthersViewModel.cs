@@ -2,7 +2,6 @@ using System.Collections.Immutable;
 using System.Linq;
 using Property_and_Management.Src.DataTransferObjects;
 using Property_and_Management.Src.Interface;
-using Property_and_Management.Src.Model;
 
 namespace Property_and_Management.Src.Viewmodels
 {
@@ -29,8 +28,7 @@ namespace Property_and_Management.Src.Viewmodels
             CurrentGameOwnerUserId = currentUserContext.CurrentUserId;
 
             var openRequestsForOwnerSortedByNewest = rentalRequestService
-                .GetRequestsForOwner(CurrentGameOwnerUserId)
-                .Where(request => request.Status == RequestStatus.Open)
+                .GetOpenRequestsForOwner(CurrentGameOwnerUserId)
                 .OrderByDescending(request => request.StartDate)
                 .ToImmutableList();
             SetAllItems(openRequestsForOwnerSortedByNewest);
@@ -56,13 +54,7 @@ namespace Property_and_Management.Src.Viewmodels
 
         public string? TryDenyRequest(int requestIdToDeny, string? rawDenialReason)
         {
-            var trimmedDenialReason = (rawDenialReason ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(trimmedDenialReason))
-            {
-                trimmedDenialReason = Constants.DialogMessages.NoReasonProvided;
-            }
-
-            var denialResult = rentalRequestService.DenyRequest(requestIdToDeny, CurrentGameOwnerUserId, trimmedDenialReason);
+            var denialResult = rentalRequestService.DenyRequest(requestIdToDeny, CurrentGameOwnerUserId, rawDenialReason ?? string.Empty);
             if (denialResult.IsSuccess)
             {
                 Reload();

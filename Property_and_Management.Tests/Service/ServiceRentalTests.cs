@@ -94,6 +94,18 @@ namespace Property_and_Management.Tests.Service
         }
 
         [Test]
+        public void CreateRental_WithInvalidDateRange_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() =>
+                RentalServiceToTest.CreateConfirmedRental(
+                    Game_Id,
+                    Renter_Id,
+                    Owner_Id,
+                    DateTime.UtcNow.AddDays(4),
+                    DateTime.UtcNow.AddDays(2)));
+        }
+
+        [Test]
         public void CreateRentalOnlyForDifferentGamesOnOverlapingDates()
         {
             var existingRental = BuildFakeRental(startDate: DateTime.UtcNow.AddDays(1),

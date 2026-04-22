@@ -10,8 +10,6 @@ namespace Property_and_Management.Src.Views
 {
     public sealed partial class EditGameView : Page
     {
-        private const int EmptyImageLength = 0;
-
         public EditGameViewModel ViewModel { get; }
 
         public EditGameView()
@@ -31,7 +29,7 @@ namespace Property_and_Management.Src.Views
                 this.Bindings.Update();
             }
 
-            if (ViewModel.GameImage != null && ViewModel.GameImage.Length > EmptyImageLength)
+            if (ViewModel.HasGameImage)
             {
                 using (var existingImageMemoryStream = new System.IO.MemoryStream(ViewModel.GameImage))
                 {

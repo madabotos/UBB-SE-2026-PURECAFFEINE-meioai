@@ -58,12 +58,13 @@ namespace Property_and_Management.Tests.Viewmodels
             var viewModel = new RequestsToOthersViewModel(mockRequestService.Object, mockUserContext.Object);
 
             var requestIdToCancel = 100;
-            mockRequestService.Setup(s => s.CancelRequest(requestIdToCancel, currentUserId)).Returns(1);
+            mockRequestService.Setup(s => s.CancelRequest(requestIdToCancel, currentUserId))
+                              .Returns(Result<int, CancelRequestError>.Success(requestIdToCancel));
 
-           
+
             var result = viewModel.TryCancelRequest(requestIdToCancel);
 
-            
+
             Assert.That(result, Is.Null);
         }
 
@@ -82,7 +83,8 @@ namespace Property_and_Management.Tests.Viewmodels
             var viewModel = new RequestsToOthersViewModel(mockRequestService.Object, mockUserContext.Object);
 
             var requestIdToCancel = 100;
-            mockRequestService.Setup(s => s.CancelRequest(requestIdToCancel, currentUserId)).Returns((int)CancelRequestError.NotFound);
+            mockRequestService.Setup(s => s.CancelRequest(requestIdToCancel, currentUserId))
+                              .Returns(Result<int, CancelRequestError>.Failure(CancelRequestError.NotFound));
 
             
             var result = viewModel.TryCancelRequest(requestIdToCancel);

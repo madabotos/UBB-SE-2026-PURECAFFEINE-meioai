@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Property_and_Management.Src.Viewmodels
+namespace Property_and_Management.Src.Service
 {
     internal static class GameInputHelper
     {

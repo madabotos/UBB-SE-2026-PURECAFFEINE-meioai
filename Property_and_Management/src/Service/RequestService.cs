@@ -50,6 +50,11 @@ namespace Property_and_Management.Src.Service
                 .Select(request => requestDtoMapper.ToDTO(request))
                 .ToImmutableList();
 
+        public ImmutableList<RequestDTO> GetOpenRequestsForOwner(int ownerUserId) =>
+            GetRequestsForOwner(ownerUserId)
+                .Where(request => request.Status == RequestStatus.Open)
+                .ToImmutableList();
+
         public Result<int, CreateRequestError> CreateRequest(
             int gameId,
             int renterUserId,
@@ -57,18 +62,25 @@ namespace Property_and_Management.Src.Service
             DateTime proposedStartDate,
             DateTime proposedEndDate)
         {
-            if (renterUserId == ownerUserId)
+            if (!DateRangeValidationHelper.HasValidFutureDateRange(proposedStartDate, proposedEndDate))
             {
-                return Result<int, CreateRequestError>.Failure(CreateRequestError.OwnerCannotRent);
+                return Result<int, CreateRequestError>.Failure(CreateRequestError.InvalidDateRange);
             }
 
+            Game requestedGame;
             try
             {
-                gameValidationRepository.Get(gameId);
+                requestedGame = gameValidationRepository.Get(gameId);
             }
             catch (KeyNotFoundException)
             {
                 return Result<int, CreateRequestError>.Failure(CreateRequestError.GameDoesNotExist);
+            }
+
+            var requestedGameOwnerId = requestedGame.Owner?.Id ?? ownerUserId;
+            if (renterUserId == requestedGameOwnerId)
+            {
+                return Result<int, CreateRequestError>.Failure(CreateRequestError.OwnerCannotRent);
             }
 
             if (!CheckAvailability(gameId, proposedStartDate, proposedEndDate))
@@ -80,7 +92,7 @@ namespace Property_and_Management.Src.Service
                 id: NewRequestId,
                 requestedGame: new Game { Id = gameId },
                 renterUser: new User { Id = renterUserId },
-                ownerUser: new User { Id = ownerUserId },
+                ownerUser: new User { Id = requestedGameOwnerId },
                 startDate: proposedStartDate,
                 endDate: proposedEndDate);
 
@@ -135,6 +147,8 @@ namespace Property_and_Management.Src.Service
                 return Result<int, DenyRequestError>.Failure(DenyRequestError.Unauthorized);
             }
 
+            var normalizedDenialReason = NormalizeDenialReason(denialReason);
+
             requestNotificationService.DeleteNotificationsLinkedToRequest(requestId);
             requestDataRepository.Delete(requestId);
 
@@ -143,12 +157,12 @@ namespace Property_and_Management.Src.Service
             SendNotificationToUser(
                 deniedRenterId,
                 Constants.NotificationTitles.RentalRequestDeclined,
-                $"Your request for {deniedGameName} {FormatRequestPeriod(requestToDeny.StartDate, requestToDeny.EndDate)} was declined. Reason: {denialReason}");
+                $"Your request for {deniedGameName} {FormatRequestPeriod(requestToDeny.StartDate, requestToDeny.EndDate)} was declined. Reason: {normalizedDenialReason}");
 
             return Result<int, DenyRequestError>.Success(requestId);
         }
 
-        public int CancelRequest(int requestId, int cancellingRenterUserId)
+        public Result<int, CancelRequestError> CancelRequest(int requestId, int cancellingRenterUserId)
         {
             Request requestToCancel;
             try
@@ -157,12 +171,12 @@ namespace Property_and_Management.Src.Service
             }
             catch (KeyNotFoundException)
             {
-                return (int)CancelRequestError.NotFound;
+                return Result<int, CancelRequestError>.Failure(CancelRequestError.NotFound);
             }
 
             if (requestToCancel.Renter?.Id != cancellingRenterUserId)
             {
-                return (int)CancelRequestError.Unauthorized;
+                return Result<int, CancelRequestError>.Failure(CancelRequestError.Unauthorized);
             }
 
             requestNotificationService.DeleteNotificationsLinkedToRequest(requestId);
@@ -172,10 +186,10 @@ namespace Property_and_Management.Src.Service
             }
             catch (KeyNotFoundException)
             {
-                return (int)CancelRequestError.NotFound;
+                return Result<int, CancelRequestError>.Failure(CancelRequestError.NotFound);
             }
 
-            return requestId;
+            return Result<int, CancelRequestError>.Success(requestId);
         }
 
         public void OnGameDeactivated(int deactivatedGameId)
@@ -203,6 +217,17 @@ namespace Property_and_Management.Src.Service
         {
             return request.Status == RequestStatus.Open ||
                    request.Status == RequestStatus.OfferPending;
+        }
+
+        private static string NormalizeDenialReason(string denialReason)
+        {
+            var trimmedDenialReason = (denialReason ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(trimmedDenialReason))
+            {
+                return Constants.DialogMessages.NoReasonProvided;
+            }
+
+            return trimmedDenialReason;
         }
 
         public ImmutableList<(DateTime StartDate, DateTime EndDate)> GetBookedDates(
