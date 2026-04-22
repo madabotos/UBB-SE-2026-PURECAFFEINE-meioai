@@ -18,7 +18,7 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void LoadRequests_WithMultipleRequests_SetsRenterIdAndOrdersByStartDateDescending()
         {
-            // set up dependencies
+         
             var mockRequestService = new Mock<IRequestService>();
             var mockUserContext = new Mock<ICurrentUserContext>();
 
@@ -33,10 +33,10 @@ namespace Property_and_Management.Tests.Viewmodels
 
             var viewModel = new RequestsToOthersViewModel(mockRequestService.Object, mockUserContext.Object);
 
-            // run the method
+           
             viewModel.LoadRequests();
 
-            // assert
+           
             Assert.That(viewModel.CurrentRenterUserId, Is.EqualTo(currentUserId));
             Assert.That(viewModel.PagedItems, Has.Count.EqualTo(2));
             Assert.That(viewModel.PagedItems[0].Id, Is.EqualTo(11));
@@ -46,7 +46,7 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void TryCancelRequest_WhenServiceSucceeds_ReturnsNull()
         {
-            // set up dependencies
+            
             var mockRequestService = new Mock<IRequestService>();
             var mockUserContext = new Mock<ICurrentUserContext>();
 
@@ -60,25 +60,18 @@ namespace Property_and_Management.Tests.Viewmodels
             var requestIdToCancel = 100;
             mockRequestService.Setup(service => service.CancelRequest(requestIdToCancel, currentUserId)).Returns(1);
 
-<<<<<<< Updated upstream
-            // run the method
-            var result = viewModel.TryCancelRequest(requestIdToCancel);
 
-            // assert
-            Assert.That(result, Is.Null);
-=======
            
             var cancellationErrorMessage = viewModel.TryCancelRequest(requestIdToCancel);
 
             
             Assert.That(cancellationErrorMessage, Is.Null);
->>>>>>> Stashed changes
         }
 
         [Test]
         public void TryCancelRequest_WhenRequestNotFound_ReturnsNotFoundErrorMessage()
         {
-            // set up dependencies
+           
             var mockRequestService = new Mock<IRequestService>();
             var mockUserContext = new Mock<ICurrentUserContext>();
 
@@ -92,19 +85,13 @@ namespace Property_and_Management.Tests.Viewmodels
             var requestIdToCancel = 100;
             mockRequestService.Setup(service => service.CancelRequest(requestIdToCancel, currentUserId)).Returns((int)CancelRequestError.NotFound);
 
-<<<<<<< Updated upstream
-            // run the method
-            var result = viewModel.TryCancelRequest(requestIdToCancel);
-
-            // assert
-            Assert.That(result, Is.EqualTo("Request not found."));
-=======
+         
             
             var cancellationErroroMessage = viewModel.TryCancelRequest(requestIdToCancel);
 
            
             Assert.That(cancellationErroroMessage, Is.EqualTo("Request not found."));
->>>>>>> Stashed changes
+
         }
     }
 }

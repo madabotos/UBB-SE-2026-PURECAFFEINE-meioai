@@ -15,14 +15,9 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void BuildValidationErrors_WithAllValidInputs_ReturnsEmptyErrorList()
         {
-<<<<<<< Updated upstream
-            // set up some valid parameters
-            var gameName = "Catan";
-            var gamePrice = 19.99m;
-=======
+
             var testGameName = "Catan";
             var testGamePrice = 19.99m;
->>>>>>> Stashed changes
             var minimumPlayerCount = 3;
             var maximumPlayerCount = 4;
             var gameDescription = "Colonize the island";
@@ -33,7 +28,7 @@ namespace Property_and_Management.Tests.Viewmodels
             var minimumDescriptionLength = 10;
             var maximumDescriptionLength = 200;
             
-            // run the method
+            
             var validationErrors = GameInputHelper.BuildValidationErrors(
                 testGameName,
                 testGamePrice,
@@ -47,22 +42,16 @@ namespace Property_and_Management.Tests.Viewmodels
                 minimumDescriptionLength,
                 maximumDescriptionLength);
 
-            // assert
+           
             Assert.That(validationErrors, Is.Empty);
         }
 
         [Test]
         public void BuildValidationErrors_WithLowPriceAndShortDescription_ReturnsPriceAndDescriptionErrors()
         {
-<<<<<<< Updated upstream
-            // set up some parameters
-            var gameName = "Saboteur";
-            var gamePrice = 2.0m;
-=======
-            
+
             var testGameName = "Saboteur";
             var testGamePrice = 2.0m;
->>>>>>> Stashed changes
             var minimumPlayerCount = 2;
             var maximumPlayerCount = 12;
             var gameDescription = "Find the gold";
@@ -73,7 +62,7 @@ namespace Property_and_Management.Tests.Viewmodels
             var minimumDescriptionLength = 100;
             var maximumDescriptionLength = 200;
 
-            // run the method
+           
             var validationErrors = GameInputHelper.BuildValidationErrors(
                 testGameName,
                 testGamePrice,
@@ -87,7 +76,7 @@ namespace Property_and_Management.Tests.Viewmodels
                 minimumDescriptionLength,
                 maximumDescriptionLength);
 
-            // assert
+            
             Assert.That(validationErrors, Does.Contain(Constants.ValidationMessages.PriceMinimum(minimumAllowedPrice)));
             Assert.That(validationErrors, Does.Contain(Constants.ValidationMessages.DescriptionLengthRange(minimumDescriptionLength, maximumDescriptionLength)));
         }
@@ -95,15 +84,10 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void BuildValidationErrors_WithEmptyNameAndInvalidPlayerCounts_ReturnsNameAndPlayerCountErrors()
         {
-<<<<<<< Updated upstream
-            // set up some parameters
-            var gameName = "";
-            var gamePrice = 30.0m;
-=======
             
+
             var testGameName = "";
             var testGamePrice = 30.0m;
->>>>>>> Stashed changes
             var minimumPlayerCount = 11;
             var maximumPlayerCount = 10;
             var gameDescription = "Find the gold";
@@ -114,7 +98,7 @@ namespace Property_and_Management.Tests.Viewmodels
             var minimumDescriptionLength = 1;
             var maximumDescriptionLength = 200;
 
-            // run the method
+            
             var validationErrors = GameInputHelper.BuildValidationErrors(
                 testGameName,
                 testGamePrice,
@@ -128,7 +112,7 @@ namespace Property_and_Management.Tests.Viewmodels
                 minimumDescriptionLength,
                 maximumDescriptionLength);
 
-            // assert
+            
             Assert.That(validationErrors, Does.Contain(Constants.ValidationMessages.NameLengthRange(minimumNameLength, maximumNameLength)));
             Assert.That(validationErrors, Does.Contain(Constants.ValidationMessages.MinimumPlayerCount(absoluteMinimumPlayerCount)));
             Assert.That(validationErrors, Does.Contain(Constants.ValidationMessages.MaximumPlayerCountComparedToMinimum));
