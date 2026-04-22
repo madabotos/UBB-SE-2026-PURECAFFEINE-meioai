@@ -16,19 +16,19 @@ namespace Property_and_Management.Tests.Viewmodels
     public sealed class RequestsToOthersViewModelTests
     {
         [Test]
-        public void LoadRequests()
+        public void LoadRequests_WithMultipleRequests_SetsRenterIdAndOrdersByStartDateDescending()
         {
          
             var mockRequestService = new Mock<IRequestService>();
             var mockUserContext = new Mock<ICurrentUserContext>();
 
             var currentUserId = 5;
-            mockUserContext.Setup(c => c.CurrentUserId).Returns(currentUserId);
+            mockUserContext.Setup(context => context.CurrentUserId).Returns(currentUserId);
 
             var request1 = new RequestDTO { Id = 10, StartDate = new DateTime(2025, 1, 1) };
             var request2 = new RequestDTO { Id = 11, StartDate = new DateTime(2025, 1, 5) };
 
-            mockRequestService.Setup(s => s.GetRequestsForRenter(currentUserId))
+            mockRequestService.Setup(service => service.GetRequestsForRenter(currentUserId))
                               .Returns(ImmutableList.Create(request1, request2));
 
             var viewModel = new RequestsToOthersViewModel(mockRequestService.Object, mockUserContext.Object);
@@ -44,53 +44,55 @@ namespace Property_and_Management.Tests.Viewmodels
         }
 
         [Test]
-        public void TryCancelRequest_Success()
+        public void TryCancelRequest_WhenServiceSucceeds_ReturnsNull()
         {
             
             var mockRequestService = new Mock<IRequestService>();
             var mockUserContext = new Mock<ICurrentUserContext>();
 
             var currentUserId = 5;
-            mockUserContext.Setup(c => c.CurrentUserId).Returns(currentUserId);
-            mockRequestService.Setup(s => s.GetRequestsForRenter(currentUserId))
+            mockUserContext.Setup(context => context.CurrentUserId).Returns(currentUserId);
+            mockRequestService.Setup(service => service.GetRequestsForRenter(currentUserId))
                               .Returns(ImmutableList<RequestDTO>.Empty);
 
             var viewModel = new RequestsToOthersViewModel(mockRequestService.Object, mockUserContext.Object);
 
             var requestIdToCancel = 100;
-            mockRequestService.Setup(s => s.CancelRequest(requestIdToCancel, currentUserId))
+            mockRequestService.Setup(service => service.CancelRequest(requestIdToCancel, currentUserId))
                               .Returns(Result<int, CancelRequestError>.Success(requestIdToCancel));
 
 
-            var result = viewModel.TryCancelRequest(requestIdToCancel);
+            var cancellationErrorMessage = viewModel.TryCancelRequest(requestIdToCancel);
 
 
-            Assert.That(result, Is.Null);
+            Assert.That(cancellationErrorMessage, Is.Null);
         }
 
         [Test]
-        public void TryCancelRequest_NotFound()
+        public void TryCancelRequest_WhenRequestNotFound_ReturnsNotFoundErrorMessage()
         {
            
             var mockRequestService = new Mock<IRequestService>();
             var mockUserContext = new Mock<ICurrentUserContext>();
 
             var currentUserId = 5;
-            mockUserContext.Setup(c => c.CurrentUserId).Returns(currentUserId);
-            mockRequestService.Setup(s => s.GetRequestsForRenter(currentUserId))
+            mockUserContext.Setup(context => context.CurrentUserId).Returns(currentUserId);
+            mockRequestService.Setup(service => service.GetRequestsForRenter(currentUserId))
                               .Returns(ImmutableList<RequestDTO>.Empty);
 
             var viewModel = new RequestsToOthersViewModel(mockRequestService.Object, mockUserContext.Object);
 
             var requestIdToCancel = 100;
-            mockRequestService.Setup(s => s.CancelRequest(requestIdToCancel, currentUserId))
+            mockRequestService.Setup(service => service.CancelRequest(requestIdToCancel, currentUserId))
                               .Returns(Result<int, CancelRequestError>.Failure(CancelRequestError.NotFound));
 
+         
             
-            var result = viewModel.TryCancelRequest(requestIdToCancel);
+            var cancellationErroroMessage = viewModel.TryCancelRequest(requestIdToCancel);
 
            
-            Assert.That(result, Is.EqualTo("Request not found."));
+            Assert.That(cancellationErroroMessage, Is.EqualTo("Request not found."));
+
         }
     }
 }

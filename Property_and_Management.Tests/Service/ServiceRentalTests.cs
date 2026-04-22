@@ -15,12 +15,12 @@ namespace Property_and_Management.Tests.Service
     public sealed class ServiceRentalTests
     {
 
-        private const int Game_Id = 10;
-        private const int Game_Id1 = 20;
+        private const int ActiveGameId = 10;
+        private const int InactiveGameId = 20;
         private const int Owner_Id = 1;
         private const int Renter_Id = 2;
         private const int Fake_Owner_Id = 999;
-        private  User user1 = new User(Owner_Id, "Gabi");
+        private  User ownerUser = new User(Owner_Id, "Gabi");
 
         private Mock<IRentalRepository> MockRentalRepo = null!;
         private Mock<IGameRepository> MockGameRepo = null!;
@@ -33,28 +33,28 @@ namespace Property_and_Management.Tests.Service
             MockRentalRepo = new Mock<IRentalRepository>();
             MockGameRepo = new Mock<IGameRepository>();
             MockMapper = new Mock<IMapper<Rental, RentalDTO>>();
-            var fakeGame = new Game
+            var fakeActiveGameId= new Game
             {
-                Id = Game_Id,
-                Owner = user1,
+                Id = ActiveGameId,
+                Owner = ownerUser,
                 IsActive = true
             };
 
-            var fakeGam1 = new Game
+            var fakeInactiveGameId = new Game
             {
-                Id = Game_Id1,
-                Owner = user1,
+                Id = InactiveGameId,
+                Owner = ownerUser,
                 IsActive = false
             };
 
 
-            MockGameRepo.Setup(repo => repo.Get(Game_Id)).Returns(fakeGame);
-            MockGameRepo.Setup(repo => repo.Get(Game_Id1)).Returns(fakeGam1);
+            MockGameRepo.Setup(repo => repo.Get(ActiveGameId)).Returns(fakeActiveGameId);
+            MockGameRepo.Setup(repo => repo.Get(InactiveGameId)).Returns(fakeInactiveGameId);
 
-            MockRentalRepo.Setup(repo => repo.GetRentalsByGame(Game_Id))
+            MockRentalRepo.Setup(repo => repo.GetRentalsByGame(ActiveGameId))
                            .Returns(ImmutableList<Rental>.Empty);
 
-            MockRentalRepo.Setup(repo => repo.GetRentalsByGame(Game_Id1 ))
+            MockRentalRepo.Setup(repo => repo.GetRentalsByGame(InactiveGameId ))
                            .Returns(ImmutableList<Rental>.Empty);   
 
             RentalServiceToTest = new RentalService(
@@ -64,14 +64,14 @@ namespace Property_and_Management.Tests.Service
         }
 
         [Test]
-        public void CreateGameSuccsesfullyForTheRightOwner()
+        public void CreateConfirmedRental_WithCorrectOwner_CallsAddConfirmedForEachGame()
         {
 
-            RentalServiceToTest.CreateConfirmedRental(Game_Id1, Renter_Id, Owner_Id, DateTime.UtcNow, DateTime.UtcNow.AddDays(3));
+            RentalServiceToTest.CreateConfirmedRental(InactiveGameId, Renter_Id, Owner_Id, DateTime.UtcNow, DateTime.UtcNow.AddDays(3));
 
             MockRentalRepo.Verify(repo => repo.AddConfirmed(It.IsAny<Rental>()), Times.Once);
 
-            RentalServiceToTest.CreateConfirmedRental(Game_Id, Renter_Id, Owner_Id, DateTime.UtcNow, DateTime.UtcNow.AddDays(3));
+            RentalServiceToTest.CreateConfirmedRental(ActiveGameId, Renter_Id, Owner_Id, DateTime.UtcNow, DateTime.UtcNow.AddDays(3));
 
             MockRentalRepo.Verify(repo => repo.AddConfirmed(It.IsAny<Rental>()), Times.Exactly(2));
 
@@ -85,11 +85,11 @@ namespace Property_and_Management.Tests.Service
 
 
         [Test]
-        public void CreateGameWithTheWrongOwnerId_Fail()
+        public void CreateConfirmedRental_WithWrongOwnerId_ThrowsInvalidOperationException()
         {
             Assert.Throws<InvalidOperationException>(() =>
                  RentalServiceToTest.CreateConfirmedRental(
-                     Game_Id, Renter_Id, Fake_Owner_Id,
+                     ActiveGameId, Renter_Id, Fake_Owner_Id,
                      DateTime.UtcNow, DateTime.UtcNow.AddDays(3)));
         }
 
@@ -106,39 +106,39 @@ namespace Property_and_Management.Tests.Service
         }
 
         [Test]
-        public void CreateRentalOnlyForDifferentGamesOnOverlapingDates()
+        public void CreateConfirmedRental_OnOverlappingDates_ThrowsInvalidOperationExceptionOnlyForSameGame()
         {
             var existingRental = BuildFakeRental(startDate: DateTime.UtcNow.AddDays(1),
                                                  endDate: DateTime.UtcNow.AddDays(3));
-            MockRentalRepo.Setup(repo => repo.GetRentalsByGame(Game_Id))
+            MockRentalRepo.Setup(repo => repo.GetRentalsByGame(ActiveGameId))
                            .Returns(ImmutableList.Create(existingRental));
 
  
             Assert.Throws<InvalidOperationException>(()=> RentalServiceToTest.CreateConfirmedRental(
-                Game_Id, Renter_Id, Owner_Id,
+                ActiveGameId, Renter_Id, Owner_Id,
                 DateTime.UtcNow.AddDays(2), DateTime.UtcNow.AddDays(3)));
 
 
             Assert.DoesNotThrow(() => RentalServiceToTest.CreateConfirmedRental(
-            Game_Id1, Renter_Id, Owner_Id,DateTime.UtcNow.AddDays(2), DateTime.UtcNow.AddDays(3))
+            InactiveGameId, Renter_Id, Owner_Id,DateTime.UtcNow.AddDays(2), DateTime.UtcNow.AddDays(3))
     );
 
         }
 
         [Test]
-        public void BufferPeriodWorksOnlyForSameGame()
+        public void IsSlotAvailable_DuringBufferPeriod_ReturnsFalsesOnlyForSameGame()
         {
             
             var existingRental = BuildFakeRental(startDate: DateTime.UtcNow.AddDays(1),
                                                  endDate: DateTime.UtcNow.AddDays(2));
-            MockRentalRepo.Setup(repo => repo.GetRentalsByGame(Game_Id))
+            MockRentalRepo.Setup(repo => repo.GetRentalsByGame(ActiveGameId))
                            .Returns(ImmutableList.Create(existingRental));
 
             bool isAvailable = RentalServiceToTest.IsSlotAvailable(
-                Game_Id, DateTime.UtcNow.AddDays(3), DateTime.UtcNow.AddDays(4));
+                ActiveGameId, DateTime.UtcNow.AddDays(3), DateTime.UtcNow.AddDays(4));
 
             bool isAvailableForAnotherGame = RentalServiceToTest.IsSlotAvailable(
-                Game_Id1, DateTime.UtcNow.AddDays(3), DateTime.UtcNow.AddDays(4));
+                InactiveGameId, DateTime.UtcNow.AddDays(3), DateTime.UtcNow.AddDays(4));
 
 
             Assert.That(isAvailable, Is.False);
@@ -152,7 +152,7 @@ namespace Property_and_Management.Tests.Service
         {
             return new Rental(
                 id: 1,
-                rentedGame: new Game { Id = Game_Id },
+                rentedGame: new Game { Id = ActiveGameId },
                 renterUser: new User(Renter_Id, "Renter"),
                 ownerUser: new User(Owner_Id, "Owner"),
                 startDate: startDate,
