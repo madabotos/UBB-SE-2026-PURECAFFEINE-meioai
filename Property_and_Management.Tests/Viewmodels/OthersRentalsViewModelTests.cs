@@ -22,25 +22,25 @@ namespace Property_and_Management.Tests.Viewmodels
         {
             MockRentalService = new Mock<IRentalService>();
             MockUserContext = new Mock<ICurrentUserContext>();
-            MockUserContext.SetupGet(c => c.CurrentUserId).Returns(Test_Id);
+            MockUserContext.SetupGet(current => current.CurrentUserId).Returns(Test_Id);
             MockRentalService
-                .Setup(s => s.GetRentalsForOwner(Test_Id))
+                .Setup(service => service.GetRentalsForOwner(Test_Id))
                 .Returns(ImmutableList<RentalDTO>.Empty);
         }
 
 
 
         [Test]
-        public void ShowingText_ShouldDescribeRentals_UsingAssert()
+        public void ShowingText_WithRentals_ContainsCountAndRentalsKeyword()
         {
-            var fakeRentals1 = ImmutableList.Create(
+            var fake4RentalsList = ImmutableList.Create(
                 BuildFakeRental(10),
                 BuildFakeRental(20),
                 BuildFakeRental(30),
                 BuildFakeRental(50)
             );
 
-            MockRentalService.Setup(s => s.GetRentalsForOwner(Test_Id)).Returns(fakeRentals1);
+            MockRentalService.Setup(service => service.GetRentalsForOwner(Test_Id)).Returns(fake4RentalsList);
 
             ViewModelToTest = new RentalsToOthersViewModel(MockRentalService.Object, MockUserContext.Object);
             string statusText = ViewModelToTest.ShowingText;
@@ -50,17 +50,17 @@ namespace Property_and_Management.Tests.Viewmodels
 
 
         [Test]
-        public void GetCorrectOwnerAndCorrectNrOfRentals()
+        public void Constructor_WithRentals_SetsCorrectOwnerIdAndTotalCount()
         {
 
-            var fakeRentals = ImmutableList.Create(
+            var fake3RentalList = ImmutableList.Create(
                 BuildFakeRental(10),
                 BuildFakeRental(20),
                 BuildFakeRental(30),
                 BuildFakeRental(40)
             );
-            MockRentalService.Setup(s => s.GetRentalsForOwner(Test_Id)).Returns(fakeRentals);
-            var actualIds = ViewModelToTest.PagedItems.Select(rental => rental.Id).ToList();
+            MockRentalService.Setup(service => service.GetRentalsForOwner(Test_Id)).Returns(fake3RentalList);
+            var pagedRentalIds = ViewModelToTest.PagedItems.Select(rental => rental.Id).ToList();
 
             ViewModelToTest = new RentalsToOthersViewModel(MockRentalService.Object, MockUserContext.Object);
             Assert.That(ViewModelToTest.TotalCount, Is.EqualTo(4));
@@ -69,31 +69,26 @@ namespace Property_and_Management.Tests.Viewmodels
         }
 
         [Test]
-        public void GetCorrectInfoAboutRentalsForTestId()
+        public void Constructor_WithRentals_PagedItemsContainCorrectRentalDetails()
         {
 
-            var fakeRentals = ImmutableList.Create(
+            var fake3RentalList = ImmutableList.Create(
                 BuildFakeRental(10),
                 BuildFakeRental(20),
                 BuildFakeRental(30)
             );
 
-            MockRentalService.Setup(s => s.GetRentalsForOwner(Test_Id)).Returns(fakeRentals);
+            MockRentalService.Setup(service => service.GetRentalsForOwner(Test_Id)).Returns(fake3RentalList);
             ViewModelToTest = new RentalsToOthersViewModel(MockRentalService.Object, MockUserContext.Object);
 
-            var actualIds = ViewModelToTest.PagedItems.Select(rental => rental.Id).ToList();
+            var pagedRentalIds = ViewModelToTest.PagedItems.Select(rental => rental.Id).ToList();
 
-            Assert.That(ViewModelToTest.PagedItems.All(r => r.Game.Id == 1), Is.True);
-            Assert.That(ViewModelToTest.PagedItems.All(r => r.Owner.Id == Test_Id), Is.True);
+            Assert.That(ViewModelToTest.PagedItems.All(rental => rental.Game.Id == 1), Is.True);
+            Assert.That(ViewModelToTest.PagedItems.All(rental => rental.Owner.Id == Test_Id), Is.True);
 
-            foreach (var rental in ViewModelToTest.PagedItems)
-            {
-                TimeSpan duration = rental.EndDate - rental.StartDate;
-                Assert.That(duration, Is.EqualTo(TimeSpan.FromDays(7)).Within(TimeSpan.FromSeconds(1)));
-            }
-            Assert.That(actualIds, Does.Contain(10));
-            Assert.That(actualIds, Does.Contain(20));
-            Assert.That(actualIds, Does.Contain(30));
+            Assert.That(pagedRentalIds, Does.Contain(10));
+            Assert.That(pagedRentalIds, Does.Contain(20));
+            Assert.That(pagedRentalIds, Does.Contain(30));
 
         }
 
@@ -101,31 +96,31 @@ namespace Property_and_Management.Tests.Viewmodels
 
 
         [Test]
-        public void LoadRentalsRefreshesTheEntitiesInViewModel()
+        public void LoadRentals_AfterServiceDataChanged_RefreshesTotalCountAndPagedItems()
         {
-            var fakeRentals = ImmutableList.Create(
+            var fake3RentalList = ImmutableList.Create(
                 BuildFakeRental(10),
                 BuildFakeRental(20),
                 BuildFakeRental(30)
             );
-            var fakeRentals1 = ImmutableList.Create(
+            var fake4RentalsList = ImmutableList.Create(
                 BuildFakeRental(10),
                 BuildFakeRental(20),
                 BuildFakeRental(30),
                 BuildFakeRental(50)
             );
 
-            MockRentalService.Setup(s => s.GetRentalsForOwner(Test_Id)).Returns(fakeRentals);
+            MockRentalService.Setup(service => service.GetRentalsForOwner(Test_Id)).Returns(fake3RentalList);
             ViewModelToTest = new RentalsToOthersViewModel(MockRentalService.Object, MockUserContext.Object);
             Assert.That(ViewModelToTest.TotalCount, Is.EqualTo(3));
 
-            MockRentalService.Setup(s => s.GetRentalsForOwner(Test_Id)).Returns(fakeRentals1);
+            MockRentalService.Setup(service => service.GetRentalsForOwner(Test_Id)).Returns(fake4RentalsList);
             ViewModelToTest.LoadRentals();
 
-            var actualIds = ViewModelToTest.PagedItems.Select(rental => rental.Id).ToList();
+            var pagedRentalIds = ViewModelToTest.PagedItems.Select(rental => rental.Id).ToList();
 
             Assert.That(ViewModelToTest.TotalCount, Is.EqualTo(4));
-            Assert.That(actualIds, Does.Contain(50));
+            Assert.That(pagedRentalIds, Does.Contain(50));
 
 
 

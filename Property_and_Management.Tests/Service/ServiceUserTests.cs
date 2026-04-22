@@ -26,15 +26,15 @@ namespace Property_and_Management.Tests.Service
             RepositoryMock = new Mock<IUserRepository>();
             MapperMock = new Mock<IMapper<User, UserDTO>>();
             MapperMock
-                .Setup(m => m.ToDTO(It.IsAny<User>()))
-                .Returns<User>(u => new UserDTO { Id = u.Id, DisplayName = u.DisplayName });
+                .Setup(mapper => mapper.ToDTO(It.IsAny<User>()))
+                .Returns<User>(user => new UserDTO { Id = user.Id, DisplayName = user.DisplayName });
 
             Service = new UserService(RepositoryMock.Object, MapperMock.Object);
         }
 
 
         [Test]
-        public void GetUsersCorrectInfo()
+        public void GetUserExcept_WithMultipleUsers_ReturnsAllUsersBesidesTheCurrentOne()
         {
 
             var allUsers = ImmutableList.Create(
@@ -44,27 +44,34 @@ namespace Property_and_Management.Tests.Service
             RepositoryMock.Setup(db => db.GetAll()).Returns(allUsers);
 
             var result = Service.GetUsersExcept(MeId);
-            Assert.That(result.Any(u => u.Id == SecondId && u.DisplayName == "Maria"), Is.True);
-            Assert.That(result.Any(u => u.Id == ThirdId && u.DisplayName == "GABI"), Is.True);
+            Assert.That(result.Any(user => user.Id == SecondId && user.DisplayName == "Maria"), Is.True);
+            Assert.That(result.Any(user => user.Id == ThirdId && user.DisplayName == "GABI"), Is.True);
         }
 
 
         [Test]
-        public void GetUsersWhenReturnedListIsEmpty()
+        public void GetUsersExcept_WhenNoOtherUsersExist_ReturnsEmptyList()
+        {
+
+            
+
+            RepositoryMock.Setup(db => db.GetAll()).Returns(ImmutableList.Create(new User(MeId, "Me")));
+            var numberOfUsersWhenOnlyCurrentUserExists = Service.GetUsersExcept(MeId);
+            Assert.That(numberOfUsersWhenOnlyCurrentUserExists, Has.Count.EqualTo(0));
+        }
+
+        [Test]
+        public void GetUsersExcept_WhenThereAreNoUsers_ReturnsEmptyList()
         {
 
             RepositoryMock.Setup(db => db.GetAll()).Returns(ImmutableList<User>.Empty);
             var result = Service.GetUsersExcept(MeId);
             Assert.That(result, Is.Empty);
-
-            RepositoryMock.Setup(db => db.GetAll()).Returns(ImmutableList.Create(new User(MeId, "Me")));
-            var result1 = Service.GetUsersExcept(MeId);
-            Assert.That(result1, Has.Count.EqualTo(0));
         }
 
 
         [Test]
-        public void GetNumberOfUsersExceptMe()
+        public void GetUsersExcept_WithMultipleUsers_ReturnsTheCorrectNumberOfUsersExcludingCurrentOne()
         {
             var allUsers = ImmutableList.Create(
                 new User(MeId, "Me"),
@@ -76,7 +83,7 @@ namespace Property_and_Management.Tests.Service
 
             var result = Service.GetUsersExcept(MeId);
 
-            Assert.That(result.Select(u => u.Id), Does.Not.Contain(MeId));
+            Assert.That(result.Select(user => user.Id), Does.Not.Contain(MeId));
             Assert.That(result, Has.Count.EqualTo(2));
 
         }
