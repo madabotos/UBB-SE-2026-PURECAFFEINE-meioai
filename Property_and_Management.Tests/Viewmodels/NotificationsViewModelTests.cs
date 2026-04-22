@@ -1,4 +1,3 @@
-// Tudor
 using System;
 using System.Collections.Immutable;
 using Moq;
