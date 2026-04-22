@@ -9,8 +9,8 @@ namespace Property_and_Management.Tests.Viewmodels
         [Test]
         public void TryParsePriceInput_NullString_ReturnsFalseAndZero()
         {
-            var parsed = PriceInputParser.TryParsePriceInput(null!, out var price);
-            Assert.That(parsed, Is.False);
+            var priceParsingSucceeded = PriceInputParser.TryParsePriceInput(null!, out var price);
+            Assert.That(priceParsingSucceeded, Is.False);
             Assert.That(price, Is.EqualTo(0));
         }
 
@@ -18,8 +18,8 @@ namespace Property_and_Management.Tests.Viewmodels
         public void TryParsePriceInput_OnlyWhitespace_ReturnsFalseAndZero()
         {
             var input = "   ";
-            var parsed = PriceInputParser.TryParsePriceInput(input, out var price);
-            Assert.That(parsed, Is.False);
+            var priceParsingSucceeded = PriceInputParser.TryParsePriceInput(input, out var price);
+            Assert.That(priceParsingSucceeded, Is.False);
             Assert.That(price, Is.EqualTo(0));
         }
 
@@ -27,8 +27,8 @@ namespace Property_and_Management.Tests.Viewmodels
         public void TryParsePriceInput_WholeNumber_ParsesCorrectly()
         {
             var input = "42";
-            var parsed = PriceInputParser.TryParsePriceInput(input, out var price);
-            Assert.That(parsed, Is.True);
+            var priceParsingSucceeded = PriceInputParser.TryParsePriceInput(input, out var price);
+            Assert.That(priceParsingSucceeded, Is.True);
             Assert.That(price, Is.EqualTo(42));
         }
 
@@ -36,8 +36,8 @@ namespace Property_and_Management.Tests.Viewmodels
         public void TryParsePriceInput_DotDecimalSeparator_ParsesCorrectly()
         {
             var input = "12.50";
-            var parsed = PriceInputParser.TryParsePriceInput(input, out var price);
-            Assert.That(parsed, Is.True);
+            var priceParsingSucceeded = PriceInputParser.TryParsePriceInput(input, out var price);
+            Assert.That(priceParsingSucceeded, Is.True);
             Assert.That(price, Is.EqualTo(12.5));
         }
 
@@ -45,8 +45,8 @@ namespace Property_and_Management.Tests.Viewmodels
         public void TryParsePriceInput_NonNumericText_ReturnsFalseAndZero()
         {
             var input = "banana";
-            var parsed = PriceInputParser.TryParsePriceInput(input, out var price);
-            Assert.That(parsed, Is.False);
+            var priceParsingSucceeded = PriceInputParser.TryParsePriceInput(input, out var price);
+            Assert.That(priceParsingSucceeded, Is.False);
             Assert.That(price, Is.EqualTo(0));
         }
     }
