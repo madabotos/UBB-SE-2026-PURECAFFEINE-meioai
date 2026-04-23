@@ -12,8 +12,18 @@ namespace Property_and_Management.Src.Repository
         private const int MissingForeignKeyId = 0;
         private const string ConnectionStringName = "BoardRent";
 
-        private readonly string boardRentConnectionString =
-            System.Configuration.ConfigurationManager.ConnectionStrings[ConnectionStringName]?.ConnectionString ?? string.Empty;
+        private readonly string boardRentConnectionString;
+
+        public RentalRepository()
+        {
+            this.boardRentConnectionString =
+                System.Configuration.ConfigurationManager.ConnectionStrings[ConnectionStringName]?.ConnectionString ?? string.Empty;
+        }
+
+        public RentalRepository(string connectionString)
+        {
+            this.boardRentConnectionString = connectionString;
+        }
 
         private const string SelectAllRentalsSql =
             "SELECT r.*, renterUser.display_name AS renter_display_name, ownerUser.display_name AS owner_display_name, " +

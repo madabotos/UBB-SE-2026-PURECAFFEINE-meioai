@@ -11,9 +11,20 @@ namespace Property_and_Management.Src.Repository
     {
         private const int MissingForeignKeyId = 0;
         private const int VarBinaryMaxLength = -1;
+        private const string ConnectionStringName = "BoardRent";
 
-        private readonly string boardRentConnectionString =
-            System.Configuration.ConfigurationManager.ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
+        private readonly string boardRentConnectionString;
+
+        public GameRepository()
+        {
+            this.boardRentConnectionString =
+                System.Configuration.ConfigurationManager.ConnectionStrings[ConnectionStringName]?.ConnectionString ?? string.Empty;
+        }
+
+        public GameRepository(string connectionString)
+        {
+            this.boardRentConnectionString = connectionString;
+        }
 
         public ImmutableList<Game> GetAll()
         {

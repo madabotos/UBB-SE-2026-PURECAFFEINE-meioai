@@ -10,9 +10,20 @@ namespace Property_and_Management.Src.Repository
     public class NotificationRepository : INotificationRepository
     {
         private const int MissingUserId = 0;
+        private const string ConnectionStringName = "BoardRent";
 
-        private readonly string boardRentConnectionString =
-            System.Configuration.ConfigurationManager.ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
+        private readonly string boardRentConnectionString;
+
+        public NotificationRepository()
+        {
+            this.boardRentConnectionString =
+                System.Configuration.ConfigurationManager.ConnectionStrings[ConnectionStringName]?.ConnectionString ?? string.Empty;
+        }
+
+        public NotificationRepository(string connectionString)
+        {
+            this.boardRentConnectionString = connectionString;
+        }
 
         private const string BaseNotificationSelectQuery =
             "SELECT n.*, u.display_name AS user_display_name FROM Notifications n LEFT JOIN Users u ON u.id = n.user_id";

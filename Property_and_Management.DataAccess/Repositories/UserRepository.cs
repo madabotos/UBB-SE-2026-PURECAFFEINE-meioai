@@ -9,8 +9,20 @@ namespace Property_and_Management.Src.Repository
 {
     public class UserRepository : IUserRepository
     {
-        private readonly string boardRentConnectionString =
-            System.Configuration.ConfigurationManager.ConnectionStrings["BoardRent"]?.ConnectionString ?? string.Empty;
+        private const string ConnectionStringName = "BoardRent";
+
+        private readonly string boardRentConnectionString;
+
+        public UserRepository()
+        {
+            this.boardRentConnectionString =
+                System.Configuration.ConfigurationManager.ConnectionStrings[ConnectionStringName]?.ConnectionString ?? string.Empty;
+        }
+
+        public UserRepository(string connectionString)
+        {
+            this.boardRentConnectionString = connectionString;
+        }
 
         public ImmutableList<User> GetAll()
         {

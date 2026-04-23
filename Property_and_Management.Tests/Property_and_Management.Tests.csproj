@@ -39,6 +39,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Property_and_Management\Property_and_Management.csproj" />
+    <ProjectReference Include="..\Property_and_Management.DataAccess\Property_and_Management.DataAccess.csproj" />
   </ItemGroup>
 
   <ItemGroup>

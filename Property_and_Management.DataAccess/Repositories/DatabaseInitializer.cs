@@ -12,9 +12,11 @@ namespace Property_and_Management.Src.Repository
         private const string MasterDatabase = "master";
         private const int EmptyRowCount = 0;
 
-        public static void EnsureDatabaseInitialized()
+        public static void EnsureDatabaseInitialized() => EnsureDatabaseInitialized(null);
+
+        public static void EnsureDatabaseInitialized(string? connectionString)
         {
-            var connectionString = ConfigurationManager.ConnectionStrings[ConnectionStringName]?.ConnectionString;
+            connectionString ??= ConfigurationManager.ConnectionStrings[ConnectionStringName]?.ConnectionString;
             if (string.IsNullOrWhiteSpace(connectionString))
             {
                 Debug.WriteLine($"DatabaseInitializer: connection string '{ConnectionStringName}' is missing.");

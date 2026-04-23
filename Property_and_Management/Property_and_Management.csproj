@@ -92,6 +92,9 @@
         <Generator>MSBuild:Compile</Generator>
       </Page>
     </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\Property_and_Management.DataAccess\Property_and_Management.DataAccess.csproj" />
+    </ItemGroup>
 
     
     <PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
